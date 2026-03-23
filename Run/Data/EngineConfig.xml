@@ -1,0 +1,25 @@
+<EventSystemConfig
+	isEnabled = "true"
+/>
+
+<AudioConfig
+	isEnabled = "true"
+/>
+
+<InputConfig
+	isEnabled = "true"
+/>
+
+<RenderConfig
+	isEnabled = "true"
+/>
+
+<WindowConfig	
+	clientAspect = "2.f"
+	windowTitle = "Protogame 3D"
+	isEnabled = "true"
+/>
+
+<DevConsoleConfig
+	isEnabled = "true"
+/>

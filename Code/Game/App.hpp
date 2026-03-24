@@ -26,8 +26,6 @@ public:
 	void Startup();
 
 	void Startup_PopulateBlackboard();
-	void Startup_LoadAllModels();
-	void Startup_LoadAllglTF();
 	void Startup_DisplayCommandsToDevConsole();
 
 	void SetIsQuitting();
@@ -38,21 +36,6 @@ public:
 	bool IsKeyDown(unsigned char keyCode);
 	bool WasKeyJustPressed(unsigned char keyCode);
 	bool WasKeyJustReleased(unsigned char keyCode);
-
-	Texture* getTextureToDrawTo();
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Models
-	OBJ_Model* m_blaineModel;
-	OBJ_Model* m_venipedeModel;
-	OBJ_Model* m_6sharksModel;
-	OBJ_Model* m_theWindModel;
-
-	glTF_Asset* m_dragonModel;
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Textures
-	Texture* m_textureToDrawTo;
 
 	Game* m_game = nullptr;
 

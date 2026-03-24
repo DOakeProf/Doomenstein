@@ -35,9 +35,6 @@ public:
 
 	void AddHitStop(float hitStop);
 
-	void RenderAllPortals() const;
-	void RenderAllEntities() const;
-
 private:
 	void Startup_PopulateFromBlackboard();
 
@@ -47,23 +44,16 @@ private:
 	void Render_AttractMode() const;
 	void Render_MainMode() const;
 
-	void Update_MainMode_Entities();
 	bool Update_MainMode_KeyboardInput();
-	void Update_MainMode_KeyboardInput_DebugRender();
 	bool Update_MainMode_ControllerInput();
-	void Update_MainMode_PlayerCCD();
 
 	void ChangeGameState(GameState newGameState);
-	void DestroyGarbageEntities();
 
 public:
 	RandomNumberGenerator*	m_randomNumberGenerator = nullptr;
 	GameState				m_nextGameState = GameState::GAME_STATE_ATTRACT;
 	GameState				m_currentGameState = GameState::GAME_STATE_ATTRACT;
 	float					m_screenShakeFraction = 0.f;
-	
-	Shader* m_useTexture1Shader;
-	Shader* m_drawToTexShader;
 
 	float m_hitStopTimer = 0.f;
 	bool m_isHitStop = false;
@@ -71,28 +61,7 @@ public:
 	Player* m_player;
 	Vec3* m_playerTranslationThisFrame;
 
-	std::vector<Entity*> m_entities;
-	std::vector<Portal*> m_portals;
-	Prop* m_cubeProp;
-	Prop* m_cubeProp2;
-	Prop* m_sphereProp;
-	Prop* m_cylinderProp;
-	Prop* m_blaineProp;
-	Prop* m_venipedeProp;
-	Prop* m_venipedeEyesProp;
-	Prop* m_thresherProp;
-	Prop* m_portal1CameraCube;
-	Prop* m_portal2CameraCube;
-	Prop* m_dragonProp;
-	std::vector<Prop*> m_theWind;
-	std::vector<Prop*> m_gridXLines;
-	std::vector<Prop*> m_gridYLines;
-
 	Rgba8 m_backgroundClearColor = Rgba8(50, 50, 50, 255);
-
-	Timer* m_theWindTimer;
-	Timer* m_theWindGoAwayTimer;
-	bool m_isTheWindActive = false;
 
 	Clock* m_gameClock;
 

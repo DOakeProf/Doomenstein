@@ -31,23 +31,14 @@
     <ClCompile Include="Game.cpp">
       <Filter>Framework</Filter>
     </ClCompile>
-    <ClCompile Include="Entity.cpp">
-      <Filter>Gameplay</Filter>
-    </ClCompile>
     <ClCompile Include="Player.cpp">
       <Filter>Gameplay</Filter>
     </ClCompile>
-    <ClCompile Include="Prop.cpp">
+    <ClCompile Include="Map.cpp">
       <Filter>Gameplay</Filter>
     </ClCompile>
-    <ClCompile Include="objReader.cpp">
-      <Filter>Framework</Filter>
-    </ClCompile>
-    <ClCompile Include="Portal.cpp">
+    <ClCompile Include="Tile.cpp">
       <Filter>Gameplay</Filter>
-    </ClCompile>
-    <ClCompile Include="glTFReader.cpp">
-      <Filter>Framework</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -60,26 +51,17 @@
     <ClInclude Include="Game.hpp">
       <Filter>Framework</Filter>
     </ClInclude>
-    <ClInclude Include="Entity.hpp">
-      <Filter>Gameplay</Filter>
-    </ClInclude>
     <ClInclude Include="EngineBuildPreferences.hpp">
       <Filter>Framework</Filter>
     </ClInclude>
     <ClInclude Include="Player.hpp">
       <Filter>Gameplay</Filter>
     </ClInclude>
-    <ClInclude Include="Prop.hpp">
+    <ClInclude Include="Map.hpp">
       <Filter>Gameplay</Filter>
     </ClInclude>
-    <ClInclude Include="objReader.hpp">
-      <Filter>Framework</Filter>
-    </ClInclude>
-    <ClInclude Include="Portal.hpp">
+    <ClInclude Include="Tile.hpp">
       <Filter>Gameplay</Filter>
-    </ClInclude>
-    <ClInclude Include="glTFReader.hpp">
-      <Filter>Framework</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -94,16 +76,8 @@
     </Xml>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\..\Run\Data\Shaders\OutlineShader.hlsl">
+    <FxCompile Include="..\..\Run\Data\Shaders\Diffuse.hlsl">
       <Filter>Data\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="..\..\Run\Data\Shaders\DrawToTex.hlsl">
-      <Filter>Data\Shaders</Filter>
-    </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\Run\Data\Shaders\glTFAnimated.hlsl">
-      <Filter>Data\Shaders</Filter>
-    </None>
   </ItemGroup>
 </Project>

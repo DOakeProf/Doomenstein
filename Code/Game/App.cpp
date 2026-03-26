@@ -72,7 +72,7 @@ void App::Update()
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	if (g_engine->m_devConsole->GetMode() == DevConsoleMode::OPEN_FULL
-		|| m_game->m_currentGameState == GAME_STATE_ATTRACT)
+		|| m_game->m_currentGameState == GameState::GAME_STATE_ATTRACT)
 	{
 		g_engine->m_input->SetCursorMode(CursorMode::POINTER);
 	}

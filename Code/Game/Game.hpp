@@ -10,16 +10,17 @@ class RandomNumberGenerator;
 class Entity;
 class Clock;
 class Player;
-class Prop;
+class Map;
 class Timer;
 class Shader;
-class Portal;
 typedef size_t SoundID;
 
-enum GameState {
+enum class GameState {
 	GAME_STATE_NONE,
 	GAME_STATE_ATTRACT,
-	GAME_STATE_MAIN
+	GAME_STATE_LOBBY,
+	GAME_STATE_PLAYING,
+	COUNT
 };
 
 class Game
@@ -39,10 +40,12 @@ private:
 	void Startup_PopulateFromBlackboard();
 
 	void Update_AttractMode();
-	void Update_MainMode();
+	void Update_LobbyMode();
+	void Update_PlayingMode();
 
 	void Render_AttractMode() const;
-	void Render_MainMode() const;
+	void Render_LobbyMode() const;
+	void Render_PlayingMode() const;
 
 	bool Update_MainMode_KeyboardInput();
 	bool Update_MainMode_ControllerInput();
@@ -54,6 +57,8 @@ public:
 	GameState				m_nextGameState = GameState::GAME_STATE_ATTRACT;
 	GameState				m_currentGameState = GameState::GAME_STATE_ATTRACT;
 	float					m_screenShakeFraction = 0.f;
+
+	Map* m_currentMap;
 
 	float m_hitStopTimer = 0.f;
 	bool m_isHitStop = false;

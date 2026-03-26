@@ -2,6 +2,8 @@
 #include "Game/App.hpp"
 #include "Game/GameCommon.hpp"
 #include "Game/Player.hpp"
+#include "Game/Map.hpp"
+#include "Game/Tile.hpp"
 
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
@@ -45,8 +47,9 @@ void Game::Update()
 
 	switch (m_currentGameState)
 	{
-		case GAME_STATE_ATTRACT: Update_AttractMode(); break;
-		case GAME_STATE_MAIN: Update_MainMode(); break;
+		case GameState::GAME_STATE_ATTRACT:		Update_AttractMode(); break;
+		case GameState::GAME_STATE_LOBBY:		Update_LobbyMode(); break;
+		case GameState::GAME_STATE_PLAYING:		Update_PlayingMode(); break;
 	}
 }
 
@@ -54,8 +57,9 @@ void Game::Render() const
 {
 	switch (m_currentGameState)
 	{
-		case GAME_STATE_ATTRACT: Render_AttractMode(); break;
-		case GAME_STATE_MAIN: Render_MainMode(); break;
+		case GameState::GAME_STATE_ATTRACT:		Render_AttractMode(); break;
+		case GameState::GAME_STATE_LOBBY:		Render_LobbyMode(); break;
+		case GameState::GAME_STATE_PLAYING:		Render_PlayingMode(); break;
 	}
 }
 
@@ -64,6 +68,8 @@ void Game::Startup()
 	m_randomNumberGenerator = new RandomNumberGenerator();
 	m_gameClock = new Clock();
 
+	MapDefinition::InitializeDefinitions("Data/Definitions/MapDefinitions.xml");
+	TileDefinition::InitializeDefinitions("Data/Definitions/TileDefinitions.xml");
 	Startup_PopulateFromBlackboard();
 
 	m_player = new Player(this, Vec3(-5.f, 0.f, 1.f));
@@ -94,12 +100,15 @@ void Game::AddHitStop(float hitStop)
 
 void Game::Startup_PopulateFromBlackboard()
 {
-	m_perspectiveFOV = g_gameConfigBlackboard.GetValue("perspectiveFOV", 0.f);
-	m_rollSensitivity = g_gameConfigBlackboard.GetValue("rollSensitivity", 0.f);
-	m_mouseSensitivity = g_gameConfigBlackboard.GetValue("mouseSensitivity", 0.f);
-	m_controllerSensitivity = g_gameConfigBlackboard.GetValue("controllerSensitivity", 0.f);
-	m_moveSpeed = g_gameConfigBlackboard.GetValue("moveSpeed", 0.f);
-	m_colorUndulateTime = g_gameConfigBlackboard.GetValue("colorUndulateTime", 0.f);
+	//m_perspectiveFOV = g_gameConfigBlackboard.GetValue("perspectiveFOV", 0.f);
+	//m_rollSensitivity = g_gameConfigBlackboard.GetValue("rollSensitivity", 0.f);
+	//m_mouseSensitivity = g_gameConfigBlackboard.GetValue("mouseSensitivity", 0.f);
+	//m_controllerSensitivity = g_gameConfigBlackboard.GetValue("controllerSensitivity", 0.f);
+	//m_moveSpeed = g_gameConfigBlackboard.GetValue("moveSpeed", 0.f);
+	//m_colorUndulateTime = g_gameConfigBlackboard.GetValue("colorUndulateTime", 0.f);
+
+	std::string mapDefinitionString = g_gameConfigBlackboard.GetValue("defaultMap", "");
+	m_currentMap = new Map(this, MapDefinition::GetByName(mapDefinitionString));
 }
 
 void Game::Update_AttractMode()
@@ -107,7 +116,7 @@ void Game::Update_AttractMode()
 	// Keyboard Inputs
 	if (g_engine->m_input->WasKeyJustPressed(' ') or g_engine->m_input->WasKeyJustPressed('N'))
 	{
-		ChangeGameState(GameState::GAME_STATE_MAIN);
+		ChangeGameState(GameState::GAME_STATE_PLAYING);
 	}
 
 	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_ESC))
@@ -118,13 +127,18 @@ void Game::Update_AttractMode()
 	// Xbox Controller Inputs
 	if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::GAMEPAD_B) or g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::GAMEPAD_A))
 	{
-		ChangeGameState(GameState::GAME_STATE_MAIN);
+		ChangeGameState(GameState::GAME_STATE_PLAYING);
 	}
 
 	if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::BACK))
 	{
 		g_app->SetIsQuitting();
 	}
+}
+
+void Game::Update_LobbyMode()
+{
+
 }
 
 void Game::Render_AttractMode() const
@@ -145,7 +159,12 @@ void Game::Render_AttractMode() const
 	g_engine->m_render->EndCamera(m_player->m_screenCamera);
 }
 
-void Game::Update_MainMode()
+void Game::Render_LobbyMode() const
+{
+
+}
+
+void Game::Update_PlayingMode()
 {
 	//float deltaSeconds = (float)m_gameClock->GetDeltaSeconds();
 
@@ -175,7 +194,7 @@ void Game::Update_MainMode()
 	}
 }
 
-void Game::Render_MainMode() const
+void Game::Render_PlayingMode() const
 {
 	g_engine->m_render->ClearScreen(m_backgroundClearColor);
 

@@ -14,7 +14,8 @@ std::vector<MapDefinition*> MapDefinition::s_definitions;
 
 Map::Map(Game* game, const MapDefinition* definition)
 {
-
+	CreateTiles();
+	CreateGeometry();
 }
 
 Map::~Map()
@@ -24,12 +25,22 @@ Map::~Map()
 
 void Map::CreateTiles()
 {
-
+	IntVec2 defDimensions = m_definition->m_mapImage->GetDimensions();
+	for (int xCoord = 0; xCoord < defDimensions.x; ++xCoord)
+	{
+		for (int yCoord = 0; yCoord < defDimensions.y; ++yCoord)
+		{
+			Rgba8 texelColor = m_definition->m_mapImage->GetTexelColor(IntVec2(xCoord, yCoord));
+			const TileDefinition* tileDef = TileDefinition::GetByPixelColor(texelColor);
+			AABB3 tileAABB3 = AABB3(Vec3((float)xCoord, (float)yCoord, 0.f), Vec3((float)xCoord + 1.f, (float)yCoord + 1.f, 1.f));
+			m_tiles.emplace_back(tileDef, tileAABB3);
+		}
+	}
 }
 
 void Map::CreateGeometry()
 {
-
+	
 }
 
 void Map::AddGeometryForWall(const AABB3& bounds, const AABB2& UVs)
@@ -64,7 +75,7 @@ bool Map::AreCoordsInBounds(int x, int y) const
 
 const Tile* Map::GetTile(int x, int y) const
 {
-	return new Tile();
+	return &m_tiles[0];
 }
 
 void Map::CollideActors()

@@ -42,3 +42,22 @@ const TileDefinition* TileDefinition::GetByName(const std::string& name)
 	}
 }
 
+const TileDefinition* TileDefinition::GetByPixelColor(Rgba8& color)
+{
+	for (int tileIndex = 0; tileIndex < s_definitions.size(); ++tileIndex)
+	{
+		TileDefinition* currentDef = s_definitions[tileIndex];
+		if (currentDef->m_mapImagePixelColor == color)
+		{
+			return currentDef;
+		}
+	}
+	return nullptr;
+}
+
+Tile::Tile(const TileDefinition* tileDefinition, AABB3 m_bounds)
+	: m_tileDefinition(tileDefinition)
+	, m_bounds(m_bounds)
+{
+
+}

@@ -20,11 +20,16 @@ Map::Map(Game* game, const MapDefinition* definition)
 	m_tileSpriteSheet = SpriteSheet(m_definition->m_spriteSheetTexture, m_definition->m_spriteSheetCellCount);
 	CreateTiles();
 	CreateGeometry();
+	CreateBuffers();
 }
 
 Map::~Map()
 {
+	delete m_vertexBuffer;
+	delete m_indexBuffer;
 
+	m_vertexBuffer = nullptr;
+	m_indexBuffer = nullptr;
 }
 
 void Map::CreateTiles()
@@ -128,7 +133,8 @@ void Map::AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs)
 
 void Map::CreateBuffers()
 {
-
+	m_vertexBuffer = g_engine->m_render->CreateVertexBuffer(sizeof(Vertex_PCUTBN), sizeof(Vertex_PCUTBN));
+	m_indexBuffer = g_engine->m_render->CreateIndexBuffer(sizeof(unsigned int));
 }
 
 bool Map::IsPositionInBounds(const Vec3& position) const
@@ -171,7 +177,7 @@ void Map::Render()
 	g_engine->m_render->BindTexture(m_tileSpriteSheet.GetTexture());
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	//g_engine->m_render->BindShader(m_definition->m_shader);
-	g_engine->m_render->DrawIndexedVertexList(&m_vertexes, &m_indexes);
+	g_engine->m_render->DrawIndexedVertexList(&m_vertexes, &m_indexes, m_vertexBuffer, m_indexBuffer);
 }
 
 RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner /*= nullptr*/) const

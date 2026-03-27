@@ -5,6 +5,7 @@
 #include "Engine/Renderer/Camera.hpp"
 
 #include <vector>
+#include <string>
 
 class RandomNumberGenerator;
 class Entity;
@@ -51,6 +52,8 @@ private:
 	bool Update_MainMode_ControllerInput();
 
 	void ChangeGameState(GameState newGameState);
+	void EnterState(GameState state);
+	void ExitState(GameState state);
 
 public:
 	RandomNumberGenerator*	m_randomNumberGenerator = nullptr;
@@ -77,4 +80,5 @@ public:
 	float m_mouseSensitivity = 0.f;
 	float m_controllerSensitivity = 0.f;
 	float m_moveSpeed = 0.f;
+	std::string m_mapDefinitionString;
 };

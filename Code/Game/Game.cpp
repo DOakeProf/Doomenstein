@@ -42,6 +42,8 @@ void Game::Update()
 {
 	if (m_nextGameState != m_currentGameState)
 	{
+		EnterState(m_nextGameState);
+		ExitState(m_currentGameState);
 		m_currentGameState = m_nextGameState;
 	}
 
@@ -106,8 +108,7 @@ void Game::Startup_PopulateFromBlackboard()
 	m_controllerSensitivity = g_gameConfigBlackboard.GetValue("controllerSensitivity", 0.f);
 	m_moveSpeed = g_gameConfigBlackboard.GetValue("moveSpeed", 0.f);
 
-	std::string mapDefinitionString = g_gameConfigBlackboard.GetValue("defaultMap", "");
-	m_currentMap = new Map(this, MapDefinition::GetByName(mapDefinitionString));
+	m_mapDefinitionString = g_gameConfigBlackboard.GetValue("defaultMap", "");
 }
 
 void Game::Update_AttractMode()
@@ -214,7 +215,7 @@ bool Game::Update_MainMode_KeyboardInput()
 {
 	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_ESC))
 	{
-		g_app->GameReset();
+		ChangeGameState(GameState::GAME_STATE_ATTRACT);
 		return true;
 	}
 
@@ -312,7 +313,7 @@ bool Game::Update_MainMode_ControllerInput()
 	XboxController* controller = &g_engine->m_input->m_controllers[0];
 	if (controller->WasButtonJustPressed(XboxButtonID::BACK))
 	{
-		g_app->GameReset();
+		ChangeGameState(GameState::GAME_STATE_ATTRACT);
 		return true;
 	}
 
@@ -382,3 +383,27 @@ void Game::ChangeGameState(GameState newGameState)
 	m_nextGameState = newGameState;
 }
 
+void Game::EnterState(GameState state)
+{
+	switch (state)
+	{
+		case GameState::GAME_STATE_PLAYING:
+		{
+			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString));
+			break;
+		}
+	}
+}
+
+void Game::ExitState(GameState state)
+{
+	switch (state)
+	{
+		case GameState::GAME_STATE_PLAYING:
+		{
+			delete m_currentMap;
+			m_currentMap = nullptr;
+			break;
+		}
+	}
+}

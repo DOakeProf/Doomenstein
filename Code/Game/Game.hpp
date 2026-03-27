@@ -77,5 +77,4 @@ public:
 	float m_mouseSensitivity = 0.f;
 	float m_controllerSensitivity = 0.f;
 	float m_moveSpeed = 0.f;
-	float m_colorUndulateTime = 0.f;
 };

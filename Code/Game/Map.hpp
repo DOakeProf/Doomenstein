@@ -71,6 +71,7 @@ protected:
 	const MapDefinition* m_definition = nullptr;
 	std::vector<Tile> m_tiles;
 	IntVec2 m_dimensions;
+	SpriteSheet m_tileSpriteSheet;
 	
 	std::vector<Vertex_PCUTBN> m_vertexes;
 	std::vector<unsigned int> m_indexes;

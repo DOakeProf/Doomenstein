@@ -100,12 +100,11 @@ void Game::AddHitStop(float hitStop)
 
 void Game::Startup_PopulateFromBlackboard()
 {
-	//m_perspectiveFOV = g_gameConfigBlackboard.GetValue("perspectiveFOV", 0.f);
-	//m_rollSensitivity = g_gameConfigBlackboard.GetValue("rollSensitivity", 0.f);
-	//m_mouseSensitivity = g_gameConfigBlackboard.GetValue("mouseSensitivity", 0.f);
-	//m_controllerSensitivity = g_gameConfigBlackboard.GetValue("controllerSensitivity", 0.f);
-	//m_moveSpeed = g_gameConfigBlackboard.GetValue("moveSpeed", 0.f);
-	//m_colorUndulateTime = g_gameConfigBlackboard.GetValue("colorUndulateTime", 0.f);
+	m_perspectiveFOV = g_gameConfigBlackboard.GetValue("perspectiveFOV", 0.f);
+	m_rollSensitivity = g_gameConfigBlackboard.GetValue("rollSensitivity", 0.f);
+	m_mouseSensitivity = g_gameConfigBlackboard.GetValue("mouseSensitivity", 0.f);
+	m_controllerSensitivity = g_gameConfigBlackboard.GetValue("controllerSensitivity", 0.f);
+	m_moveSpeed = g_gameConfigBlackboard.GetValue("moveSpeed", 0.f);
 
 	std::string mapDefinitionString = g_gameConfigBlackboard.GetValue("defaultMap", "");
 	m_currentMap = new Map(this, MapDefinition::GetByName(mapDefinitionString));
@@ -201,6 +200,7 @@ void Game::Render_PlayingMode() const
 	g_engine->m_render->BeginCamera(m_player->m_worldCamera);
 
 	// Render Everything
+	m_currentMap->Render();
 
 	g_engine->m_render->EndCamera(m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_player->m_screenCamera);
@@ -286,6 +286,7 @@ bool Game::Update_MainMode_KeyboardInput()
 	m_playerTranslationThisFrame->x = newTranslation.x;
 	m_playerTranslationThisFrame->y = newTranslation.y;
 	m_playerTranslationThisFrame->z = newTranslation.z;
+	m_player->m_position += newTranslation;
 
 	if (g_engine->m_input->IsKeyDown('H'))
 	{

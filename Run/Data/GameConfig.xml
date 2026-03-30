@@ -8,9 +8,9 @@
 
 	perspectiveFOV = "60.f"
 	rollSensitivity = "90.f"
-	mouseSensitivity = "0.125f"
+	mouseSensitivity = "0.075f"
 	controllerSensitivity = "1.f"
-	moveSpeed = "2.f"
+	moveSpeed = "1.f"
 />
 <!--
 	defaultMap="MPMap"

@@ -108,6 +108,7 @@ void App::Startup()
 	new Engine(config);
 
 	DebugRenderSystemStartup(config.m_debugRenderConfig);
+	DebugRenderSetVisible();
 
 	m_game = new Game();
 

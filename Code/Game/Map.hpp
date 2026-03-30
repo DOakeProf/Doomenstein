@@ -13,7 +13,9 @@
 class Game;
 class Actor;
 class Image;
+class Player;
 
+struct Camera;
 struct RaycastResult3D;
 struct AABB3;
 struct AABB2;
@@ -52,6 +54,9 @@ public:
 	const Tile* GetTile(int x, int y) const;
 
 	void Update();
+	bool Update_KeyboardInput();
+	bool Update_ControllerInput();
+	void Update_DebugInput();
 	void CollideActors();
 	void CollideActors(Actor* actorA, Actor* actorB);
 	void CollideActorsWithMap();
@@ -79,4 +84,12 @@ protected:
 	Shader* m_shader = nullptr;
 	VertexBuffer* m_vertexBuffer = nullptr;
 	IndexBuffer* m_indexBuffer = nullptr;
+
+	Player* m_player;
+	Vec3* m_playerTranslationThisFrame;
+
+	Camera* m_screenCamera = nullptr;
+	Vec3 m_sunDirection;
+	float m_sunIntensity;
+	float m_ambientIntensity;
 };

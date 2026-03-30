@@ -4,7 +4,7 @@
 #include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Core/Rgba8.hpp"
 
-class Game;
+class Map;
 struct Camera;
 struct Vec3;
 struct Mat44;
@@ -14,7 +14,7 @@ struct Rgba8;
 class Player
 {
 public:
-	Player(Game* owner, Vec3 const& startingPosition);
+	Player(Map* owner, Vec3 const& startingPosition);
 	virtual ~Player() = default;
 
 	virtual void Update();
@@ -36,5 +36,5 @@ public:
 	Rgba8 m_color = Rgba8::WHITE;
 	bool m_isDead = false;
 	bool m_isGarbage = false;
-	Game* m_game = nullptr;
+	Map* m_map = nullptr;
 };

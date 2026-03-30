@@ -4,8 +4,8 @@
 
 #include "Engine/Renderer/Camera.hpp"
 
-Player::Player(Game* owner, Vec3 const& startingPosition)
-	: m_game(owner)
+Player::Player(Map* owner, Vec3 const& startingPosition)
+	: m_map(owner)
 	, m_position(startingPosition)
 {
 

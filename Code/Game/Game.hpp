@@ -36,6 +36,7 @@ public:
 	void AddScreenShake(float screenShake);
 
 	void AddHitStop(float hitStop);
+	void ChangeGameState(GameState newGameState);
 
 private:
 	void Startup_PopulateFromBlackboard();
@@ -48,10 +49,6 @@ private:
 	void Render_LobbyMode() const;
 	void Render_PlayingMode() const;
 
-	bool Update_MainMode_KeyboardInput();
-	bool Update_MainMode_ControllerInput();
-
-	void ChangeGameState(GameState newGameState);
 	void EnterState(GameState state);
 	void ExitState(GameState state);
 
@@ -66,9 +63,6 @@ public:
 	float m_hitStopTimer = 0.f;
 	bool m_isHitStop = false;
 
-	Player* m_player;
-	Vec3* m_playerTranslationThisFrame;
-
 	Rgba8 m_backgroundClearColor = Rgba8(50, 50, 50, 255);
 
 	Clock* m_gameClock;
@@ -81,4 +75,6 @@ public:
 	float m_controllerSensitivity = 0.f;
 	float m_moveSpeed = 0.f;
 	std::string m_mapDefinitionString;
+
+	Camera* m_screenCamera;
 };

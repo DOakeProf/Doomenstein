@@ -778,19 +778,20 @@ void Map::Render_Actors() const
 RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner /*= nullptr*/) const
 {
 	RaycastResult3D result;
+	result.m_impactDist = distance;
 
 	RaycastResult3D worldXYResult = RaycastWorldXY(start, direction, distance);
-	if (worldXYResult.m_impactDist < result.m_impactDist)
+	if (worldXYResult.m_impactDist != 0.f && worldXYResult.m_impactDist < result.m_impactDist)
 	{
 		result = worldXYResult;
 	}
 	RaycastResult3D worldZResult = RaycastWorldZ(start, direction, distance);
-	if (worldZResult.m_impactDist < result.m_impactDist)
+	if (worldZResult.m_impactDist != 0.f && worldZResult.m_impactDist < result.m_impactDist)
 	{
 		result = worldZResult;
 	}
 	RaycastResult3D worldActorsResult = RaycastWorldActors(start, direction, distance);
-	if (worldActorsResult.m_impactDist < result.m_impactDist)
+	if (worldActorsResult.m_impactDist != 0.f && worldActorsResult.m_impactDist < result.m_impactDist)
 	{
 		result = worldActorsResult;
 	}
@@ -799,7 +800,7 @@ RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float 
 	if (result.m_didImpact)
 	{
 		DebugAddWorldSphere(result.m_impactPos, 0.06f, 10.f);
-		DebugAddWorldArrow(result.m_impactPos, result.m_impactPos + result.m_impactNormal * 0.3f, Vec3(), 0.03f, 10.f, Rgba8::BLUE);
+		DebugAddWorldArrow(result.m_impactPos, result.m_impactPos + result.m_impactNormal * 0.3f, Vec3(), 0.03f, 10.f, Rgba8::BLUE, Rgba8::BLUE);
 	}
 
 	return result;
@@ -821,7 +822,20 @@ RaycastResult3D Map::RaycastWorldZ(const Vec3& start, const Vec3& direction, flo
 
 RaycastResult3D Map::RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, Actor* owner /*= nullptr*/) const
 {
-	return RaycastResult3D();
+	RaycastResult3D result;
+	result.m_impactDist = distance;
+
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		Actor* actor = m_actors[actorIndex];
+		RaycastResult3D newRaycastResult = RaycastVsCylinderZ3D(start, direction, distance, Vec2(actor->m_position.x, actor->m_position.y), actor->m_position.z, actor->m_position.z + actor->m_physicsHeight, actor->m_physicsRadius);
+		if (newRaycastResult.m_impactDist != 0.f && newRaycastResult.m_impactDist < result.m_impactDist )
+		{
+			result = newRaycastResult;
+		}
+	}
+
+	return result;
 }
 
 void MapDefinition::InitializeDefinitions(const char* path)

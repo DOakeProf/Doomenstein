@@ -68,6 +68,7 @@ public:
 	// Update
 	void Update();
 	bool Update_KeyboardInput();
+	bool Update_KeyboardInputBullet();
 	bool Update_ControllerInput();
 	void Update_DebugInput();
 	void Update_Actors();
@@ -118,10 +119,11 @@ protected:
 	// Lists of owned objects
 	std::vector<Tile> m_tiles;
 	std::vector<Actor*> m_actors;
+	Actor* m_bulletActor;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Player
 	Player* m_player;
 	Vec3* m_playerTranslationThisFrame;
-
+	bool m_isControllingBullet = false;
 };

@@ -14,6 +14,7 @@
 #include "Engine/VertexUtils.hpp"
 #include "Engine/Renderer/Camera.hpp"
 #include "Engine/Core/StringUtils.hpp"
+#include "Engine/Math/FloatRange.hpp"
 
 std::vector<MapDefinition*> MapDefinition::s_definitions;
 
@@ -40,6 +41,7 @@ Map::~Map()
 void Map::Startup()
 {
 	m_tileSpriteSheet = SpriteSheet(m_definition->m_spriteSheetTexture, m_definition->m_spriteSheetCellCount);
+	m_dimensions = m_definition->m_mapImage->GetDimensions();
 	CreateTiles();
 	CreateGeometry();
 	CreateBuffers();
@@ -95,6 +97,7 @@ void Map::Startup()
 		Rgba8::BLUE);
 	AddActorToMap(actor);
 	actor->setStatic(false);
+	m_bulletActor = actor;
 
 	m_sunDirection = Vec3(2.f, 1.f, -1.f);
 	m_sunIntensity = 0.85f;
@@ -103,10 +106,9 @@ void Map::Startup()
 
 void Map::CreateTiles()
 {
-	IntVec2 defDimensions = m_definition->m_mapImage->GetDimensions();
-	for (int xCoord = 0; xCoord < defDimensions.x; ++xCoord)
+	for (int xCoord = 0; xCoord < m_dimensions.x; ++xCoord)
 	{
-		for (int yCoord = 0; yCoord < defDimensions.y; ++yCoord)
+		for (int yCoord = 0; yCoord < m_dimensions.y; ++yCoord)
 		{
 			Rgba8 texelColor = m_definition->m_mapImage->GetTexelColor(IntVec2(xCoord, yCoord));
 			const TileDefinition* tileDef = TileDefinition::GetByPixelColor(texelColor);
@@ -223,7 +225,7 @@ const Tile* Map::GetTile(int x, int y) const
 
 int Map::GetTileIndexFromWorldPosition(Vec3 position)
 {
-	int indexToReturn = (RoundDownToInt(position.y) * m_dimensions.x) + RoundDownToInt(position.x);
+	int indexToReturn = (RoundDownToInt(position.x) * m_dimensions.y) + RoundDownToInt(position.y);
 	if (indexToReturn < 0 || indexToReturn > m_tiles.size() - 1)
 	{
 		return -1;
@@ -247,7 +249,15 @@ void Map::AddActorToMap(Actor* actor)
 
 void Map::Update()
 {
-	bool didGameReset = Update_KeyboardInput();
+	bool didGameReset = false;
+	if (m_isControllingBullet)
+	{
+		didGameReset = Update_KeyboardInputBullet();
+	}
+	else
+	{
+		didGameReset = Update_KeyboardInput();
+	}
 	if (didGameReset)
 	{
 		return;
@@ -364,6 +374,106 @@ bool Map::Update_KeyboardInput()
 		m_game->m_gameClock->StepSingleFrame();
 	}
 
+	DebugAddMessage("[F1] Control Mode: Player", 0.f);
+
+	return false;
+}
+
+bool Map::Update_KeyboardInputBullet()
+{
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_ESC))
+	{
+		m_game->ChangeGameState(GameState::GAME_STATE_ATTRACT);
+		return true;
+	}
+
+	if (g_engine->m_input->IsKeyDown('T'))
+	{
+		m_game->m_gameClock->SetTimeScale(0.1f);
+	}
+	else
+	{
+		m_game->m_gameClock->SetTimeScale(1.f);
+	}
+
+	float currentMoveSpeed = m_game->m_moveSpeed;
+	if (g_engine->m_input->IsKeyDown(KEYCODE_SHIFT))
+	{
+		currentMoveSpeed *= 15.f;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Camera Orientation
+	EulerAngles newOrientation = m_player->m_orientation;
+	newOrientation.m_yawDegrees += g_engine->m_input->GetCursorClientDelta().x * m_game->m_mouseSensitivity;
+	newOrientation.m_pitchDegrees -= g_engine->m_input->GetCursorClientDelta().y * m_game->m_mouseSensitivity;
+	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
+	if (g_engine->m_input->IsKeyDown('Q'))
+	{
+		newOrientation.m_rollDegrees -= (float)s_systemClock->GetDeltaSeconds() * m_game->m_rollSensitivity;
+	}
+	if (g_engine->m_input->IsKeyDown('E'))
+	{
+		newOrientation.m_rollDegrees += (float)s_systemClock->GetDeltaSeconds() * m_game->m_rollSensitivity;
+	}
+	newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
+	m_player->m_orientation = newOrientation;
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Movement
+	Vec3 currentPosition = m_bulletActor->m_position;
+	Vec3 newAddedPosition;
+	if (g_engine->m_input->IsKeyDown('A'))
+	{
+		newAddedPosition.y += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
+	}
+	if (g_engine->m_input->IsKeyDown('D'))
+	{
+		newAddedPosition.y -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
+	}
+	if (g_engine->m_input->IsKeyDown('W'))
+	{
+		newAddedPosition.x += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
+	}
+	if (g_engine->m_input->IsKeyDown('S'))
+	{
+		newAddedPosition.x -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
+	}
+	Vec3 orientationFwd = newOrientation.GetForwardDir_IFwd_JLeft_KUp();
+	Vec3 orientationFwdXY = Vec3(orientationFwd.x, orientationFwd.y, 0.f).GetNormalized();
+	Mat44 orientationMatrix = Mat44(orientationFwdXY, orientationFwdXY.GetRotatedAboutZDegrees(90.f), Vec3(0.f, 0.f, 1.f), Vec3());
+	orientationMatrix.AppendTranslation3D(newAddedPosition);
+	Vec3 newTranslation = orientationMatrix.GetTranslation3D();
+
+	if (g_engine->m_input->IsKeyDown('Z'))
+	{
+		newTranslation.z -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
+	}
+	if (g_engine->m_input->IsKeyDown('C'))
+	{
+		newTranslation.z += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
+	}
+
+	m_bulletActor->m_position += newTranslation;
+
+	if (g_engine->m_input->IsKeyDown('H'))
+	{
+		m_bulletActor->m_position = Vec3();
+		m_bulletActor->m_orientation = EulerAngles();
+	}
+
+	if (g_engine->m_input->WasKeyJustPressed('P'))
+	{
+		m_game->m_gameClock->TogglePause();
+	}
+
+	if (g_engine->m_input->WasKeyJustPressed('O'))
+	{
+		m_game->m_gameClock->StepSingleFrame();
+	}
+
+	DebugAddMessage("[F1] Control Mode: Actor", 0.f, Rgba8::BLUE);
+
 	return false;
 }
 
@@ -439,7 +549,10 @@ bool Map::Update_ControllerInput()
 
 void Map::Update_DebugInput()
 {
-	m_sunDirection, m_sunIntensity, m_ambientIntensity;
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F1))
+	{
+		m_isControllingBullet = !m_isControllingBullet;
+	}
 	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F2))
 	{
 		m_sunDirection.x -= 1;
@@ -492,6 +605,15 @@ void Map::Update_DebugInput()
 		std::string message = Stringf("Ambient Intensity: %.2f", m_ambientIntensity);
 		DebugAddMessage(message, 2.f);
 	}
+
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_LEFT_MOUSE))
+	{
+		RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 10.f, nullptr);
+	}
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_RIGHT_MOUSE))
+	{
+		RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 0.25f, nullptr);
+	}
 }
 
 void Map::Update_Actors()
@@ -517,6 +639,13 @@ void Map::CollideActors()
 
 void Map::CollideActors(Actor* actorA, Actor* actorB)
 {
+	FloatRange actorAZRange = FloatRange(actorA->m_position.z, actorA->m_position.z + actorA->m_physicsHeight);
+	FloatRange actorBZRange = FloatRange(actorB->m_position.z, actorB->m_position.z + actorB->m_physicsHeight);
+	if (!actorAZRange.IsOverlappingWith(actorBZRange))
+	{
+		return;
+	}
+
 	Vec2 actorADisc = Vec2(actorA->m_position.x, actorA->m_position.y);
 	Vec2 actorBDisc = Vec2(actorB->m_position.x, actorB->m_position.y);
 	PushDiscsOutOfEachOther2D(actorADisc, actorA->m_physicsRadius, actorBDisc, actorB->m_physicsRadius);
@@ -551,8 +680,12 @@ void Map::CollideActorsWithSurroundingTilesXY(Actor* actor)
 void Map::CollideActorWithSingleTileXY(Actor* actor, Vec3 tilePosition)
 {
 	int tileIndex = GetTileIndexFromWorldPosition(tilePosition);
+	if (tileIndex == -1)
+	{
+		return;
+	}
 	Tile tile = m_tiles[tileIndex];
-	if (m_tiles[tileIndex].m_tileDefinition->m_isSolid)
+	if (tile.m_tileDefinition->m_isSolid)
 	{
 		PushActorOutOfTileXY(actor, tile);
 	}
@@ -575,7 +708,17 @@ void Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
 
 void Map::CollideActorsWithSurroundingCeilingsAndFloorsXY(Actor* actor)
 {
-
+	FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_physicsHeight);
+	// IsCollidingWithCeiling
+	if (actorZRange.IsOnRange(1.f))
+	{
+		actor->m_position.z = 1.f - actor->m_physicsHeight;
+	}
+	// IsCollidingWithFloor
+	if (actorZRange.IsOnRange(0.f))
+	{
+		actor->m_position.z = 0.f;
+	}
 }
 
 void Map::CollideActorsWithMap()
@@ -602,6 +745,7 @@ void Map::Render() const
 	// Render Everything
 	Render_Tiles();
 	Render_Actors();
+	DebugRenderWorld(*m_player->m_worldCamera);
 
 	g_engine->m_render->EndCamera(m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_player->m_screenCamera);
@@ -617,7 +761,7 @@ void Map::Render_Tiles() const
 	g_engine->m_render->BindTexture(m_tileSpriteSheet.GetTexture());
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	g_engine->m_render->BindShader(m_definition->m_shader);
-	g_engine->m_render->SetLightingConstants(m_sunDirection, m_sunIntensity, m_ambientIntensity);
+	g_engine->m_render->SetLightingConstants(m_sunDirection.GetNormalized(), m_sunIntensity, m_ambientIntensity);
 	g_engine->m_render->DrawIndexedVertexList(&m_vertexes, &m_indexes, m_vertexBuffer, m_indexBuffer);
 }
 
@@ -633,14 +777,41 @@ void Map::Render_Actors() const
 
 RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner /*= nullptr*/) const
 {
-	RaycastResult3D();
+	RaycastResult3D result;
 
-	return RaycastResult3D();
+	RaycastResult3D worldXYResult = RaycastWorldXY(start, direction, distance);
+	if (worldXYResult.m_impactDist < result.m_impactDist)
+	{
+		result = worldXYResult;
+	}
+	RaycastResult3D worldZResult = RaycastWorldZ(start, direction, distance);
+	if (worldZResult.m_impactDist < result.m_impactDist)
+	{
+		result = worldZResult;
+	}
+	RaycastResult3D worldActorsResult = RaycastWorldActors(start, direction, distance);
+	if (worldActorsResult.m_impactDist < result.m_impactDist)
+	{
+		result = worldActorsResult;
+	}
+
+	DebugAddWorldCylinder(start, start + direction * distance, Vec3(), 0.01f, 10.f);
+	if (result.m_didImpact)
+	{
+		DebugAddWorldSphere(result.m_impactPos, 0.06f, 10.f);
+		DebugAddWorldArrow(result.m_impactPos, result.m_impactPos + result.m_impactNormal * 0.3f, Vec3(), 0.03f, 10.f, Rgba8::BLUE);
+	}
+
+	return result;
 }
 
 RaycastResult3D Map::RaycastWorldXY(const Vec3& start, const Vec3& direction, float distance) const
 {
-	return RaycastResult3D();
+	RaycastResult3D result;
+
+
+
+	return result;
 }
 
 RaycastResult3D Map::RaycastWorldZ(const Vec3& start, const Vec3& direction, float distance) const

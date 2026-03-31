@@ -188,6 +188,7 @@ void Game::EnterState(GameState state)
 		case GameState::GAME_STATE_ATTRACT:
 		{
 			g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
+			g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 			break;
 		}
 	}

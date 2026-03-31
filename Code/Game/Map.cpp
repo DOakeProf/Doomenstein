@@ -2,6 +2,7 @@
 
 #include "Game/Game.hpp"
 #include "Game/Player.hpp"
+#include "Game/Actor.hpp"
 
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Math/AABB3.hpp"
@@ -20,28 +21,7 @@ Map::Map(Game* game, const MapDefinition* definition)
 	:m_game(game)
 	, m_definition(definition)
 {
-	m_tileSpriteSheet = SpriteSheet(m_definition->m_spriteSheetTexture, m_definition->m_spriteSheetCellCount);
-	CreateTiles();
-	CreateGeometry();
-	CreateBuffers();
-
-	m_player = new Player(this, Vec3(-5.f, 0.f, 1.f));
-	m_player->m_worldCamera = new Camera();
-	m_player->m_screenCamera = new Camera();
-
-	m_player->m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
-	m_player->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS); 
-	m_player->m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
-
-	m_player->m_position = Vec3(3.f, 3.f, 10.f);
-	m_player->m_orientation.m_yawDegrees = 45.f;
-	m_player->m_orientation.m_yawDegrees = 30.f;
-
-	m_playerTranslationThisFrame = new Vec3();
-
-	m_sunDirection = Vec3(2.f, 1.f, -1.f);
-	m_sunIntensity = 0.85f; 
-	m_ambientIntensity = 0.35f;
+	Startup();
 }
 
 Map::~Map()
@@ -55,6 +35,70 @@ Map::~Map()
 	m_playerTranslationThisFrame = nullptr;
 	m_vertexBuffer = nullptr;
 	m_indexBuffer = nullptr;
+}
+
+void Map::Startup()
+{
+	m_tileSpriteSheet = SpriteSheet(m_definition->m_spriteSheetTexture, m_definition->m_spriteSheetCellCount);
+	CreateTiles();
+	CreateGeometry();
+	CreateBuffers();
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Initialize Player
+	m_player = new Player(this, Vec3(-5.f, 0.f, 1.f));
+	m_player->m_worldCamera = new Camera();
+	m_player->m_screenCamera = new Camera();
+
+	m_player->m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
+	m_player->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
+	m_player->m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+
+	m_player->m_position = Vec3(2.5f, 8.5f, 0.5f);
+
+	m_playerTranslationThisFrame = new Vec3();
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Initialize Actors
+	Actor* actor = new Actor(
+		Vec3(7.5f, 8.5f, 0.25f),
+		0.75f,
+		0.35f,
+		EulerAngles(),
+		Rgba8::RED
+	);
+	AddActorToMap(actor);
+	actor->setStatic(true);
+	actor = new Actor(
+		Vec3(8.5f, 8.5f, 0.125f),
+		0.75f,
+		0.35f,
+		EulerAngles(),
+		Rgba8::RED);
+	AddActorToMap(actor);
+	actor->setStatic(true);
+	actor = new Actor(
+		Vec3(9.5f, 8.5f, 0.f),
+		0.75f,
+		0.35f,
+		EulerAngles(),
+		Rgba8::RED);
+	AddActorToMap(actor);
+	actor->setStatic(true);
+
+	// Test Projectile
+	actor = new Actor(
+		Vec3(5.5f, 8.5f, 0.f),
+		0.125f,
+		0.0625f,
+		EulerAngles(),
+		Rgba8::BLUE);
+	AddActorToMap(actor);
+	actor->setStatic(false);
+
+	m_sunDirection = Vec3(2.f, 1.f, -1.f);
+	m_sunIntensity = 0.85f;
+	m_ambientIntensity = 0.35f;
 }
 
 void Map::CreateTiles()
@@ -177,6 +221,30 @@ const Tile* Map::GetTile(int x, int y) const
 	return &m_tiles[0];
 }
 
+int Map::GetTileIndexFromWorldPosition(Vec3 position)
+{
+	int indexToReturn = (RoundDownToInt(position.y) * m_dimensions.x) + RoundDownToInt(position.x);
+	if (indexToReturn < 0 || indexToReturn > m_tiles.size() - 1)
+	{
+		return -1;
+	}
+	return indexToReturn;
+}
+
+void Map::AddActorToMap(Actor* actor)
+{
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		Actor* currentActor = m_actors[actorIndex];
+		if (currentActor == nullptr)
+		{
+			currentActor = actor;
+			return;
+		}
+	}
+	m_actors.push_back(actor);
+}
+
 void Map::Update()
 {
 	bool didGameReset = Update_KeyboardInput();
@@ -192,6 +260,12 @@ void Map::Update()
 	}
 
 	Update_DebugInput();
+	
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Update Actors
+	Update_Actors();
+	CollideActors();
+	CollideActorsWithMap();
 
 	m_player->Update();
 }
@@ -420,19 +494,98 @@ void Map::Update_DebugInput()
 	}
 }
 
+void Map::Update_Actors()
+{
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		m_actors[actorIndex]->Update();
+	}
+}
+
 void Map::CollideActors()
 {
-
+	for (int actorAIndex = 0; actorAIndex < m_actors.size(); ++actorAIndex)
+	{
+		Actor* actorA = m_actors[actorAIndex];
+		for (int actorBIndex = actorAIndex + 1; actorBIndex < m_actors.size(); ++actorBIndex)
+		{
+			Actor* actorB = m_actors[actorBIndex];
+			CollideActors(actorA, actorB);
+		}
+	}
 }
 
 void Map::CollideActors(Actor* actorA, Actor* actorB)
+{
+	Vec2 actorADisc = Vec2(actorA->m_position.x, actorA->m_position.y);
+	Vec2 actorBDisc = Vec2(actorB->m_position.x, actorB->m_position.y);
+	PushDiscsOutOfEachOther2D(actorADisc, actorA->m_physicsRadius, actorBDisc, actorB->m_physicsRadius);
+	actorA->m_position.x = actorADisc.x;
+	actorA->m_position.y = actorADisc.y;
+	actorB->m_position.x = actorBDisc.x;
+	actorB->m_position.y = actorBDisc.y;
+}
+
+void Map::CollideActorsWithSurroundingTilesXY(Actor* actor)
+{
+	Vec3 NORTH		= Vec3(0.f, 1.f, 0.f);
+	Vec3 NORTH_EAST	= Vec3(1.f, 1.f, 0.f);
+	Vec3 EAST		= Vec3(1.f, 0.f, 0.f);
+	Vec3 SOUTH_EAST = Vec3(1.f, -1.f, 0.f);
+	Vec3 SOUTH		= Vec3(0.f, -1.f, 0.f);
+	Vec3 SOUTH_WEST = Vec3(-1.f, -1.f, 0.f);
+	Vec3 WEST		= Vec3(-1.f, 0.f, 0.f);
+	Vec3 NORTH_WEST = Vec3(-1.f, 1.f, 0.f);
+
+	CollideActorWithSingleTileXY(actor, actor->m_position);
+	CollideActorWithSingleTileXY(actor, actor->m_position + NORTH);
+	CollideActorWithSingleTileXY(actor, actor->m_position + NORTH_EAST);
+	CollideActorWithSingleTileXY(actor, actor->m_position + EAST);
+	CollideActorWithSingleTileXY(actor, actor->m_position + SOUTH_EAST);
+	CollideActorWithSingleTileXY(actor, actor->m_position + SOUTH);
+	CollideActorWithSingleTileXY(actor, actor->m_position + SOUTH_WEST);
+	CollideActorWithSingleTileXY(actor, actor->m_position + WEST);
+	CollideActorWithSingleTileXY(actor, actor->m_position + NORTH_WEST);
+}
+
+void Map::CollideActorWithSingleTileXY(Actor* actor, Vec3 tilePosition)
+{
+	int tileIndex = GetTileIndexFromWorldPosition(tilePosition);
+	Tile tile = m_tiles[tileIndex];
+	if (m_tiles[tileIndex].m_tileDefinition->m_isSolid)
+	{
+		PushActorOutOfTileXY(actor, tile);
+	}
+}
+
+void Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
+{
+	AABB2 tileBounds = AABB2(
+		Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y),
+		Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_maxs.y)
+	);
+
+	Vec2 actorPosition = Vec2(actor->m_position.x, actor->m_position.y);
+
+	PushDiscOutOfFixedAABB2D(actorPosition, actor->m_physicsRadius, tileBounds);
+
+	actor->m_position.x = actorPosition.x;
+	actor->m_position.y = actorPosition.y;
+}
+
+void Map::CollideActorsWithSurroundingCeilingsAndFloorsXY(Actor* actor)
 {
 
 }
 
 void Map::CollideActorsWithMap()
 {
-
+	for (int actorAIndex = 0; actorAIndex < m_actors.size(); ++actorAIndex)
+	{
+		Actor* actor = m_actors[actorAIndex];
+		CollideActorsWithSurroundingTilesXY(actor);
+		CollideActorsWithSurroundingCeilingsAndFloorsXY(actor);
+	}
 }
 
 void Map::CollideActorsWithMap(Actor* actor)
@@ -440,18 +593,15 @@ void Map::CollideActorsWithMap(Actor* actor)
 
 }
 
-void Map::Render()
+void Map::Render() const
 {
 	g_engine->m_render->ClearScreen(m_game->m_backgroundClearColor);
 
 	g_engine->m_render->BeginCamera(m_player->m_worldCamera);
 
 	// Render Everything
-	g_engine->m_render->BindTexture(m_tileSpriteSheet.GetTexture());
-	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
-	g_engine->m_render->BindShader(m_definition->m_shader);
-	g_engine->m_render->SetLightingConstants(m_sunDirection, m_sunIntensity, m_ambientIntensity);
-	g_engine->m_render->DrawIndexedVertexList(&m_vertexes, &m_indexes, m_vertexBuffer, m_indexBuffer);
+	Render_Tiles();
+	Render_Actors();
 
 	g_engine->m_render->EndCamera(m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_player->m_screenCamera);
@@ -462,8 +612,29 @@ void Map::Render()
 	g_engine->m_render->EndCamera(m_player->m_screenCamera);
 }
 
+void Map::Render_Tiles() const
+{
+	g_engine->m_render->BindTexture(m_tileSpriteSheet.GetTexture());
+	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+	g_engine->m_render->BindShader(m_definition->m_shader);
+	g_engine->m_render->SetLightingConstants(m_sunDirection, m_sunIntensity, m_ambientIntensity);
+	g_engine->m_render->DrawIndexedVertexList(&m_vertexes, &m_indexes, m_vertexBuffer, m_indexBuffer);
+}
+
+void Map::Render_Actors() const
+{
+	g_engine->m_render->BindTexture(nullptr);
+	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		m_actors[actorIndex]->Render();
+	}
+}
+
 RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner /*= nullptr*/) const
 {
+	RaycastResult3D();
+
 	return RaycastResult3D();
 }
 

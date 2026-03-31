@@ -42,6 +42,10 @@ public:
 	Map(Game* game, const MapDefinition* definition);
 	~Map();
 
+	void Startup();
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Creating Geometry/Map tiles
 	void CreateTiles();
 	void CreateGeometry();
 	void AddGeometryForWall(const AABB3& bounds, const AABB2& UVs);
@@ -49,20 +53,38 @@ public:
 	void AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs);
 	void CreateBuffers();
 
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Getting information
 	bool IsPositionInBounds(const Vec3& position) const;
 	bool AreCoordsInBounds(int x, int y) const;
 	const Tile* GetTile(int x, int y) const;
+	int GetTileIndexFromWorldPosition(Vec3 position);
 
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Utility functions
+	void AddActorToMap(Actor* actor);
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Update
 	void Update();
 	bool Update_KeyboardInput();
 	bool Update_ControllerInput();
 	void Update_DebugInput();
+	void Update_Actors();
 	void CollideActors();
 	void CollideActors(Actor* actorA, Actor* actorB);
 	void CollideActorsWithMap();
 	void CollideActorsWithMap(Actor* actor);
+	void CollideActorsWithSurroundingTilesXY(Actor* actor);
+	void CollideActorWithSingleTileXY(Actor* actor, Vec3 tilePosition);
+	void PushActorOutOfTileXY(Actor* actor, Tile const& tile);
+	void CollideActorsWithSurroundingCeilingsAndFloorsXY(Actor* actor);
 
-	void Render();
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Render
+	void Render() const;
+	void Render_Tiles() const;
+	void Render_Actors() const;
 
 	RaycastResult3D RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
 	RaycastResult3D RaycastWorldXY(const Vec3& start, const Vec3& direction, float distance) const;
@@ -73,23 +95,33 @@ public:
 
 protected:
 
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Properties
 	const MapDefinition* m_definition = nullptr;
-	std::vector<Tile> m_tiles;
 	IntVec2 m_dimensions;
 	SpriteSheet m_tileSpriteSheet;
 	
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Graphics rendering
 	std::vector<Vertex_PCUTBN> m_vertexes;
 	std::vector<unsigned int> m_indexes;
 	const Texture* m_texture = nullptr;
 	Shader* m_shader = nullptr;
 	VertexBuffer* m_vertexBuffer = nullptr;
 	IndexBuffer* m_indexBuffer = nullptr;
-
-	Player* m_player;
-	Vec3* m_playerTranslationThisFrame;
-
 	Camera* m_screenCamera = nullptr;
 	Vec3 m_sunDirection;
 	float m_sunIntensity;
 	float m_ambientIntensity;
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Lists of owned objects
+	std::vector<Tile> m_tiles;
+	std::vector<Actor*> m_actors;
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Player
+	Player* m_player;
+	Vec3* m_playerTranslationThisFrame;
+
 };

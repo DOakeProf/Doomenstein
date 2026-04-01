@@ -77,7 +77,6 @@ public:
 	void CollideActors();
 	void CollideActors(Actor* actorA, Actor* actorB);
 	void CollideActorsWithMap();
-	void CollideActorsWithMap(Actor* actor);
 	void CollideActorsWithSurroundingTilesXY(Actor* actor);
 	void CollideActorWithSingleTileXY(Actor* actor, Vec3 tilePosition);
 	void PushActorOutOfTileXY(Actor* actor, Tile const& tile);

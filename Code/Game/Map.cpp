@@ -210,17 +210,39 @@ void Map::CreateBuffers()
 
 bool Map::IsPositionInBounds(const Vec3& position) const
 {
+	AABB2 mapBounds = AABB2(Vec2(0.f, 0.f), Vec2((float)m_dimensions.x, (float)m_dimensions.y));
+	if (mapBounds.IsPointInside(Vec2(position.x, position.y)))
+	{
+		return true;
+	}
 	return false;
 }
 
 bool Map::AreCoordsInBounds(int x, int y) const
 {
+	AABB2 mapBounds = AABB2(Vec2(0.f, 0.f), Vec2((float)m_dimensions.x, (float)m_dimensions.y));
+	if (mapBounds.IsPointInside(Vec2((float)x, (float)y)))
+	{
+		return true;
+	}
 	return false;
 }
 
 const Tile* Map::GetTile(int x, int y) const
 {
-	return &m_tiles[0];
+	if (x < 0 ||
+		y < 0 ||
+		x > x - 1 ||
+		y > y - 1)
+	{
+		return nullptr;
+	}
+	int indexToReturn = (x * y) + y;
+	if (indexToReturn < 0 || indexToReturn > m_tiles.size() - 1)
+	{
+		return nullptr;
+	}
+	return &m_tiles[indexToReturn];
 }
 
 int Map::GetTileIndexFromWorldPosition(Vec3 position) const
@@ -766,11 +788,6 @@ void Map::CollideActorsWithMap()
 	}
 }
 
-void Map::CollideActorsWithMap(Actor* actor)
-{
-
-}
-
 void Map::Render() const
 {
 	g_engine->m_render->ClearScreen(m_game->m_backgroundClearColor);
@@ -812,7 +829,7 @@ void Map::Render_Actors() const
 	}
 }
 
-RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner /*= nullptr*/) const
+RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float distance, [[maybe_unused]] Actor* owner /*= nullptr*/) const
 {
 	RaycastResult3D result;
 	result.m_impactDist = distance;
@@ -1013,7 +1030,7 @@ RaycastResult3D Map::RaycastWorldZ(const Vec3& start, const Vec3& direction, flo
 	return result;
 }
 
-RaycastResult3D Map::RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, Actor* owner /*= nullptr*/) const
+RaycastResult3D Map::RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, [[maybe_unused]] Actor* owner /*= nullptr*/) const
 {
 	RaycastResult3D result;
 	result.m_impactDist = distance;
@@ -1163,4 +1180,5 @@ const MapDefinition* MapDefinition::GetByName(const std::string& name)
 			return currentDef;
 		}
 	}
+	return nullptr;
 }

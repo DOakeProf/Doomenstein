@@ -58,7 +58,8 @@ public:
 	bool IsPositionInBounds(const Vec3& position) const;
 	bool AreCoordsInBounds(int x, int y) const;
 	const Tile* GetTile(int x, int y) const;
-	int GetTileIndexFromWorldPosition(Vec3 position);
+	int GetTileIndexFromWorldPosition(Vec3 position) const;
+	int GetTileIndexFromCoordinates(IntVec2 coordinates) const;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Utility functions
@@ -91,6 +92,8 @@ public:
 	RaycastResult3D RaycastWorldXY(const Vec3& start, const Vec3& direction, float distance) const;
 	RaycastResult3D RaycastWorldZ(const Vec3& start, const Vec3& direction, float distance) const;
 	RaycastResult3D RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
+
+	RaycastResult3D RaycastVsTilesXY(Vec3 startPos, Vec3 fwdNormal, float maxDist) const;
 
 	Game* m_game = nullptr;
 

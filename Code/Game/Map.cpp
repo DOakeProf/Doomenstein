@@ -223,9 +223,33 @@ const Tile* Map::GetTile(int x, int y) const
 	return &m_tiles[0];
 }
 
-int Map::GetTileIndexFromWorldPosition(Vec3 position)
+int Map::GetTileIndexFromWorldPosition(Vec3 position) const
 {
+	if (position.x < 0.f || 
+		position.y < 0.f ||
+		position.x > (float)m_dimensions.x - 1 ||
+		position.y > (float)m_dimensions.y - 1)
+	{
+		return -1;
+	}
 	int indexToReturn = (RoundDownToInt(position.x) * m_dimensions.y) + RoundDownToInt(position.y);
+	if (indexToReturn < 0 || indexToReturn > m_tiles.size() - 1)
+	{
+		return -1;
+	}
+	return indexToReturn;
+}
+
+int Map::GetTileIndexFromCoordinates(IntVec2 coordinates) const
+{
+	if (coordinates.x < 0 || 
+		coordinates.y < 0 || 
+		coordinates.x > m_dimensions.x - 1 || 
+		coordinates.y > m_dimensions.y - 1)
+	{
+		return -1;
+	}
+	int indexToReturn = (coordinates.x * m_dimensions.y) + coordinates.y;
 	if (indexToReturn < 0 || indexToReturn > m_tiles.size() - 1)
 	{
 		return -1;
@@ -781,17 +805,17 @@ RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float 
 	result.m_impactDist = distance;
 
 	RaycastResult3D worldXYResult = RaycastWorldXY(start, direction, distance);
-	if (worldXYResult.m_impactDist != 0.f && worldXYResult.m_impactDist < result.m_impactDist)
+	if (worldXYResult.m_impactDist < result.m_impactDist)
 	{
 		result = worldXYResult;
 	}
 	RaycastResult3D worldZResult = RaycastWorldZ(start, direction, distance);
-	if (worldZResult.m_impactDist != 0.f && worldZResult.m_impactDist < result.m_impactDist)
+	if (worldZResult.m_impactDist < result.m_impactDist)
 	{
 		result = worldZResult;
 	}
 	RaycastResult3D worldActorsResult = RaycastWorldActors(start, direction, distance);
-	if (worldActorsResult.m_impactDist != 0.f && worldActorsResult.m_impactDist < result.m_impactDist)
+	if (worldActorsResult.m_impactDist < result.m_impactDist)
 	{
 		result = worldActorsResult;
 	}
@@ -808,16 +832,172 @@ RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float 
 
 RaycastResult3D Map::RaycastWorldXY(const Vec3& start, const Vec3& direction, float distance) const
 {
-	RaycastResult3D result;
+	RaycastResult3D hitResult;
+	hitResult.m_impactDist = distance;
+	Vec3 startPos = start;
+	Vec3 fwdNormal = direction;
+	float maxDist = distance;
 
+	IntVec2 coordinates = IntVec2((int)floor(startPos.x), (int)floor(startPos.y));
+	int startTileIndex = GetTileIndexFromWorldPosition(startPos);
+	//if (startTileIndex == -1)
+	//{
+	//	return hitResult;
+	//}
+	if (startTileIndex != -1 && 
+		(startPos.z > 0.f && startPos.z < 1.f) &&
+		m_tiles[startTileIndex].m_tileDefinition->m_isSolid)
+	{
+		hitResult.m_didImpact = true;
+		hitResult.m_impactPos = startPos;
+		hitResult.m_impactNormal = -fwdNormal;
+		hitResult.m_impactDist = 0.f;
+		return hitResult;
+	}
 
+	float fwdDistPerXCrossing = 1.f / abs(fwdNormal.x);
+	int tileStepDirectionX = (fwdNormal.x < 0) ? -1 : 1;
+	float xAtFirstXCrossing = (float)coordinates.x + (tileStepDirectionX + 1) / 2;
+	float xDistToFirstXCrossing = (float)xAtFirstXCrossing - startPos.x;
+	float fwdDistAtNextXCrossing = fabsf(xDistToFirstXCrossing) * fwdDistPerXCrossing;
 
-	return result;
+	float fwdDistPerYCrossing = 1.f / abs(fwdNormal.y);
+	int tileStepDirectionY = (fwdNormal.y < 0) ? -1 : 1;
+	float yAtFirstYCrossing = (float)coordinates.y + (tileStepDirectionY + 1) / 2;
+	float yDistToFirstYCrossing = (float)yAtFirstYCrossing - startPos.y;
+	float fwdDistAtNextYCrossing = fabsf(yDistToFirstYCrossing) * fwdDistPerYCrossing;
+
+	while (true)
+	{
+		if (fwdDistAtNextXCrossing <= fwdDistAtNextYCrossing)
+		{
+			if (fwdDistAtNextXCrossing >= maxDist)
+			{
+				RaycastResult3D missResult;
+				missResult.m_didImpact = false;
+				missResult.m_impactPos = startPos + (fwdNormal * maxDist);
+				//missResult.m_impactNormal = ? ? ? ;
+				missResult.m_impactDist = maxDist;
+				return missResult;
+			}
+			coordinates.x += tileStepDirectionX;
+			int tileIndex = GetTileIndexFromCoordinates(coordinates);
+			if (tileIndex == -1)
+			{
+				fwdDistAtNextXCrossing += fwdDistPerXCrossing;
+				continue;
+			}
+			Vec3 impactPos = startPos + (fwdNormal * fwdDistAtNextXCrossing);
+			if (m_tiles[tileIndex].m_tileDefinition->m_isSolid &&
+				impactPos.z > 0.f &&
+				impactPos.z < 1.f
+				)
+			{
+				hitResult.m_didImpact = true;
+				hitResult.m_impactDist = fwdDistAtNextXCrossing;
+				hitResult.m_impactPos = impactPos;
+				if (tileStepDirectionX > 0)
+				{
+					hitResult.m_impactNormal = Vec3(-1, 0, 0.f);
+				}
+				else
+				{
+					hitResult.m_impactNormal = Vec3(1, 0, 0.f);
+				}
+				return hitResult;
+			}
+			fwdDistAtNextXCrossing += fwdDistPerXCrossing;
+		}
+		else
+		{
+			if (fwdDistAtNextYCrossing >= maxDist)
+			{
+				RaycastResult3D missResult;
+				missResult.m_didImpact = false;
+				missResult.m_impactPos = startPos + (fwdNormal * maxDist);
+				//missResult.m_impactNormal = ? ? ? ;
+				missResult.m_impactDist = maxDist;
+				return missResult;
+			}
+			coordinates.y += tileStepDirectionY;
+			int tileIndex = GetTileIndexFromCoordinates(coordinates);
+			if (tileIndex == -1)
+			{
+				fwdDistAtNextYCrossing += fwdDistPerYCrossing;
+				continue;
+			}
+			Vec3 impactPos = startPos + (fwdNormal * fwdDistAtNextYCrossing);
+			if (m_tiles[tileIndex].m_tileDefinition->m_isSolid &&
+				impactPos.z > 0.f &&
+				impactPos.z < 1.f
+				)
+			{
+				hitResult.m_didImpact = true;
+				hitResult.m_impactDist = fwdDistAtNextYCrossing;
+				hitResult.m_impactPos = impactPos;
+				if (tileStepDirectionY > 0)
+				{
+					hitResult.m_impactNormal = Vec3(0, -1, 0.f);
+				}
+				else
+				{
+					hitResult.m_impactNormal = Vec3(0, 1, 0.f);
+				}
+				return hitResult;
+			}
+			fwdDistAtNextYCrossing += fwdDistPerYCrossing;
+		}
+	}
 }
 
 RaycastResult3D Map::RaycastWorldZ(const Vec3& start, const Vec3& direction, float distance) const
 {
-	return RaycastResult3D();
+	RaycastResult3D result;
+	result.m_impactDist = distance;
+
+	Vec3 rayEnd = start + direction * distance;
+
+	float rayZLength = rayEnd.z - start.z;
+	float zTFloor = (0.f - start.z) / rayZLength;
+	float zTCeiling = (1.f - start.z) / rayZLength;
+	Vec3 floorHitPoint = start + direction * distance * zTFloor;
+	Vec3 ceilingHitPoint = start + direction * distance * zTCeiling;
+
+	AABB2 mapBounds = AABB2(Vec2(0.f, 0.f), Vec2((float)m_dimensions.x, (float)m_dimensions.y));
+
+	FloatRange zRange = FloatRange(start.z, rayEnd.z);
+	if (start.z > rayEnd.z)
+	{
+		zRange.m_min = rayEnd.z;
+		zRange.m_max = start.z;
+	}
+
+	// Did hit floor
+	if (zRange.IsOnRange(0.f) &&
+		start.z > 0.f &&
+		mapBounds.IsPointInside(Vec2(floorHitPoint.x, floorHitPoint.y))
+		)
+	{
+		result.m_didImpact = true;
+		result.m_impactPos = floorHitPoint;
+		result.m_impactDist = (result.m_impactPos - start).GetLength();
+		result.m_impactNormal = Vec3(0.f,0.f,1.f);
+		return result;
+	}
+	// Did hit ceiling
+	if (zRange.IsOnRange(1.f) &&
+		start.z < 1.f &&
+		mapBounds.IsPointInside(Vec2(ceilingHitPoint.x, ceilingHitPoint.y))
+		)
+	{
+		result.m_didImpact = true;
+		result.m_impactPos = ceilingHitPoint;
+		result.m_impactDist = (result.m_impactPos - start).GetLength();
+		result.m_impactNormal = Vec3(0.f, 0.f, -1.f);
+		return result;
+	}
+
+	return result;
 }
 
 RaycastResult3D Map::RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, Actor* owner /*= nullptr*/) const
@@ -836,6 +1016,101 @@ RaycastResult3D Map::RaycastWorldActors(const Vec3& start, const Vec3& direction
 	}
 
 	return result;
+}
+
+RaycastResult3D Map::RaycastVsTilesXY(Vec3 startPos, Vec3 fwdNormal, float maxDist) const
+{
+	IntVec2 coordinates = IntVec2((int)floor(startPos.x), (int)floor(startPos.y));
+	int startTileIndex = GetTileIndexFromWorldPosition(startPos);
+	if (m_tiles[startTileIndex].m_tileDefinition->m_isSolid)
+	{
+		RaycastResult3D hitResult;
+		hitResult.m_didImpact = true;
+		hitResult.m_impactPos = startPos;
+		hitResult.m_impactNormal = -fwdNormal;
+		hitResult.m_impactDist = 0.f;
+		return hitResult;
+	}
+
+	float fwdDistPerXCrossing = 1.f / abs(fwdNormal.x);
+	int tileStepDirectionX = (fwdNormal.x < 0) ? -1 : 1;
+	float xAtFirstXCrossing = (float)coordinates.x + (tileStepDirectionX + 1) / 2;
+	float xDistToFirstXCrossing = (float)xAtFirstXCrossing - startPos.x;
+	float fwdDistAtNextXCrossing = fabsf(xDistToFirstXCrossing) * fwdDistPerXCrossing;
+
+	float fwdDistPerYCrossing = 1.f / abs(fwdNormal.y);
+	int tileStepDirectionY = (fwdNormal.y < 0) ? -1 : 1;
+	float yAtFirstYCrossing = (float)coordinates.y + (tileStepDirectionY + 1) / 2;
+	float yDistToFirstYCrossing = (float)yAtFirstYCrossing - startPos.y;
+	float fwdDistAtNextYCrossing = fabsf(yDistToFirstYCrossing) * fwdDistPerYCrossing;
+
+	while (true)
+	{
+		if (fwdDistAtNextXCrossing <= fwdDistAtNextYCrossing)
+		{
+			if (fwdDistAtNextXCrossing >= maxDist)
+			{
+				RaycastResult3D missResult;
+				missResult.m_didImpact = false;
+				missResult.m_impactPos = startPos + (fwdNormal * maxDist);
+				//missResult.m_impactNormal = ? ? ? ;
+				missResult.m_impactDist = maxDist;
+				return missResult;
+			}
+			coordinates.x += tileStepDirectionX;
+			int tileIndex = GetTileIndexFromCoordinates(coordinates);
+			if (m_tiles[tileIndex].m_tileDefinition->m_isSolid)
+			{
+				RaycastResult3D hitResult;
+				hitResult.m_didImpact = true;
+				float impactDist = fwdDistAtNextXCrossing;
+				hitResult.m_impactDist = impactDist;
+				hitResult.m_impactPos = startPos + (fwdNormal * impactDist);
+				if (tileStepDirectionX > 0)
+				{
+					hitResult.m_impactNormal = Vec3(-1, 0, 0.f);
+				}
+				else
+				{
+					hitResult.m_impactNormal = Vec3(1, 0, 0.f);
+				}
+				return hitResult;
+			}
+			fwdDistAtNextXCrossing += fwdDistPerXCrossing;
+		}
+		else
+		{
+			if (fwdDistAtNextYCrossing >= maxDist)
+			{
+				RaycastResult3D missResult;
+				missResult.m_didImpact = false;
+				missResult.m_impactPos = startPos + (fwdNormal * maxDist);
+				//missResult.m_impactNormal = ? ? ? ;
+				missResult.m_impactDist = maxDist;
+				return missResult;
+			}
+			coordinates.y += tileStepDirectionY;
+			int tileIndex = GetTileIndexFromCoordinates(coordinates);
+			if (m_tiles[tileIndex].m_tileDefinition->m_isSolid)
+			{
+				RaycastResult3D hitResult;
+				hitResult.m_didImpact = true;
+				float impactDist = fwdDistAtNextYCrossing;
+				hitResult.m_impactDist = impactDist;
+				hitResult.m_impactPos = startPos + (fwdNormal * impactDist);
+				if (tileStepDirectionY > 0)
+				{
+					hitResult.m_impactNormal = Vec3(0, -1, 0.f);
+				}
+				else
+				{
+					hitResult.m_impactNormal = Vec3(0, 1, 0.f);
+				}
+				return hitResult;
+			}
+			fwdDistAtNextYCrossing += fwdDistPerYCrossing;
+		}
+	}
 }
 
 void MapDefinition::InitializeDefinitions(const char* path)

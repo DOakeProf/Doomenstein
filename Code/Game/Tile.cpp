@@ -40,6 +40,7 @@ const TileDefinition* TileDefinition::GetByName(const std::string& name)
 			return currentDef;
 		}
 	}
+	return nullptr;
 }
 
 const TileDefinition* TileDefinition::GetByPixelColor(Rgba8& color)

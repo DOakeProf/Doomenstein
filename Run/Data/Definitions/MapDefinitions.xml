@@ -1,0 +1,28 @@
+<Definitions>
+  <MapDefinition name="TestMap" image="Data/Maps/TestMap.png" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8">
+    <SpawnInfos>
+      <SpawnInfo actor="SpawnPoint" position="25.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="SpawnPoint" position="26.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="SpawnPoint" position="27.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="SpawnPoint" position="28.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="SpawnPoint" position="29.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="SpawnPoint"  position="30.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="Demon" position="1.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="Demon" position="4.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="Demon" position="7.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="Demon" position="26.5,10.5,0.0" orientation="270.0,0.0,0.0" />
+      <SpawnInfo actor="Demon" position="29.5,10.5,0.0" orientation="270.0,0.0,0.0" />
+    </SpawnInfos>
+  </MapDefinition>
+  <MapDefinition name="MPMap" image="Data/Maps/MPMap.png" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8">
+    <SpawnInfos>
+      <SpawnInfo actor="Demon" faction="Demon" position="15.0,7.0,0.0" />
+      <SpawnInfo actor="Demon" faction="Demon" position="20.0,15.0,0.0" />
+      <SpawnInfo actor="SpawnPoint" faction="Marine" position="1.5,1.5,0.0" orientation="0.0,0.0,0.0" />
+      <SpawnInfo actor="SpawnPoint" faction="Marine" position="1.5,30.5f,0.0" orientation="315.0,0.0,0.0" />
+      <SpawnInfo actor="SpawnPoint" faction="Marine" position="30.5,30.5,0.0" orientation="225.0,0.0,0.0" />
+      <SpawnInfo actor="SpawnPoint" faction="Marine" position="30.5,1.5,0.0" orientation="135.0,0.0,0.0" />
+    </SpawnInfos>
+  </MapDefinition>
+</Definitions>
+

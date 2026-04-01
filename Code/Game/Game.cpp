@@ -21,6 +21,7 @@
 #include "Engine/Math/AABB3.hpp"
 #include "Engine/Core/Timer.hpp"
 #include "Engine/Renderer/Texture.hpp"
+#include "Engine/BitmapFont.hpp"
 // TODO: Make gamestate set by an enum value. DO current state and next state, 
 // when these are different know we're switching states, run current state frame 
 // and then next frame switch. switch at top of update. enum has invalidstate as -1. 
@@ -79,6 +80,8 @@ void Game::Startup()
 
 	m_screenCamera = new Camera();
 	m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+
+	m_squirrelFont = g_engine->m_render->CreateOrGetBitmapFont("Data/Fonts/SquirrelFixedFont");
 }
 
 void Game::AddScreenShake(float screenShake)
@@ -139,14 +142,12 @@ void Game::Render_AttractMode() const
 
 	g_engine->m_render->BeginCamera(m_screenCamera);
 
-	Vertex vertices[] = {
-		Vertex(Vec3(600.f, 300.f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.f, 0.f)),
-		Vertex(Vec3(1000.f, 300.f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.f, 0.f)),
-		Vertex(Vec3(800.f, 600.f, 0.0f), Rgba8(255, 255, 255, 255), Vec2(0.f, 0.f))
-	};
+	std::vector<Vertex> verts;
 
-	g_engine->m_render->BindTexture(NULL);
-	g_engine->m_render->DrawVertexArray(3, vertices);
+	m_squirrelFont->AddVertsForTextInBox2D(verts, "Press SPACE to start", AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y)), SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.1f));
+
+	g_engine->m_render->BindTexture(&m_squirrelFont->GetTexture());
+	g_engine->m_render->DrawVertexList(&verts);
 
 	g_engine->m_render->EndCamera(m_screenCamera);
 }

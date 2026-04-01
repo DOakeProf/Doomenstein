@@ -293,6 +293,8 @@ void Map::Update()
 		return;
 	}
 
+	Update_AddDebugScreenText();
+
 	Update_DebugInput();
 	
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -640,6 +642,15 @@ void Map::Update_DebugInput()
 	}
 }
 
+void Map::Update_AddDebugScreenText()
+{
+	std::string clockText = Stringf("[GAME CLOCK] Time: %.2f FPS: %.2f Time Scale: %.2f", m_game->m_gameClock->GetTotalSeconds(), m_game->m_gameClock->GetFrameRate(), m_game->m_gameClock->GetTimeScale());
+	DebugAddScreenText(clockText, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y)), SCREEN_SIZE_Y * 0.02f, Vec2(0.98f, 0.97f), 0.f);
+
+	std::string lightingText = Stringf("Sun Direction X: %.2f [F2 / F3 to change]\nSun Direction Y: %.2f [F4 / F5 to change]\nSun Intensity: %.2f [F6 / F7 to change]\nAmbient Intensity: %.2f [F8 / F9 to change]", m_sunDirection.x, m_sunDirection.y, m_sunIntensity, m_ambientIntensity);
+	DebugAddScreenText(lightingText, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y)), SCREEN_SIZE_Y * 0.02f, Vec2(0.98f, 0.94f), 0.f);
+}
+
 void Map::Update_Actors()
 {
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
@@ -767,6 +778,8 @@ void Map::Render() const
 	g_engine->m_render->BeginCamera(m_player->m_worldCamera);
 
 	// Render Everything
+	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
+	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
 	Render_Tiles();
 	Render_Actors();
 	DebugRenderWorld(*m_player->m_worldCamera);

@@ -14,6 +14,7 @@ class Player;
 class Map;
 class Timer;
 class Shader;
+class BitmapFont;
 typedef size_t SoundID;
 
 enum class GameState {
@@ -59,6 +60,7 @@ public:
 	float					m_screenShakeFraction = 0.f;
 
 	Map* m_currentMap;
+	BitmapFont* m_squirrelFont;
 
 	float m_hitStopTimer = 0.f;
 	bool m_isHitStop = false;

@@ -72,6 +72,7 @@ public:
 	bool Update_KeyboardInputBullet();
 	bool Update_ControllerInput();
 	void Update_DebugInput();
+	void Update_AddDebugScreenText();
 	void Update_Actors();
 	void CollideActors();
 	void CollideActors(Actor* actorA, Actor* actorB);

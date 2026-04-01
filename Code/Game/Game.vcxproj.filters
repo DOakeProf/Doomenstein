@@ -40,6 +40,9 @@
     <ClCompile Include="Tile.cpp">
       <Filter>Gameplay</Filter>
     </ClCompile>
+    <ClCompile Include="Actor.cpp">
+      <Filter>Gameplay</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameCommon.hpp">
@@ -61,6 +64,9 @@
       <Filter>Gameplay</Filter>
     </ClInclude>
     <ClInclude Include="Tile.hpp">
+      <Filter>Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.hpp">
       <Filter>Gameplay</Filter>
     </ClInclude>
   </ItemGroup>

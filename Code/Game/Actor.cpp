@@ -1,29 +1,44 @@
 #include "Game/Actor.hpp"
+#include "Game/Map.hpp"
+#include "Game/Game.hpp"
+#include "Game/ActorHandle.hpp"
 
 #include "Engine/Math/Mat44.hpp"
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/VertexUtils.hpp"
 #include "Engine/Core/Engine.hpp"
-#include "ENgine/Renderer/Renderer.hpp"
+#include "Engine/Renderer/Renderer.hpp"
 
-Actor::Actor(Vec3 const& position, float height, float radius, EulerAngles const& orientation /*= EulerAngles()*/, Rgba8 const& color /*= Rgba8::WHITE*/)
-	: m_position(position)
+Actor::Actor(Map* map, Vec3 const& position, float height, float radius, EulerAngles const& orientation /*= EulerAngles()*/, Rgba8 const& color /*= Rgba8::WHITE*/)
+	: m_map(map)
+	, m_position(position)
 	, m_physicsHeight(height)
 	, m_physicsRadius(radius)
 	, m_orientation(orientation)
 	, m_color(color)
 {
-
+	m_deathTimer = new Timer(1.f, m_map->m_game->m_gameClock);
 }
 
 Actor::~Actor()
 {
+	delete m_deathTimer;
+	m_deathTimer = nullptr;
 
+	delete m_handle;
+	m_handle = nullptr;
 }
 
 void Actor::Update()
 {
-
+	if (m_health <= 0)
+	{
+		Die();
+	}
+	if (m_deathTimer->HasPeriodElapsed())
+	{
+		m_isGarbage = true;
+	}
 }
 
 void Actor::Render() const
@@ -51,6 +66,17 @@ Mat44 Actor::GetModelMatrix() const
 	modelToWorld.Append(orientationMatrix);
 
 	return modelToWorld;
+}
+
+void Actor::SetActorHandle(ActorHandle* handle)
+{
+	m_handle = handle;
+}
+
+void Actor::Die()
+{
+	m_isDead = true;
+	m_deathTimer->Start();
 }
 
 void Actor::setStatic(bool status)

@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "Engine/Math/IntVec2.hpp"
+#include "Engine/Math/IntVec3.hpp"
 #include "Engine/Renderer/Texture.hpp"
 #include "Engine/Shader.hpp"
 #include "Engine/VertexBuffer.hpp"
@@ -9,6 +10,8 @@
 #include "Engine/Core/Image.hpp"
 
 #include "Game/Tile.hpp"
+#include "Game/ActorHandle.hpp"
+#include "Game/SpawnInfo.hpp"
 
 class Game;
 class Actor;
@@ -25,7 +28,8 @@ struct Vertex_PCUTBN;
 struct MapDefinition
 {
 	std::string m_name;
-	Image* m_mapImage;
+	std::vector<Image*> m_mapImages;
+	std::vector<SpawnInfo> m_spawnInfos;
 	Shader* m_shader;
 	Texture* m_spriteSheetTexture;
 	IntVec2 m_spriteSheetCellCount;
@@ -43,6 +47,7 @@ public:
 	~Map();
 
 	void Startup();
+	void Startup_InitializeActors();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Creating Geometry/Map tiles
@@ -59,11 +64,13 @@ public:
 	bool AreCoordsInBounds(int x, int y) const;
 	const Tile* GetTile(int x, int y) const;
 	int GetTileIndexFromWorldPosition(Vec3 position) const;
-	int GetTileIndexFromCoordinates(IntVec2 coordinates) const;
+	int GetTileIndexFromCoordinates(IntVec3 coordinates) const;
+	Actor* GetActorByHandle(const ActorHandle handle) const;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Utility functions
-	void AddActorToMap(Actor* actor);
+	int AddActorToMap(Actor* actor);
+	Actor* SpawnActor(const SpawnInfo& spawnInfo);
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Update
@@ -77,7 +84,7 @@ public:
 	void CollideActors();
 	void CollideActors(Actor* actorA, Actor* actorB);
 	void CollideActorsWithMap();
-	void CollideActorsWithSurroundingTilesXY(Actor* actor);
+	void CollideActorsWithSurroundingTilesXY(Actor* actor, Vec3 const& position);
 	void CollideActorWithSingleTileXY(Actor* actor, Vec3 tilePosition);
 	void PushActorOutOfTileXY(Actor* actor, Tile const& tile);
 	void CollideActorsWithSurroundingCeilingsAndFloorsXY(Actor* actor);
@@ -93,8 +100,6 @@ public:
 	RaycastResult3D RaycastWorldZ(const Vec3& start, const Vec3& direction, float distance) const;
 	RaycastResult3D RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
 
-	RaycastResult3D RaycastVsTilesXY(Vec3 startPos, Vec3 fwdNormal, float maxDist) const;
-
 	Game* m_game = nullptr;
 
 protected:
@@ -102,7 +107,7 @@ protected:
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Properties
 	const MapDefinition* m_definition = nullptr;
-	IntVec2 m_dimensions;
+	IntVec3 m_dimensions;
 	SpriteSheet m_tileSpriteSheet;
 	
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -122,6 +127,7 @@ protected:
 	// Lists of owned objects
 	std::vector<Tile> m_tiles;
 	std::vector<Actor*> m_actors;
+	unsigned int m_nextActorUID = 0;
 	Actor* m_bulletActor;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

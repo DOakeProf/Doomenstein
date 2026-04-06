@@ -159,8 +159,6 @@ void Game::Render_LobbyMode() const
 
 void Game::Update_PlayingMode()
 {
-	//float deltaSeconds = (float)m_gameClock->GetDeltaSeconds();
-
 	// Entity updates
 	m_currentMap->Update();
 

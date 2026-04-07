@@ -12,9 +12,9 @@
 #include "Game/Tile.hpp"
 #include "Game/ActorHandle.hpp"
 #include "Game/SpawnInfo.hpp"
+#include "Game/Actor.hpp"
 
 class Game;
-class Actor;
 class Image;
 class Player;
 
@@ -102,6 +102,12 @@ public:
 
 	Game* m_game = nullptr;
 
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Player
+	Player* m_player;
+	Vec3* m_playerTranslationThisFrame;
+	bool m_isControllingBullet = false;
+
 protected:
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -130,9 +136,4 @@ protected:
 	unsigned int m_nextActorUID = 0;
 	Actor* m_bulletActor;
 
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Player
-	Player* m_player;
-	Vec3* m_playerTranslationThisFrame;
-	bool m_isControllingBullet = false;
 };

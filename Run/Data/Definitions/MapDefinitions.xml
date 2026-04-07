@@ -1,6 +1,7 @@
 <Definitions>
   <MapDefinition name="TestMap" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8">
     <SpawnInfos>
+	  <SpawnInfo actor="Marine" position="4.5,18.5,0.0" orientation="270.0,0.0,0.0" />
       <SpawnInfo actor="SpawnPoint" position="25.5,15.5,0.0" orientation="270.0,0.0,0.0" />
       <SpawnInfo actor="SpawnPoint" position="26.5,15.5,0.0" orientation="270.0,0.0,0.0" />
       <SpawnInfo actor="SpawnPoint" position="27.5,15.5,0.0" orientation="270.0,0.0,0.0" />

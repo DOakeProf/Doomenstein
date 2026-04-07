@@ -73,6 +73,7 @@ void Game::Startup()
 
 	MapDefinition::InitializeDefinitions("Data/Definitions/MapDefinitions.xml");
 	TileDefinition::InitializeDefinitions("Data/Definitions/TileDefinitions.xml");
+	ActorDefinition::InitializeDefinitions("Data/Definitions/ActorDefinitions.xml");
 	Startup_PopulateFromBlackboard();
 
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
@@ -182,6 +183,7 @@ void Game::EnterState(GameState state)
 		case GameState::GAME_STATE_PLAYING:
 		{
 			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString));
+			m_currentMap->Startup_InitializeActors(); // Initialize actors here because the function calls things that only exist after the map is made.
 			break;
 		}
 		case GameState::GAME_STATE_ATTRACT:

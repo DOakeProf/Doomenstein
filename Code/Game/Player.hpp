@@ -4,6 +4,8 @@
 #include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Core/Rgba8.hpp"
 
+#include "Game/Controller.hpp"
+
 class Map;
 struct Camera;
 struct Vec3;
@@ -27,7 +29,7 @@ enum class ControlState
 	COUNT
 };
 
-class Player
+class Player : public Controller
 {
 public:
 	Player(Map* owner, Vec3 const& startingPosition);
@@ -69,6 +71,4 @@ public:
 
 	bool m_isDead = false;
 	bool m_isGarbage = false;
-	
-	Map* m_map = nullptr;
 };

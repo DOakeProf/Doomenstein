@@ -8,7 +8,7 @@
 #include "Engine/Math/MathUtils.hpp"
 
 Player::Player(Map* owner, Vec3 const& startingPosition)
-	: m_map(owner)
+	: Controller(owner)
 	, m_position(startingPosition)
 {
 
@@ -207,7 +207,7 @@ void Player::HandleInputs_FreeFly_Controller()
 
 void Player::HandleInputs_FirstPerson()
 {
-	if (g_engine->m_input->WasKeyJustPressed('F'))
+	if (g_engine->m_input->WasKeyJustPressed('F') || m_actorHandle == nullptr || m_map->GetActorByHandle(*m_actorHandle) == nullptr)
 	{
 		SetPlayerState(PlayerState::FREEFLY);
 	}
@@ -226,69 +226,71 @@ void Player::HandleInputs_FirstPerson()
 
 void Player::HandleInputs_FirstPerson_Keyboard()
 {
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Keyboard
-	float currentMoveSpeed = m_map->m_game->m_moveSpeed;
-	if (g_engine->m_input->IsKeyDown(KEYCODE_SHIFT))
+	if (m_actorHandle != nullptr && m_map->GetActorByHandle(*m_actorHandle) != nullptr)
 	{
-		currentMoveSpeed *= 2.f;
-	}
+		Actor* actor = m_map->GetActorByHandle(*m_actorHandle);
 
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Camera Orientation
-	EulerAngles newOrientation = m_orientation;
-	newOrientation.m_yawDegrees += g_engine->m_input->GetCursorClientDelta().x * m_map->m_game->m_mouseSensitivity;
-	newOrientation.m_pitchDegrees -= g_engine->m_input->GetCursorClientDelta().y * m_map->m_game->m_mouseSensitivity;
-	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
-	if (g_engine->m_input->IsKeyDown('Q'))
-	{
-		newOrientation.m_rollDegrees -= (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-	}
-	if (g_engine->m_input->IsKeyDown('E'))
-	{
-		newOrientation.m_rollDegrees += (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-	}
-	newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
-	m_orientation = newOrientation;
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Camera Orientation
+		EulerAngles newOrientation = m_orientation;
+		newOrientation.m_yawDegrees += g_engine->m_input->GetCursorClientDelta().x * m_map->m_game->m_mouseSensitivity;
+		newOrientation.m_pitchDegrees -= g_engine->m_input->GetCursorClientDelta().y * m_map->m_game->m_mouseSensitivity;
+		newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
+		if (g_engine->m_input->IsKeyDown('Q'))
+		{
+			newOrientation.m_rollDegrees -= (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
+		}
+		if (g_engine->m_input->IsKeyDown('E'))
+		{
+			newOrientation.m_rollDegrees += (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
+		}
+		newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
+		m_orientation = newOrientation;
 
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Movement
-	Vec3 currentPosition = m_position;
-	Vec3 newAddedPosition;
-	if (g_engine->m_input->IsKeyDown('A'))
-	{
-		newAddedPosition.y += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('D'))
-	{
-		newAddedPosition.y -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('W'))
-	{
-		newAddedPosition.x += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('S'))
-	{
-		newAddedPosition.x -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	Mat44 orientationMatrix = newOrientation.GetAsMatrix_IFwd_JLeft_KUp();
-	orientationMatrix.AppendTranslation3D(newAddedPosition);
-	Vec3 newTranslation = orientationMatrix.GetTranslation3D();
+		actor->m_orientation.m_yawDegrees = m_orientation.m_yawDegrees;
 
-	if (g_engine->m_input->IsKeyDown('Z'))
-	{
-		newTranslation.z -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('C'))
-	{
-		newTranslation.z += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	m_position += newTranslation;
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Movement
+		float currentMoveSpeed = actor->m_definition->m_walkSpeed;
+		if (g_engine->m_input->IsKeyDown(KEYCODE_SHIFT))
+		{
+			currentMoveSpeed = actor->m_definition->m_runSpeed;
+		}
 
-	if (g_engine->m_input->IsKeyDown('H'))
-	{
-		m_position = Vec3();
-		m_orientation = EulerAngles();
+		Vec3 currentPosition = actor->m_position;
+		Vec3 newAddedPosition;
+		if (g_engine->m_input->IsKeyDown('A'))
+		{
+			newAddedPosition.y += 1.f;
+		}
+		if (g_engine->m_input->IsKeyDown('D'))
+		{
+			newAddedPosition.y -= 1.f;
+		}
+		if (g_engine->m_input->IsKeyDown('W'))
+		{
+			newAddedPosition.x += 1.f;
+		}
+		if (g_engine->m_input->IsKeyDown('S'))
+		{
+			newAddedPosition.x -= 1.f;
+		}
+		if (newAddedPosition != Vec3())
+		{
+			Mat44 orientationMatrix = newOrientation.GetAsMatrix_IFwd_JLeft_KUp();
+			orientationMatrix.AppendTranslation3D(newAddedPosition);
+			Vec3 directionToMoveIn = orientationMatrix.GetTranslation3D();
+			directionToMoveIn.z = 0;
+			directionToMoveIn = directionToMoveIn.GetNormalized();
+			actor->MoveInDirection(directionToMoveIn, currentMoveSpeed);
+		}
+
+		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_SPACE))
+		{
+			actor->AddImpulse(Vec3(0.f,0.f,10.f));
+		}
+
+		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height);
 	}
 
 	if (g_engine->m_input->WasKeyJustPressed('P'))

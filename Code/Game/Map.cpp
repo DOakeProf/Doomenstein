@@ -4,6 +4,7 @@
 #include "Game/Player.hpp"
 #include "Game/Actor.hpp"
 #include "Game/ActorHandle.hpp"
+#include "Game/AI.hpp"
 
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Math/AABB3.hpp"
@@ -61,10 +62,6 @@ void Map::Startup()
 	m_player->m_position = Vec3(2.5f, 8.5f, 0.5f);
 
 	m_playerTranslationThisFrame = new Vec3();
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Initialize Actors
-	Startup_InitializeActors();
 
 	m_sunDirection = Vec3(2.f, 1.f, -1.f);
 	m_sunIntensity = 0.85f;
@@ -227,8 +224,8 @@ int Map::GetTileIndexFromWorldPosition(Vec3 position) const
 {
 	if (position.x < 0.f || 
 		position.y < 0.f ||
-		position.x > (float)m_dimensions.x - 1 ||
-		position.y > (float)m_dimensions.y - 1)
+		position.x > (float)m_dimensions.x ||
+		position.y > (float)m_dimensions.y)
 	{
 		return -1;
 	}
@@ -282,19 +279,32 @@ int Map::AddActorToMap(Actor* actor)
 		}
 	}
 	m_actors.push_back(actor);
+
 	return (int)m_actors.size() - 1;
 }
 
 Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 {
-	Actor* newActor = new Actor(this, spawnInfo.m_position, 1.f, 0.5f, spawnInfo.m_orientation);
+	Actor* newActor = new Actor(this, spawnInfo.m_name, spawnInfo.m_position, spawnInfo.m_orientation);
 	int actorIndex = AddActorToMap(newActor);
-	ActorHandle actorHandle = ActorHandle(m_nextActorUID, actorIndex);
+	ActorHandle* actorHandle = new ActorHandle(m_nextActorUID, actorIndex);
+	newActor->m_handle = actorHandle;
 	++m_nextActorUID;
 	if (m_nextActorUID > ActorHandle::MAX_ACTOR_UID)
 	{
 		m_nextActorUID = 0;
 	}
+
+	if (newActor->m_definition->m_name == "Marine")
+	{
+		m_player->Possess(actorHandle);
+	}
+	if (newActor->m_definition->m_aiEnabled)
+	{
+		AI* aiController = new AI(this);
+		aiController->Possess(actorHandle);
+	}
+
 	return newActor;
 }
 
@@ -684,8 +694,8 @@ void Map::CollideActors()
 
 void Map::CollideActors(Actor* actorA, Actor* actorB)
 {
-	FloatRange actorAZRange = FloatRange(actorA->m_position.z, actorA->m_position.z + actorA->m_physicsHeight);
-	FloatRange actorBZRange = FloatRange(actorB->m_position.z, actorB->m_position.z + actorB->m_physicsHeight);
+	FloatRange actorAZRange = FloatRange(actorA->m_position.z, actorA->m_position.z + actorA->m_definition->m_height);
+	FloatRange actorBZRange = FloatRange(actorB->m_position.z, actorB->m_position.z + actorB->m_definition->m_height);
 	if (!actorAZRange.IsOverlappingWith(actorBZRange))
 	{
 		return;
@@ -693,7 +703,7 @@ void Map::CollideActors(Actor* actorA, Actor* actorB)
 
 	Vec2 actorADisc = Vec2(actorA->m_position.x, actorA->m_position.y);
 	Vec2 actorBDisc = Vec2(actorB->m_position.x, actorB->m_position.y);
-	PushDiscsOutOfEachOther2D(actorADisc, actorA->m_physicsRadius, actorBDisc, actorB->m_physicsRadius);
+	PushDiscsOutOfEachOther2D(actorADisc, actorA->m_definition->m_radius, actorBDisc, actorB->m_definition->m_radius);
 	actorA->m_position.x = actorADisc.x;
 	actorA->m_position.y = actorADisc.y;
 	actorB->m_position.x = actorBDisc.x;
@@ -730,9 +740,48 @@ void Map::CollideActorWithSingleTileXY(Actor* actor, Vec3 tilePosition)
 		return;
 	}
 	Tile tile = m_tiles[tileIndex];
+
 	if (tile.m_tileDefinition->m_isSolid)
 	{
 		PushActorOutOfTileXY(actor, tile);
+	}
+	// Collide with ceiling
+	if (tile.m_tileDefinition->m_ceilingSpriteCoords != IntVec2(-1, -1))
+	{
+		FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_definition->m_height);
+		if (DoesDiscOverlapAABB2D(
+			Vec2(actor->m_position.x, actor->m_position.y)
+			, actor->m_definition->m_radius,
+			AABB2(Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y), Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_mins.y))
+		)
+			)
+		{
+			// IsCollidingWithCeiling
+			if (actorZRange.IsOnRange(tile.m_bounds.m_maxs.z))
+			{
+				actor->m_position.z = tile.m_bounds.m_maxs.z - actor->m_definition->m_height;
+				actor->m_velocity.z = 0.f;
+			}
+		}
+	}
+	// Collide with floor
+	if (tile.m_tileDefinition->m_floorSpriteCoords != IntVec2(-1, -1))
+	{
+		FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_definition->m_height);
+		if (DoesDiscOverlapAABB2D(
+			Vec2(actor->m_position.x, actor->m_position.y)
+			, actor->m_definition->m_radius,
+			AABB2(Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y), Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_maxs.y))
+		)
+			)
+		{
+			// IsCollidingWithFloor
+			if (actorZRange.IsOnRange(tile.m_bounds.m_mins.z))
+			{
+				actor->m_position.z = tile.m_bounds.m_mins.z;
+				actor->m_velocity.z = 0.f;
+			}
+		}
 	}
 }
 
@@ -745,7 +794,7 @@ void Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
 
 	Vec2 actorPosition = Vec2(actor->m_position.x, actor->m_position.y);
 
-	PushDiscOutOfFixedAABB2D(actorPosition, actor->m_physicsRadius, tileBounds);
+	PushDiscOutOfFixedAABB2D(actorPosition, actor->m_definition->m_radius, tileBounds);
 
 	actor->m_position.x = actorPosition.x;
 	actor->m_position.y = actorPosition.y;
@@ -753,17 +802,23 @@ void Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
 
 void Map::CollideActorsWithSurroundingCeilingsAndFloorsXY(Actor* actor)
 {
-	FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_physicsHeight);
-	// IsCollidingWithCeiling
-	if (actorZRange.IsOnRange(1.f))
-	{
-		actor->m_position.z = 1.f - actor->m_physicsHeight;
-	}
-	// IsCollidingWithFloor
-	if (actorZRange.IsOnRange(0.f))
-	{
-		actor->m_position.z = 0.f;
-	}
+	FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_definition->m_height);
+	//for (int zLevelIndex = 0; zLevelIndex < m_definition->m_mapImages.size(); ++zLevelIndex)
+	//{
+	//	// IsCollidingWithCeiling
+	//	if (actorZRange.IsOnRange(zLevelIndex + 1.f))
+	//	{
+	//		actor->m_position.z = zLevelIndex + 1.f - actor->m_definition->m_height;
+	//		actor->m_velocity.z = 0.f;
+	//	}
+	//	// IsCollidingWithFloor
+	//	if (actorZRange.IsOnRange(zLevelIndex + 0.f))
+	//	{
+	//		actor->m_position.z = zLevelIndex + 0.f;
+	//		actor->m_velocity.z = 0.f;
+	//	}
+	//}
+
 }
 
 void Map::CollideActorsWithMap()
@@ -1052,7 +1107,7 @@ RaycastResult3D Map::RaycastWorldActors(const Vec3& start, const Vec3& direction
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
 	{
 		Actor* actor = m_actors[actorIndex];
-		RaycastResult3D newRaycastResult = RaycastVsCylinderZ3D(start, direction, distance, Vec2(actor->m_position.x, actor->m_position.y), actor->m_position.z, actor->m_position.z + actor->m_physicsHeight, actor->m_physicsRadius);
+		RaycastResult3D newRaycastResult = RaycastVsCylinderZ3D(start, direction, distance, Vec2(actor->m_position.x, actor->m_position.y), actor->m_position.z, actor->m_position.z + actor->m_definition->m_height, actor->m_definition->m_radius);
 		if (newRaycastResult.m_impactDist != 0.f && newRaycastResult.m_impactDist < result.m_impactDist )
 		{
 			result = newRaycastResult;

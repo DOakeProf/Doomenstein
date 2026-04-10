@@ -36,8 +36,6 @@ public:
 	virtual ~Player() = default;
 
 	virtual void Update();
-	virtual void Render() const;
-	virtual void Die();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Inputs
@@ -51,10 +49,11 @@ public:
 
 	virtual Mat44 GetModelToWorldTransform() const;
 	virtual Mat44 GetWorldToModelTransform() const;
-	bool IsAlive() const;
 
 	void SetPlayerState(PlayerState const& state);
 	void SetControllerState(ControlState const& state);
+
+	bool IsPlayer() const override;
 
 	Camera* m_worldCamera = nullptr;
 	Camera* m_screenCamera = nullptr;
@@ -69,6 +68,5 @@ public:
 	ControlState m_controlState = ControlState::KEYBOARD;
 	ControlState m_desiredControlState = ControlState::KEYBOARD;
 
-	bool m_isDead = false;
-	bool m_isGarbage = false;
+	float m_jumpBuffer = 1.f;
 };

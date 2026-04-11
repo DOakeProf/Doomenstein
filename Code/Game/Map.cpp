@@ -20,22 +20,20 @@
 
 std::vector<MapDefinition*> MapDefinition::s_definitions;
 
-Map::Map(Game* game, const MapDefinition* definition)
+Map::Map(Game* game, const MapDefinition* definition, Player* player)
 	:m_game(game)
 	, m_definition(definition)
+	, m_player(player)
 {
+	m_player->m_map = this;
 	Startup();
 }
 
 Map::~Map()
 {
-	delete m_player;
-	delete m_playerTranslationThisFrame;
 	delete m_vertexBuffer;
 	delete m_indexBuffer;
 
-	m_player = nullptr;
-	m_playerTranslationThisFrame = nullptr;
 	m_vertexBuffer = nullptr;
 	m_indexBuffer = nullptr;
 }
@@ -48,20 +46,6 @@ void Map::Startup()
 	CreateTiles();
 	CreateGeometry();
 	CreateBuffers();
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Initialize Player
-	m_player = new Player(this, Vec3(-5.f, 0.f, 1.f));
-	m_player->m_worldCamera = new Camera();
-	m_player->m_screenCamera = new Camera();
-
-	m_player->m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
-	m_player->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
-	m_player->m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
-
-	m_player->m_position = Vec3(2.5f, 8.5f, 0.5f);
-
-	m_playerTranslationThisFrame = new Vec3();
 
 	m_sunDirection = Vec3(2.f, 1.f, -1.f);
 	m_sunIntensity = 0.85f;
@@ -229,7 +213,7 @@ int Map::GetTileIndexFromWorldPosition(Vec3 position) const
 	{
 		return -1;
 	}
-	int indexToReturn = (RoundDownToInt(position.x) * m_dimensions.y) + RoundDownToInt(position.y);
+	int indexToReturn = (RoundDownToInt(position.x) * m_dimensions.y) + RoundDownToInt(position.y) + (RoundDownToInt(position.z) * m_dimensions.x * m_dimensions.y);
 	if (indexToReturn < 0 || indexToReturn > m_tiles.size() - 1)
 	{
 		return -1;
@@ -260,11 +244,21 @@ Actor* Map::GetActorByHandle(const ActorHandle handle) const
 {
 	int actorIndex = handle.GetIndex();
 	Actor* actor = m_actors[actorIndex];
-	if (handle.GetData() == actor->m_handle->GetData())
+	if (actor != nullptr && handle.GetData() == actor->m_handle->GetData())
 	{
 		return actor;
 	}
 	return nullptr;
+}
+
+Player* Map::GetCurrentRenderedPlayer()
+{
+	return m_currentlyRenderedPlayer;
+}
+
+std::vector<Actor*> Map::GetActors()
+{
+	return m_actors;
 }
 
 int Map::AddActorToMap(Actor* actor)
@@ -274,7 +268,7 @@ int Map::AddActorToMap(Actor* actor)
 		Actor* currentActor = m_actors[actorIndex];
 		if (currentActor == nullptr)
 		{
-			currentActor = actor;
+			m_actors[actorIndex] = actor;
 			return actorIndex;
 		}
 	}
@@ -317,6 +311,11 @@ void Map::Update()
 		return;
 	}
 
+	if (g_engine->m_input->WasKeyJustPressed('K'))
+	{
+		Debug_KillAllActors();
+	}
+
 	Update_AddDebugScreenText();
 
 	Update_DebugInput();
@@ -327,7 +326,7 @@ void Map::Update()
 	CollideActors();
 	CollideActorsWithMap();
 
-	m_player->Update();
+	DestroyIfGarbage();
 }
 
 bool Map::Update_KeyboardInput()
@@ -652,14 +651,14 @@ void Map::Update_DebugInput()
 		DebugAddMessage(message, 2.f);
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_LEFT_MOUSE))
-	{
-		RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 10.f, nullptr);
-	}
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_RIGHT_MOUSE))
-	{
-		RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 0.25f, nullptr);
-	}
+	//if (g_engine->m_input->WasKeyJustPressed(KEYCODE_LEFT_MOUSE))
+	//{
+	//	RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 10.f, nullptr);
+	//}
+	//if (g_engine->m_input->WasKeyJustPressed(KEYCODE_RIGHT_MOUSE))
+	//{
+	//	RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 0.25f, nullptr);
+	//}
 }
 
 void Map::Update_AddDebugScreenText()
@@ -675,7 +674,11 @@ void Map::Update_Actors()
 {
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
 	{
-		m_actors[actorIndex]->Update();
+		Actor* actor = m_actors[actorIndex];
+		if (actor != nullptr)
+		{
+			m_actors[actorIndex]->Update();
+		}
 	}
 }
 
@@ -684,10 +687,23 @@ void Map::CollideActors()
 	for (int actorAIndex = 0; actorAIndex < m_actors.size(); ++actorAIndex)
 	{
 		Actor* actorA = m_actors[actorAIndex];
-		for (int actorBIndex = actorAIndex + 1; actorBIndex < m_actors.size(); ++actorBIndex)
+		if (actorA != nullptr && 
+			!actorA->m_isDead && 
+			actorA->m_definition->m_collidesWithActors
+			)
 		{
-			Actor* actorB = m_actors[actorBIndex];
-			CollideActors(actorA, actorB);
+			for (int actorBIndex = actorAIndex + 1; actorBIndex < m_actors.size(); ++actorBIndex)
+			{
+				Actor* actorB = m_actors[actorBIndex];
+				if (actorB != nullptr && 
+					!actorB->m_isDead && 
+					actorB->m_definition->m_collidesWithActors &&
+					actorB->m_owner != actorA
+					)
+				{
+					CollideActors(actorA, actorB);
+				}
+			}
 		}
 	}
 }
@@ -696,21 +712,29 @@ void Map::CollideActors(Actor* actorA, Actor* actorB)
 {
 	FloatRange actorAZRange = FloatRange(actorA->m_position.z, actorA->m_position.z + actorA->m_definition->m_height);
 	FloatRange actorBZRange = FloatRange(actorB->m_position.z, actorB->m_position.z + actorB->m_definition->m_height);
-	if (!actorAZRange.IsOverlappingWith(actorBZRange))
+
+	if (!actorAZRange.IsOverlappingWith(actorBZRange) ||
+		!actorA->m_definition->m_collidesWithSameActor && actorA->m_definition == actorB->m_definition)
 	{
 		return;
 	}
 
 	Vec2 actorADisc = Vec2(actorA->m_position.x, actorA->m_position.y);
 	Vec2 actorBDisc = Vec2(actorB->m_position.x, actorB->m_position.y);
-	PushDiscsOutOfEachOther2D(actorADisc, actorA->m_definition->m_radius, actorBDisc, actorB->m_definition->m_radius);
+	bool didActorsCollide = PushDiscsOutOfEachOther2D(actorADisc, actorA->m_definition->m_radius, actorBDisc, actorB->m_definition->m_radius);
 	actorA->m_position.x = actorADisc.x;
 	actorA->m_position.y = actorADisc.y;
 	actorB->m_position.x = actorBDisc.x;
 	actorB->m_position.y = actorBDisc.y;
+
+	if (didActorsCollide)
+	{
+		actorA->OnCollide(actorB);
+		actorB->OnCollide(actorA);
+	}
 }
 
-void Map::CollideActorsWithSurroundingTilesXY(Actor* actor, Vec3 const& position)
+void Map::CollideActorsWithSurroundingTilesXYZ(Actor* actor, Vec3 const& position)
 {
 	Vec3 NORTH		= Vec3(0.f, 1.f, 0.f);
 	Vec3 NORTH_EAST	= Vec3(1.f, 1.f, 0.f);
@@ -721,18 +745,18 @@ void Map::CollideActorsWithSurroundingTilesXY(Actor* actor, Vec3 const& position
 	Vec3 WEST		= Vec3(-1.f, 0.f, 0.f);
 	Vec3 NORTH_WEST = Vec3(-1.f, 1.f, 0.f);
 
-	CollideActorWithSingleTileXY(actor, position);
-	CollideActorWithSingleTileXY(actor, position + NORTH);
-	CollideActorWithSingleTileXY(actor, position + NORTH_EAST);
-	CollideActorWithSingleTileXY(actor, position + EAST);
-	CollideActorWithSingleTileXY(actor, position + SOUTH_EAST);
-	CollideActorWithSingleTileXY(actor, position + SOUTH);
-	CollideActorWithSingleTileXY(actor, position + SOUTH_WEST);
-	CollideActorWithSingleTileXY(actor, position + WEST);
-	CollideActorWithSingleTileXY(actor, position + NORTH_WEST);
+	CollideActorWithSingleTileXYZ(actor, position);
+	CollideActorWithSingleTileXYZ(actor, position + NORTH);
+	CollideActorWithSingleTileXYZ(actor, position + NORTH_EAST);
+	CollideActorWithSingleTileXYZ(actor, position + EAST);
+	CollideActorWithSingleTileXYZ(actor, position + SOUTH_EAST);
+	CollideActorWithSingleTileXYZ(actor, position + SOUTH);
+	CollideActorWithSingleTileXYZ(actor, position + SOUTH_WEST);
+	CollideActorWithSingleTileXYZ(actor, position + WEST);
+	CollideActorWithSingleTileXYZ(actor, position + NORTH_WEST);
 }
 
-void Map::CollideActorWithSingleTileXY(Actor* actor, Vec3 tilePosition)
+void Map::CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition)
 {
 	int tileIndex = GetTileIndexFromWorldPosition(tilePosition);
 	if (tileIndex == -1)
@@ -741,33 +765,13 @@ void Map::CollideActorWithSingleTileXY(Actor* actor, Vec3 tilePosition)
 	}
 	Tile tile = m_tiles[tileIndex];
 
-	if (tile.m_tileDefinition->m_isSolid)
-	{
-		PushActorOutOfTileXY(actor, tile);
-	}
+	bool didCollide = false;
+	FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_definition->m_height);
+	FloatRange tilezRange = FloatRange(tile.m_bounds.m_mins.z + 0.1f, tile.m_bounds.m_maxs.z - 0.1f);
+	//FloatRange tilezRange = FloatRange(-1.f, -1.f);
 	// Collide with ceiling
 	if (tile.m_tileDefinition->m_ceilingSpriteCoords != IntVec2(-1, -1))
 	{
-		FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_definition->m_height);
-		if (DoesDiscOverlapAABB2D(
-			Vec2(actor->m_position.x, actor->m_position.y)
-			, actor->m_definition->m_radius,
-			AABB2(Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y), Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_mins.y))
-		)
-			)
-		{
-			// IsCollidingWithCeiling
-			if (actorZRange.IsOnRange(tile.m_bounds.m_maxs.z))
-			{
-				actor->m_position.z = tile.m_bounds.m_maxs.z - actor->m_definition->m_height;
-				actor->m_velocity.z = 0.f;
-			}
-		}
-	}
-	// Collide with floor
-	if (tile.m_tileDefinition->m_floorSpriteCoords != IntVec2(-1, -1))
-	{
-		FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_definition->m_height);
 		if (DoesDiscOverlapAABB2D(
 			Vec2(actor->m_position.x, actor->m_position.y)
 			, actor->m_definition->m_radius,
@@ -775,18 +779,50 @@ void Map::CollideActorWithSingleTileXY(Actor* actor, Vec3 tilePosition)
 		)
 			)
 		{
+			// IsCollidingWithCeiling
+			if (actorZRange.IsOnRange(tile.m_bounds.m_maxs.z))
+			{
+				actor->m_position.z = tile.m_bounds.m_maxs.z - actor->m_definition->m_height;
+				didCollide = true;
+				//actor->m_velocity.z = 0.f;
+			}
+		}
+	}
+	// Collide with floor
+	if (tile.m_tileDefinition->m_floorSpriteCoords != IntVec2(-1, -1))
+	{
+		if (DoesDiscOverlapAABB2D(
+			Vec2(actor->m_position.x, actor->m_position.y)
+			, actor->m_definition->m_radius,
+			AABB2(Vec2(tile.m_bounds.m_mins.x + 0.01f, tile.m_bounds.m_mins.y + 0.01f), Vec2(tile.m_bounds.m_maxs.x - 0.01f, tile.m_bounds.m_maxs.y - 0.01f))
+		)
+			)
+		{
 			// IsCollidingWithFloor
 			if (actorZRange.IsOnRange(tile.m_bounds.m_mins.z))
 			{
 				actor->m_position.z = tile.m_bounds.m_mins.z;
-				actor->m_velocity.z = 0.f;
+				actor->m_isGrounded = true;
+				actor->m_isJumping = false;
+				didCollide = true;
 			}
 		}
 	}
+	if (tile.m_tileDefinition->m_isSolid && actorZRange.IsOverlappingWith(tilezRange))
+	{
+		didCollide = PushActorOutOfTileXY(actor, tile);
+	}
+
+	if (didCollide)
+	{
+		actor->OnCollide(nullptr);
+	}
 }
 
-void Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
+bool Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
 {
+	Vec2 savedPosition = Vec2(actor->m_position.x, actor->m_position.y);
+
 	AABB2 tileBounds = AABB2(
 		Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y),
 		Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_maxs.y)
@@ -798,27 +834,25 @@ void Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
 
 	actor->m_position.x = actorPosition.x;
 	actor->m_position.y = actorPosition.y;
+
+	if (savedPosition != Vec2(actor->m_position.x, actor->m_position.y))
+	{
+		return true;
+	}
+	return false;
 }
 
-void Map::CollideActorsWithSurroundingCeilingsAndFloorsXY(Actor* actor)
+void Map::DestroyIfGarbage()
 {
-	FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_definition->m_height);
-	//for (int zLevelIndex = 0; zLevelIndex < m_definition->m_mapImages.size(); ++zLevelIndex)
-	//{
-	//	// IsCollidingWithCeiling
-	//	if (actorZRange.IsOnRange(zLevelIndex + 1.f))
-	//	{
-	//		actor->m_position.z = zLevelIndex + 1.f - actor->m_definition->m_height;
-	//		actor->m_velocity.z = 0.f;
-	//	}
-	//	// IsCollidingWithFloor
-	//	if (actorZRange.IsOnRange(zLevelIndex + 0.f))
-	//	{
-	//		actor->m_position.z = zLevelIndex + 0.f;
-	//		actor->m_velocity.z = 0.f;
-	//	}
-	//}
-
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		Actor* actor = m_actors[actorIndex];
+		if (actor != nullptr && actor->m_isGarbage)
+		{
+			delete actor;
+			m_actors[actorIndex] = nullptr;
+		}
+	}
 }
 
 void Map::CollideActorsWithMap()
@@ -826,17 +860,23 @@ void Map::CollideActorsWithMap()
 	for (int actorAIndex = 0; actorAIndex < m_actors.size(); ++actorAIndex)
 	{
 		Actor* actor = m_actors[actorAIndex];
-		CollideActorsWithSurroundingTilesXY(actor, actor->m_position - Vec3(0.f,0.f, 1.f));
-		CollideActorsWithSurroundingTilesXY(actor, actor->m_position);
-		CollideActorsWithSurroundingTilesXY(actor, actor->m_position + Vec3(0.f, 0.f, 1.f));
-		CollideActorsWithSurroundingCeilingsAndFloorsXY(actor);
+		if (actor != nullptr && 
+			!actor->m_isDead && 
+			actor->m_definition->m_collidesWithWorld
+			)
+		{
+			CollideActorsWithSurroundingTilesXYZ(actor, actor->m_position - Vec3(0.f, 0.f, 1.f));
+			CollideActorsWithSurroundingTilesXYZ(actor, actor->m_position);
+			CollideActorsWithSurroundingTilesXYZ(actor, actor->m_position + Vec3(0.f, 0.f, 1.f));
+		}
 	}
 }
 
-void Map::Render() const
+void Map::Render()
 {
 	g_engine->m_render->ClearScreen(m_game->m_backgroundClearColor);
 
+	m_currentlyRenderedPlayer = m_player;
 	g_engine->m_render->BeginCamera(m_player->m_worldCamera);
 
 	// Render Everything
@@ -847,12 +887,12 @@ void Map::Render() const
 	DebugRenderWorld(*m_player->m_worldCamera);
 
 	g_engine->m_render->EndCamera(m_player->m_worldCamera);
-	g_engine->m_render->BeginCamera(m_player->m_screenCamera);
+	g_engine->m_render->BeginCamera(m_game->m_screenCamera);
 
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
-	DebugRenderScreen(*m_player->m_screenCamera);
+	DebugRenderScreen(*m_game->m_screenCamera);
 
-	g_engine->m_render->EndCamera(m_player->m_screenCamera);
+	g_engine->m_render->EndCamera(m_game->m_screenCamera);
 }
 
 void Map::Render_Tiles() const
@@ -870,36 +910,50 @@ void Map::Render_Actors() const
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
 	{
-		m_actors[actorIndex]->Render();
+		Actor* actor = m_actors[actorIndex];
+		if (actor != nullptr)
+		{
+			m_actors[actorIndex]->Render();
+		}
 	}
 }
 
-RaycastResult3D Map::RaycastAll(const Vec3& start, const Vec3& direction, float distance, [[maybe_unused]] Actor* owner /*= nullptr*/) const
+RaycastResultDoomenstein Map::RaycastAll(const Vec3& start, const Vec3& direction, float distance, [[maybe_unused]] Actor* owner /*= nullptr*/) const
 {
-	RaycastResult3D result;
-	result.m_impactDist = distance;
+	RaycastResult3D raycastResult;
+	raycastResult.m_impactDist = distance;
 
 	RaycastResult3D worldXYResult = RaycastWorldXY(start, direction, distance);
-	if (worldXYResult.m_impactDist < result.m_impactDist)
+	if (worldXYResult.m_impactDist < raycastResult.m_impactDist)
 	{
-		result = worldXYResult;
+		raycastResult = worldXYResult;
 	}
 	RaycastResult3D worldZResult = RaycastWorldZ(start, direction, distance);
-	if (worldZResult.m_impactDist < result.m_impactDist)
+	if (worldZResult.m_impactDist < raycastResult.m_impactDist)
 	{
-		result = worldZResult;
+		raycastResult = worldZResult;
 	}
-	RaycastResult3D worldActorsResult = RaycastWorldActors(start, direction, distance);
-	if (worldActorsResult.m_impactDist < result.m_impactDist)
+
+	RaycastResultDoomenstein result;
+	result.m_didImpact = raycastResult.m_didImpact;
+	result.m_impactDist = raycastResult.m_impactDist;
+	result.m_impactNormal = raycastResult.m_impactNormal;
+	result.m_impactPos = raycastResult.m_impactPos;
+	result.m_rayDirection = raycastResult.m_rayDirection;
+	result.m_rayLength = raycastResult.m_rayLength;
+	result.m_rayStartPosition = raycastResult.m_rayStartPosition;
+
+	RaycastResultDoomenstein worldActorsResult = RaycastWorldActors(start, direction, distance, owner);
+	if (worldActorsResult.m_impactDist < raycastResult.m_impactDist)
 	{
 		result = worldActorsResult;
 	}
 
 	DebugAddWorldCylinder(start, start + direction * distance, Vec3(), 0.01f, 10.f);
-	if (result.m_didImpact)
+	if (raycastResult.m_didImpact)
 	{
-		DebugAddWorldSphere(result.m_impactPos, 0.06f, 10.f);
-		DebugAddWorldArrow(result.m_impactPos, result.m_impactPos + result.m_impactNormal * 0.3f, Vec3(), 0.03f, 10.f, Rgba8::BLUE, Rgba8::BLUE);
+		DebugAddWorldSphere(raycastResult.m_impactPos, 0.06f, 10.f);
+		DebugAddWorldArrow(raycastResult.m_impactPos, raycastResult.m_impactPos + raycastResult.m_impactNormal * 0.3f, Vec3(), 0.03f, 10.f, Rgba8::BLUE, Rgba8::BLUE);
 	}
 
 	return result;
@@ -1099,22 +1153,48 @@ RaycastResult3D Map::RaycastWorldZ(const Vec3& start, const Vec3& direction, flo
 	return result;
 }
 
-RaycastResult3D Map::RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, [[maybe_unused]] Actor* owner /*= nullptr*/) const
+RaycastResultDoomenstein Map::RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, [[maybe_unused]] Actor* owner /*= nullptr*/) const
 {
-	RaycastResult3D result;
-	result.m_impactDist = distance;
+	RaycastResult3D raycastResult;
+	raycastResult.m_impactDist = distance;
+	Actor* actorHit = nullptr;
 
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
 	{
 		Actor* actor = m_actors[actorIndex];
-		RaycastResult3D newRaycastResult = RaycastVsCylinderZ3D(start, direction, distance, Vec2(actor->m_position.x, actor->m_position.y), actor->m_position.z, actor->m_position.z + actor->m_definition->m_height, actor->m_definition->m_radius);
-		if (newRaycastResult.m_impactDist != 0.f && newRaycastResult.m_impactDist < result.m_impactDist )
+		if (actor != nullptr && !actor->m_isDead && actor != owner)
 		{
-			result = newRaycastResult;
+			RaycastResult3D newRaycastResult = RaycastVsCylinderZ3D(start, direction, distance, Vec2(actor->m_position.x, actor->m_position.y), actor->m_position.z, actor->m_position.z + actor->m_definition->m_height, actor->m_definition->m_radius);
+			if (newRaycastResult.m_impactDist != 0.f && newRaycastResult.m_impactDist < raycastResult.m_impactDist)
+			{
+				raycastResult = newRaycastResult;
+				actorHit = actor;
+			}
 		}
 	}
 
+	RaycastResultDoomenstein result;
+	result.m_actor = actorHit;
+	result.m_didImpact = raycastResult.m_didImpact;
+	result.m_impactDist = raycastResult.m_impactDist;
+	result.m_impactNormal = raycastResult.m_impactNormal;
+	result.m_impactPos = raycastResult.m_impactPos;
+	result.m_rayDirection = raycastResult.m_rayDirection;
+	result.m_rayLength = raycastResult.m_rayLength;
+	result.m_rayStartPosition = raycastResult.m_rayStartPosition;
 	return result;
+}
+
+void Map::Debug_KillAllActors()
+{
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		Actor* actor = m_actors[actorIndex];
+		if (actor != nullptr)
+		{
+			m_actors[actorIndex]->Die();
+		}
+	}
 }
 
 void MapDefinition::InitializeDefinitions(const char* path)
@@ -1141,10 +1221,7 @@ void MapDefinition::InitializeDefinitions(const char* path)
 		XmlElement* mapSpawnInfoElement = mapSpawnInfos->FirstChildElement();
 		while (mapSpawnInfoElement)
 		{
-			SpawnInfo newSpawnInfo = SpawnInfo();
-			newSpawnInfo.m_name = ParseXmlAttribute(*mapSpawnInfoElement, "actor", "");
-			newSpawnInfo.m_position = ParseXmlAttribute(*mapSpawnInfoElement, "position", Vec3());
-			newSpawnInfo.m_orientation = ParseXmlAttribute(*mapSpawnInfoElement, "orientation", EulerAngles());
+			SpawnInfo newSpawnInfo = SpawnInfo(ParseXmlAttribute(*mapSpawnInfoElement, "actor", ""), ParseXmlAttribute(*mapSpawnInfoElement, "position", Vec3()), ParseXmlAttribute(*mapSpawnInfoElement, "orientation", EulerAngles()));
 			newMapDef->m_spawnInfos.push_back(newSpawnInfo);
 			mapSpawnInfoElement = mapSpawnInfoElement->NextSiblingElement();
 		}

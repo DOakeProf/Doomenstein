@@ -59,7 +59,8 @@ public:
 	GameState				m_currentGameState = GameState::GAME_STATE_ATTRACT;
 	float					m_screenShakeFraction = 0.f;
 
-	Map* m_currentMap;
+	Map* m_currentMap = nullptr;
+	Player* m_player = nullptr;
 	BitmapFont* m_squirrelFont;
 
 	float m_hitStopTimer = 0.f;
@@ -78,5 +79,5 @@ public:
 	float m_moveSpeed = 0.f;
 	std::string m_mapDefinitionString;
 
-	Camera* m_screenCamera;
+	Camera* m_screenCamera = nullptr;
 };

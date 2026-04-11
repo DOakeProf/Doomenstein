@@ -4,6 +4,8 @@
 #include "Game/Player.hpp"
 #include "Game/Map.hpp"
 #include "Game/Tile.hpp"
+#include "Game/Weapon.hpp"
+#include "Game/Actor.hpp"
 
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
@@ -73,7 +75,9 @@ void Game::Startup()
 
 	MapDefinition::InitializeDefinitions("Data/Definitions/MapDefinitions.xml");
 	TileDefinition::InitializeDefinitions("Data/Definitions/TileDefinitions.xml");
+	WeaponDefinition::InitializeDefinitions("Data/Definitions/WeaponDefinitions.xml");
 	ActorDefinition::InitializeDefinitions("Data/Definitions/ActorDefinitions.xml");
+	ActorDefinition::InitializeDefinitions("Data/Definitions/ProjectileActorDefinitions.xml");
 	Startup_PopulateFromBlackboard();
 
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
@@ -81,6 +85,14 @@ void Game::Startup()
 
 	m_screenCamera = new Camera();
 	m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Initialize Player
+	m_player = new Player(nullptr, Vec3(2.5f, 8.5f, 0.5f));
+	m_player->m_worldCamera = new Camera();
+
+	m_player->m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
+	m_player->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
 
 	m_squirrelFont = g_engine->m_render->CreateOrGetBitmapFont("Data/Fonts/SquirrelFixedFont");
 }
@@ -162,6 +174,7 @@ void Game::Update_PlayingMode()
 {
 	// Entity updates
 	m_currentMap->Update();
+	m_player->Update();
 
 	// Camera updates
 }
@@ -182,7 +195,7 @@ void Game::EnterState(GameState state)
 	{
 		case GameState::GAME_STATE_PLAYING:
 		{
-			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString));
+			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString), m_player);
 			m_currentMap->Startup_InitializeActors(); // Initialize actors here because the function calls things that only exist after the map is made.
 			break;
 		}

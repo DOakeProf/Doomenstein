@@ -35,7 +35,7 @@ public:
 	Player(Map* owner, Vec3 const& startingPosition);
 	virtual ~Player() = default;
 
-	virtual void Update();
+	void Update() override;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Inputs

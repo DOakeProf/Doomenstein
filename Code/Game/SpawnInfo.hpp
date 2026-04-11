@@ -6,6 +6,9 @@
 
 struct SpawnInfo
 {
+	SpawnInfo(std::string name, Vec3 position, EulerAngles orientation);
+	~SpawnInfo() = default;
+
 	std::string m_name;
 	Vec3 m_position;
 	EulerAngles m_orientation;

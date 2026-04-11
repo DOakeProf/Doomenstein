@@ -12,7 +12,9 @@ public:
 	ActorHandle* m_targetActorHandle = nullptr;
 
 	void DamagedBy(ActorHandle* otherActor);
-	void Update();
+	void Update() override;
+
+	void Update_FindTargetActor();
 
 	void Possess(ActorHandle* handle) override;
 };

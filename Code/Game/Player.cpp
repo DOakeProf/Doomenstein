@@ -2,6 +2,7 @@
 
 #include "Game/Game.hpp"
 #include "Game/Map.hpp"
+#include "Game/Actor.hpp"
 
 #include "Engine/Renderer/Camera.hpp"
 #include "Engine/Core/Engine.hpp"
@@ -17,18 +18,19 @@ Player::Player(Map* owner, Vec3 const& startingPosition)
 void Player::Update()
 {
 	HandleInputs();
+
+	if (m_actorHandle == nullptr)
+	{
+		return;
+	}
+	Actor* actor = m_map->GetActorByHandle(*m_actorHandle);
+	if (m_jumpBuffer < 0.05f && actor->m_coyoteTime < 0.09f)
+	{
+		actor->Jump(13.5f);
+	}
+	m_jumpBuffer += m_map->m_game->m_gameClock->GetDeltaSeconds();
+
 	m_worldCamera->SetPositionAndOrientation(m_position, m_orientation);
-}
-
-void Player::Render() const
-{
-
-}
-
-void Player::Die()
-{
-	m_isDead = true;
-	m_isGarbage = true;
 }
 
 void Player::HandleInputs()
@@ -247,7 +249,7 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
 		m_orientation = newOrientation;
 
-		actor->m_orientation.m_yawDegrees = m_orientation.m_yawDegrees;
+		actor->m_orientation = m_orientation;
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		// Movement
@@ -285,9 +287,31 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 			actor->MoveInDirection(directionToMoveIn, currentMoveSpeed);
 		}
 
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Gameplay
 		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_SPACE))
 		{
-			actor->AddImpulse(Vec3(0.f,0.f,10.f));
+			m_jumpBuffer = 0.f;
+		}
+		if (g_engine->m_input->WasKeyJustReleased(KEYCODE_SPACE) && actor->m_isJumping && actor->m_velocity.z > 0.f)
+		{
+			actor->CancelJump();
+		}
+		if (g_engine->m_input->IsKeyDown(KEYCODE_LEFT_MOUSE))
+		{
+			actor->Attack();
+		}
+		if (g_engine->m_input->WasKeyJustPressed('1') && actor->m_weapons.size() > 0)
+		{
+			actor->m_equippedWeapon = actor->m_weapons[0];
+		}
+		if (g_engine->m_input->WasKeyJustPressed('2') && actor->m_weapons.size() > 1)
+		{
+			actor->m_equippedWeapon = actor->m_weapons[1];
+		}
+		if (g_engine->m_input->WasKeyJustPressed('3') && actor->m_weapons.size() > 2)
+		{
+			actor->m_equippedWeapon = actor->m_weapons[2];
 		}
 
 		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height);
@@ -376,11 +400,6 @@ Mat44 Player::GetWorldToModelTransform() const
 	return ModelToWorld.GetOrthonormalInverse();
 }
 
-bool Player::IsAlive() const
-{
-	return !m_isDead;
-}
-
 void Player::SetPlayerState(PlayerState const& state)
 {
 	m_desiredPlayerState = state;
@@ -389,4 +408,9 @@ void Player::SetPlayerState(PlayerState const& state)
 void Player::SetControllerState(ControlState const& state)
 {
 	m_desiredControlState = state;
+}
+
+bool Player::IsPlayer() const
+{
+	return true;
 }

@@ -11,6 +11,7 @@
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Renderer/Renderer.hpp"
 #include "Engine/Math/MathUtils.hpp"
+#include "Engine/Math/RandomNumberGenerator.hpp"
 
 std::vector<ActorDefinition*> ActorDefinition::s_definitions;
 
@@ -29,6 +30,20 @@ Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const
 	{
 		m_color = Rgba8::RED;
 	}
+	else
+	{
+		m_color = Rgba8::BLUE;
+	}
+
+	// Populate initial inventory
+	for (int weaponIndex = 0; weaponIndex < m_definition->m_inventory.size(); ++weaponIndex)
+	{
+		m_weapons.push_back(new Weapon(m_map, m_definition->m_inventory[weaponIndex]));
+	}
+	if (m_weapons.size() > 0)
+	{
+		m_equippedWeapon = m_weapons[0];
+	}
 
 	m_health = m_definition->m_health;
 
@@ -40,35 +55,62 @@ Actor::~Actor()
 	delete m_deathTimer;
 	m_deathTimer = nullptr;
 
-	delete m_handle;
-	m_handle = nullptr;
+	for (int weaponIndex = 0; weaponIndex < m_weapons.size(); ++weaponIndex)
+	{
+		delete m_weapons[weaponIndex];
+		m_weapons[weaponIndex] = nullptr;
+	}
 }
 
 void Actor::Update()
 {
 	Update_Physics();
 
-	if (m_health <= 0)
-	{
-		Die();
-	}
-	if (m_deathTimer->HasPeriodElapsed())
-	{
-		m_isGarbage = true;
-	}
+	Update_Gameplay();
 
+	m_isGrounded = false;
 }
 
 void Actor::Render() const
 {
-	g_engine->m_render->SetModelConstants(GetModelMatrix());
+	Player* currentlyRenderedPlayer = m_map->GetCurrentRenderedPlayer();
+	if (m_controller != nullptr && m_controller->IsPlayer() && currentlyRenderedPlayer->m_desiredPlayerState == PlayerState::FIRSTPERSON)
+	{
+		return;
+	}
+
+	g_engine->m_render->SetModelConstants(GetModelMatrixOnlyYaw());
 	std::vector<Vertex> m_verts;
-	AddVertsForCylinder3D(m_verts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height), m_definition->m_radius, m_color, AABB2::ZERO_TO_ONE, 16);
+
+	Rgba8 colorToUse = m_color;
+	if (m_isDead)
+	{
+		colorToUse.ScaleColor(0.5f);
+	}
+
+	AddVertsForCylinder3D(m_verts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height), m_definition->m_radius, colorToUse, AABB2::ZERO_TO_ONE, 16);
+	Vec3 displacementFromCenter = Vec3(m_definition->m_radius, 0.f, 0.f);
+	displacementFromCenter.GetRotatedAboutZDegrees(m_orientation.m_yawDegrees);
+
+	if (!m_definition->m_isFlying)
+	{
+		Vec3 noseStart = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter;
+		Vec3 noseEnd = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter + displacementFromCenter * 0.3f;
+		AddVertsForCone3D(m_verts, noseStart, noseEnd, 0.1f, colorToUse, AABB2::ZERO_TO_ONE, 16);
+	}
+
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	g_engine->m_render->DrawVertexList(&m_verts);
 
 	m_verts.clear();
 	AddVertsForCylinder3D(m_verts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height + 0.001f), m_definition->m_radius + 0.001f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 16);
+
+	if (!m_definition->m_isFlying)
+	{
+		Vec3 noseStart = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter;
+		Vec3 noseEnd = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter + displacementFromCenter * 0.3f;
+		AddVertsForCone3D(m_verts, noseStart, noseEnd, 0.1f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 16);
+	}
 
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::WIREFRAME_CULL_BACK);
 	g_engine->m_render->DrawVertexList(&m_verts);
@@ -86,20 +128,35 @@ Mat44 Actor::GetModelMatrix() const
 	return modelToWorld;
 }
 
+Mat44 Actor::GetModelMatrixOnlyYaw() const
+{
+	Mat44 modelToWorld = Mat44();
+
+	modelToWorld.AppendTranslation3D(m_position);
+
+	EulerAngles orientationOnlyYaw = EulerAngles(m_orientation.m_yawDegrees, 0.f, 0.f);
+	Mat44 orientationMatrix = orientationOnlyYaw.GetAsMatrix_IFwd_JLeft_KUp();
+	modelToWorld.Append(orientationMatrix);
+
+	return modelToWorld;
+}
+
 void Actor::Update_Physics()
 {
-	if (m_definition->m_physicsIsSimulated)
+	if (m_definition->m_physicsIsSimulated && !m_isDead)
 	{
 		float deltaSeconds = m_map->m_game->m_gameClock->GetDeltaSeconds();
-		/*if (!m_definition->m_isFlying)
+		if (!m_definition->m_isFlying)
 		{
-			m_velocity.z = 0.f;
-		}*/
-		Vec3 gravityForce = Vec3(0.f, 0.f, -9.81f);
-		float gravityMultiplier = 1.f + abs(GetClamped(m_velocity.z, -10.f, 0.f));
-		gravityForce *= gravityMultiplier;
+			Vec3 gravityForce = Vec3(0.f, 0.f, -9.81f * 1.1f);
+			float gravityMultiplier = 1.f + abs(GetClamped(m_velocity.z, -10.f, 0.f));
+			if (!m_isGrounded)
+			{
+				gravityForce *= gravityMultiplier;
+			}
 
-		m_acceleration += gravityForce;
+			m_acceleration += gravityForce;
+		}
 
 		Vec3 dragForce = m_definition->m_drag * m_velocity * -1 * deltaSeconds;
 		m_velocity += dragForce;
@@ -121,6 +178,33 @@ void Actor::AddImpulse(Vec3 const& impulse)
 	m_velocity += impulse;
 }
 
+void Actor::Update_Gameplay()
+{
+	if (m_controller != nullptr && !m_controller->IsPlayer())
+	{
+		m_controller->Update();
+	}
+
+	if (m_health <= 0 && m_definition->m_health != -1)
+	{
+		Die();
+	}
+
+	if (m_isGrounded)
+	{
+		m_coyoteTime = 0.f;
+	}
+	else
+	{
+		m_coyoteTime += m_map->m_game->m_gameClock->GetDeltaSeconds();
+	}
+
+	if (m_deathTimer->HasPeriodElapsed())
+	{
+		m_isGarbage = true;
+	}
+}
+
 void Actor::SetActorHandle(ActorHandle* handle)
 {
 	m_handle = handle;
@@ -128,25 +212,102 @@ void Actor::SetActorHandle(ActorHandle* handle)
 
 void Actor::MoveInDirection(Vec3 const& direction, float speed)
 {
-	float forceAmount = speed * m_definition->m_drag;
-	AddForce(forceAmount * direction);
+	if (!m_isDead)
+	{
+		float forceAmount = speed * m_definition->m_drag;
+		AddForce(forceAmount * direction);
+	}
 }
 
 void Actor::TurnInDirection(float angleToTurnTowards, float maximumTurn)
 {
-	m_orientation.m_yawDegrees = GetTurnedTowardDegrees(m_orientation.m_yawDegrees, angleToTurnTowards, maximumTurn);
+	if (!m_isDead)
+	{
+		m_orientation.m_yawDegrees = GetTurnedTowardDegrees(m_orientation.m_yawDegrees, angleToTurnTowards, maximumTurn);
+	}
 }
 
-void Actor::Damage(int damage)
+void Actor::Jump(float jumpStrength)
+{
+	if (!m_isDead)
+	{
+		m_velocity.z = 0.f;
+		AddImpulse(Vec3(0.f, 0.f, jumpStrength));
+		m_isJumping = true;
+		m_coyoteTime += 0.09f;
+		m_isGrounded = false;
+	}
+}
+
+void Actor::CancelJump()
+{
+	if (!m_isDead)
+	{
+		m_velocity.z *= 0.55f;
+		m_isJumping = false;
+	}
+}
+
+void Actor::Attack()
+{
+	if (!m_isDead && m_equippedWeapon != nullptr)
+	{
+		m_equippedWeapon->Fire(this);
+	}
+}
+
+void Actor::EquipWeapon(Weapon* weapon)
+{
+	m_equippedWeapon = weapon;
+}
+
+void Actor::Damage(int damage, ActorHandle* otherActor)
 {
 	m_health -= damage;
-	// Notify controller of source?
+	if (m_AIController != nullptr)
+	{
+		m_AIController->DamagedBy(otherActor);
+	}
 }
 
 void Actor::Die()
 {
-	m_isDead = true;
-	m_deathTimer->Start();
+	if (!m_isDead)
+	{
+		m_isDead = true;
+		m_deathTimer->Start();
+	}
+}
+
+void Actor::OnCollide(Actor* otherActor)
+{
+	if (otherActor != nullptr && m_definition->m_damageOnCollide != FloatRange(-1, -1))
+	{
+		float damage = m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_damageOnCollide.m_min, m_definition->m_damageOnCollide.m_max);
+		otherActor->Damage(damage, m_owner->m_handle);
+	}
+	if (otherActor != nullptr && m_definition->m_impulseOnCollide != -1.f)
+	{
+		Vec3 vectorFromSelfToOther = (otherActor->m_position - m_position).GetNormalized();
+		otherActor->AddImpulse(vectorFromSelfToOther * m_definition->m_impulseOnCollide);
+	}
+	if (m_definition->m_dieOnCollide)
+	{
+		Die();
+	}
+}
+
+void Actor::OnPossessed()
+{
+
+}
+
+void Actor::OnUnpossessed()
+{
+	if (m_AIController != nullptr)
+	{
+		m_controller = m_AIController;
+	}
 }
 
 void ActorDefinition::InitializeDefinitions(const char* path)
@@ -171,8 +332,12 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 		{
 			newActorDef->m_radius = ParseXmlAttribute(*collisionElement, "radius", -1.f);
 			newActorDef->m_height = ParseXmlAttribute(*collisionElement, "height", -1.f);
-			newActorDef->m_collidesWithWorld = ParseXmlAttribute(*collisionElement, "collidesWithWorld", true);
-			newActorDef->m_collidesWithActors = ParseXmlAttribute(*collisionElement, "collidesWithActors", true);
+			newActorDef->m_collidesWithWorld = ParseXmlAttribute(*collisionElement, "collidesWithWorld", false);
+			newActorDef->m_collidesWithActors = ParseXmlAttribute(*collisionElement, "collidesWithActors", false);
+			newActorDef->m_damageOnCollide = ParseXmlAttribute(*collisionElement, "damageOnCollide", FloatRange(-1.f, -1.f));
+			newActorDef->m_impulseOnCollide = ParseXmlAttribute(*collisionElement, "impulseOnCollide", -1.f);
+			newActorDef->m_dieOnCollide = ParseXmlAttribute(*collisionElement, "dieOnCollide", false);
+			newActorDef->m_collidesWithSameActor = ParseXmlAttribute(*collisionElement, "collidesWithSameActor", true);
 		}
 
 		XmlElement* physicsElement = actorDefElement->FirstChildElement("Physics");
@@ -183,6 +348,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 			newActorDef->m_runSpeed = ParseXmlAttribute(*physicsElement, "runSpeed", -1.f);
 			newActorDef->m_turnSpeed = ParseXmlAttribute(*physicsElement, "turnSpeed", -1.f);
 			newActorDef->m_drag = ParseXmlAttribute(*physicsElement, "drag", -1.f);
+			newActorDef->m_isFlying = ParseXmlAttribute(*physicsElement, "flying", false);
 		}
 
 		XmlElement* cameraElement = actorDefElement->FirstChildElement("Camera");
@@ -198,6 +364,18 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 			newActorDef->m_aiEnabled = ParseXmlAttribute(*AIElement, "aiEnabled", false);
 			newActorDef->m_sightRadius = ParseXmlAttribute(*AIElement, "sightRadius", -1.f);
 			newActorDef->m_sightAngle = ParseXmlAttribute(*AIElement, "sightAngle", -1.f);
+		}
+
+		XmlElement* InventoryElement = actorDefElement->FirstChildElement("Inventory");
+		if (InventoryElement != nullptr)
+		{
+			XmlElement* WeaponElement = InventoryElement->FirstChildElement();
+
+			while (WeaponElement)
+			{
+				newActorDef->m_inventory.push_back(ParseXmlAttribute(*WeaponElement, "name", ""));
+				WeaponElement = WeaponElement->NextSiblingElement();
+			}
 		}
 
 		s_definitions.push_back(newActorDef);

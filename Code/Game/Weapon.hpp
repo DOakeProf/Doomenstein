@@ -10,9 +10,19 @@
 
 class Actor;
 
+enum class WeaponType
+{
+	NONE = -1,
+	WEAPON,
+	PORTALGUN,
+	GRAPPLE, // TODO
+	NUM_WEAPONTYPES
+};
+
 struct WeaponDefinition
 {
 	std::string m_name;
+	WeaponType m_type;
 	float m_refireTime;
 
 	int m_rayCount;
@@ -23,6 +33,7 @@ struct WeaponDefinition
 
 	int m_projectileCount;
 	std::string m_projectileActor;
+	std::string m_secondaryProjectileActor;
 	float m_projectileCone;
 	float m_projectileSpeed;
 
@@ -47,6 +58,13 @@ public:
 	Map* m_map;
 	WeaponDefinition const* m_definition;
 	Timer* m_fireTimer;
+	Timer* m_alternateFireTimer;
 
 	void Fire(Actor* actor);
+	void Fire_Weapon(Actor* actor);
+	void Fire_PortalGun(Actor* actor);
+
+	void AlternateFire(Actor* actor);
+	void AlternateFire_Weapon(Actor* actor);
+	void AlternateFire_PortalGun(Actor* actor);
 };

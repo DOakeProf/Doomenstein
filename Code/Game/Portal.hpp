@@ -1,19 +1,27 @@
 #pragma once
-#include "Game/Entity.hpp"
+//#include "Game/Entity.hpp"
+
+#include "Engine/Math/Vec3.hpp"
+#include "Engine/Math/EulerAngles.hpp"
+#include "Engine/Core/Vertex.hpp"
 
 struct Camera;
+class Map;
 
-class Portal : public Entity
+class Portal
 {
 public:
-	Portal(Game* owner, Vec3 const& startingPosition);
+	Portal(Map* map, Vec3 const& startingPosition);
 	~Portal();
 
-	virtual void Update() override;
-	virtual void Render() const override;
+	void Update();
+	void Render() const;
 	void RenderPortal() const;
 
 	void Update_MoveCamera();
+
+	Mat44 GetModelToWorldTransform() const;
+	Mat44 GetWorldToModelTransform() const;
 
 	void AssignPortal(Portal* otherPortal);
 	Camera* GetCamera();
@@ -30,6 +38,9 @@ public:
 private:
 	Portal* m_otherPortal = nullptr;
 
+	Map* m_map = nullptr;
+	Vec3 m_position;
+	EulerAngles m_orientation;
 	
 	std::vector<Vertex> m_frontVertexes;
 	std::vector<Vertex> m_backVertexes;

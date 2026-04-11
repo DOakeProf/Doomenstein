@@ -9,7 +9,7 @@ glTF_Asset::glTF_Asset(const char* gltfFilePath, const char* gltfBinPath)
 {
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Get the shader which includes the node transform constant buffer
-	m_glTFAnimatedShader = g_engine->m_render->CreateShader("glTFAnimated");
+	m_glTFAnimatedShader = g_engine->m_render->CreateShader("Data/Shaders/glTFAnimated", VertexType::VERTEX_PCU);
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Read the json data
@@ -39,7 +39,7 @@ glTF_Asset::glTF_Asset(const char* gltfFilePath, const char* gltfBinPath)
 	FileReadToBuffer(m_buffers[0]->m_data, gltfBinPath); // TODO: Make this support multiple buffers
 
 	Initialize_LoadBufferInformationToMeshes();
-	Initialize_LoadBufferInformationForAnimations();
+	//Initialize_LoadBufferInformationForAnimations();
 }
 
 glTF_Asset::~glTF_Asset()
@@ -209,20 +209,33 @@ void glTF_Asset::Initialize_LoadAllMaterials(JsonData  const& jsonData)
 		{
 			glTF_pbrMetallicRoughness* pbrMR = new glTF_pbrMetallicRoughness();
 			JsonData pbrMetallicRoughness = GetValueFromJsonData(currentData, "pbrMetallicRoughness");
-			JsonArray baseColorFactorArray = GetArrayFromJsonData(GetValueFromJsonData(pbrMetallicRoughness, "baseColorFactor"));
-			pbrMR->m_baseColorFactor = Vec4
-			(
-				(float)GetValueFromJsonData(baseColorFactorArray[0], -1.0),
-				(float)GetValueFromJsonData(baseColorFactorArray[1], -1.0),
-				(float)GetValueFromJsonData(baseColorFactorArray[2], -1.0),
-				(float)GetValueFromJsonData(baseColorFactorArray[3], -1.0)
-			);
+
+			if (DoesValueExist(pbrMetallicRoughness, "baseColorFactor"))
+			{
+				JsonArray baseColorFactorArray = GetArrayFromJsonData(GetValueFromJsonData(pbrMetallicRoughness, "baseColorFactor"));
+				pbrMR->m_baseColorFactor = Vec4
+				(
+					(float)GetValueFromJsonData(baseColorFactorArray[0], -1.0),
+					(float)GetValueFromJsonData(baseColorFactorArray[1], -1.0),
+					(float)GetValueFromJsonData(baseColorFactorArray[2], -1.0),
+					(float)GetValueFromJsonData(baseColorFactorArray[3], -1.0)
+				);
+			}
+			else
+			{
+				pbrMR->m_baseColorFactor = Vec4(1.f, 1.f, 1.f, 1.f);
+			}
+
 			JsonData baseColorTexture = GetValueFromJsonData(pbrMetallicRoughness, "baseColorTexture");
 			pbrMR->m_baseColorTextureIndex = GetValueFromJsonData(baseColorTexture, "index", -1);
-			JsonData metallicroughnessTexture = GetValueFromJsonData(pbrMetallicRoughness, "metallicRoughnessTexture");
-			pbrMR->m_metallicRougnessTextureIndex = GetValueFromJsonData(metallicroughnessTexture, "index", -1);
-			pbrMR->m_metallicFactor = GetValueFromJsonData(pbrMetallicRoughness, "metallicFactor", -1.0);
-			pbrMR->m_roughnessFactor = GetValueFromJsonData(pbrMetallicRoughness, "roughnessFactor", -1.0);
+
+			if (DoesValueExist(pbrMetallicRoughness, "metallicRoughnessTexture"))
+			{
+				JsonData metallicroughnessTexture = GetValueFromJsonData(pbrMetallicRoughness, "metallicRoughnessTexture");
+				pbrMR->m_metallicRougnessTextureIndex = GetValueFromJsonData(metallicroughnessTexture, "index", -1);
+				pbrMR->m_metallicFactor = GetValueFromJsonData(pbrMetallicRoughness, "metallicFactor", -1.0);
+				pbrMR->m_roughnessFactor = GetValueFromJsonData(pbrMetallicRoughness, "roughnessFactor", -1.0);
+			}
 
 			newObject->m_pbrMetallicRoughness = pbrMR;
 		}
@@ -400,6 +413,7 @@ void glTF_Asset::Initialize_LoadBufferInformationForAnimations()
 {
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Test
+	// This throws errors if theres no animations i believe.
 	int jointAccessorIndex = m_meshes[2]->m_primitives[0]->m_attributes["JOINTS_0"];
 	glTF_Accessor* jointAccessor = m_accessors[jointAccessorIndex];
 	std::vector<uint8_t> jointsBuffer = ReadBytesFromAccessor(*jointAccessor);
@@ -656,9 +670,9 @@ void glTF_Node::RenderNode()
 			g_engine->m_render->SetSamplerMode(sampler->m_samplerMode);
 
 			// Bind the node transform
-			Vec4 iBasis = Vec4(m_randomNum, 0.f, 0.f, 0.f);
-			Vec4 jBasis = Vec4(0.f, m_randomNum, 0.f, 0.f);
-			Vec4 kBasis = Vec4(0.f, 0.f, m_randomNum, 0.f);
+			Vec4 iBasis = Vec4(1.f, 0.f, 0.f, 0.f);
+			Vec4 jBasis = Vec4(0.f, 1.f, 0.f, 0.f);
+			Vec4 kBasis = Vec4(0.f, 0.f, 1.f, 0.f);
 			Vec4 tBasis = Vec4(0.f, 0.f, 0.f, 1.f);
 			Mat44 testMatrix = Mat44(iBasis, jBasis, kBasis, tBasis);
 
@@ -668,21 +682,41 @@ void glTF_Node::RenderNode()
 			{
 				case glTF_Primitive::IndexType::INDEXTYPE_8: // TODO: Find a way to convert uint8_t and uint16_t into unsigned int stored with 32 bits. current implementation of dividing may be flawed.
 				{
+					// TODO: Have this conversion take place when the model is loaded, so that we dont have to handle the logic during render
+					std::vector<uint32_t> indexesAs32Bit;
+					uint8_t* src = reinterpret_cast<uint8_t*>(currentPrimitive->m_indexes.data());
+					size_t indexCount = currentPrimitive->m_indexes.size() / sizeof(uint8_t);
+					indexesAs32Bit.resize(indexCount);
+					for (size_t indexIndex = 0; indexIndex < indexCount; indexIndex++)
+					{
+						indexesAs32Bit[indexIndex] = src[indexIndex];
+					}
+
 					g_engine->m_render->DrawIndexedVertexArray(
 						(int)currentPrimitive->m_verts.size(),
 						currentPrimitive->m_verts.data(),
-						(int)currentPrimitive->m_indexes.size() / sizeof(unsigned int) / 4,
-						reinterpret_cast<unsigned int*>(currentPrimitive->m_indexes.data())
+						indexesAs32Bit.size(),
+						indexesAs32Bit.data()
 					);
 					break;
 				}
 				case glTF_Primitive::IndexType::INDEXTYPE_16:
 				{
+					// TODO: Have this conversion take place when the model is loaded, so that we dont have to handle the logic during render
+					std::vector<uint32_t> indexesAs32Bit;
+					uint16_t* src = reinterpret_cast<uint16_t*>(currentPrimitive->m_indexes.data());
+					size_t indexCount = currentPrimitive->m_indexes.size() / sizeof(uint16_t);
+					indexesAs32Bit.resize(indexCount);
+					for (size_t indexIndex = 0; indexIndex < indexCount; indexIndex++)
+					{
+						indexesAs32Bit[indexIndex] = src[indexIndex];
+					}
+
 					g_engine->m_render->DrawIndexedVertexArray(
 						(int)currentPrimitive->m_verts.size(),
 						currentPrimitive->m_verts.data(),
-						(int)currentPrimitive->m_indexes.size() / sizeof(unsigned int) / 2,
-						reinterpret_cast<unsigned int*>(currentPrimitive->m_indexes.data())
+						indexesAs32Bit.size(),
+						indexesAs32Bit.data()
 					);
 					break;
 				}

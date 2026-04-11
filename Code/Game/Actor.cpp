@@ -256,6 +256,14 @@ void Actor::Attack()
 	}
 }
 
+void Actor::SecondaryAttack()
+{
+	if (!m_isDead && m_equippedWeapon != nullptr)
+	{
+		m_equippedWeapon->AlternateFire(this);
+	}
+}
+
 void Actor::EquipWeapon(Weapon* weapon)
 {
 	m_equippedWeapon = weapon;

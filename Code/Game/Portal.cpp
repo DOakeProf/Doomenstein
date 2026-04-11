@@ -1,22 +1,21 @@
 #include "Game/Portal.hpp"
 
 #include "Engine/Renderer/Camera.hpp"
-#include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Core/Engine.hpp"
 #include "Engine/VertexUtils.hpp"
-#include "Engine/Core/Vertex.hpp"
 #include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/MathUtils.hpp"
 
 #include "Game/Game.hpp"
 #include "Game/Player.hpp"
 #include "Game/GameCommon.hpp"
+#include "Game/Map.hpp"
 
-Portal::Portal(Game* owner, Vec3 const& startingPosition)
-	: Entity(owner, startingPosition)
+Portal::Portal(Map* map, Vec3 const& startingPosition)
+	: m_map(map)
 {
 	m_portalCamera = new Camera();
-	m_portalCamera->SetPerspectiveView(SCREEN_ASPECT, m_game->m_perspectiveFOV, 0.1f, 100.f);
+	m_portalCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
 	m_portalCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
 
 	bl = Vec3(0.f, 0.5f, -1.f);
@@ -36,10 +35,10 @@ Portal::Portal(Game* owner, Vec3 const& startingPosition)
 	AABB3 rightAABB3 = AABB3(br + Vec3(-borderSize, borderSize, -borderSize), tr + Vec3(borderSize, -borderSize, borderSize));
 	AABB3 topAABB3 = AABB3(tl + Vec3(-borderSize, -borderSize, -borderSize), tr + Vec3(borderSize, borderSize, borderSize));
 
-	AddVertsForAABB3D(m_borderVertexes, leftAABB3, m_color);
-	AddVertsForAABB3D(m_borderVertexes, bottomAABB3, m_color);
-	AddVertsForAABB3D(m_borderVertexes, rightAABB3, m_color);
-	AddVertsForAABB3D(m_borderVertexes, topAABB3, m_color);
+	AddVertsForAABB3D(m_borderVertexes, leftAABB3, Rgba8::WHITE);
+	AddVertsForAABB3D(m_borderVertexes, bottomAABB3, Rgba8::WHITE);
+	AddVertsForAABB3D(m_borderVertexes, rightAABB3, Rgba8::WHITE);
+	AddVertsForAABB3D(m_borderVertexes, topAABB3, Rgba8::WHITE);
 }
 
 Portal::~Portal()
@@ -66,7 +65,7 @@ void Portal::Render() const
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_render->BindTexture(nullptr);
 
-	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), m_color);
+	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
 	g_engine->m_render->DrawVertexList(&m_borderVertexes);
 }
 
@@ -80,17 +79,17 @@ void Portal::RenderPortal() const
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Switch to rendering to the target texture instead of back buffer
 	g_engine->m_render->ChangeRenderTargetToTextureBuffer();
-	g_engine->m_render->ClearTargetTextureBuffer(m_game->m_backgroundClearColor);
+	g_engine->m_render->ClearTargetTextureBuffer(Rgba8::WHITE);
 	g_engine->m_render->ClearTargetTextureDepthBuffer();
 
 	// Render Everything from the other portal's camera
-	g_engine->m_render->EndCamera(m_game->m_player->m_worldCamera);
+	g_engine->m_render->EndCamera(m_map->m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_portalCamera);
 
-	m_game->RenderAllEntities();
+	m_map->Render();
 
 	g_engine->m_render->EndCamera(m_portalCamera);
-	g_engine->m_render->BeginCamera(m_game->m_player->m_worldCamera);
+	g_engine->m_render->BeginCamera(m_map->m_player->m_worldCamera);
 
 	// Draw portal onto stencil buffer
 	g_engine->m_render->BindTexture(nullptr);
@@ -99,7 +98,7 @@ void Portal::RenderPortal() const
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::WRITE_TO_STENCIL);
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
-	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), m_color);
+	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
 	if (m_isPlayerOnFrontSide)
 	{
 		g_engine->m_render->DrawVertexList(&m_backVertexes);
@@ -109,11 +108,11 @@ void Portal::RenderPortal() const
 		g_engine->m_render->DrawVertexList(&m_frontVertexes);
 	}
 
-	g_engine->m_render->EndCamera(m_game->m_player->m_worldCamera);
-	g_engine->m_render->BeginCamera(m_game->m_player->m_screenCamera);
+	g_engine->m_render->EndCamera(m_map->m_player->m_worldCamera);
+	g_engine->m_render->BeginCamera(m_map->m_player->m_screenCamera);
 
 	// Draw full screen quad only where stencil is drawn to
-	g_engine->m_render->BindShader(m_game->m_useTexture1Shader);
+	//g_engine->m_render->BindShader(m_map->m_useTexture1Shader); TODO: create and bind this shader
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::ONLY_DRAW_ON_STENCIL);
 	std::vector<Vertex> screenVerts;
 	AddVertsForQuad3D(screenVerts,
@@ -124,8 +123,8 @@ void Portal::RenderPortal() const
 	);
 	g_engine->m_render->DrawVertexList(&screenVerts);
 
-	g_engine->m_render->EndCamera(m_game->m_player->m_screenCamera);
-	g_engine->m_render->BeginCamera(m_game->m_player->m_worldCamera);
+	g_engine->m_render->EndCamera(m_map->m_player->m_screenCamera);
+	g_engine->m_render->BeginCamera(m_map->m_player->m_worldCamera);
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Set rendering modes and shaders back to default
@@ -138,8 +137,8 @@ void Portal::Update_MoveCamera()
 {
 	// Get starting world values
 	Vec3 otherPortalPos = m_otherPortal->m_position;
-	Vec3 playerPos = m_game->m_player->m_worldCamera->GetPosition();
-	EulerAngles playerOrientation = m_game->m_player->m_worldCamera->GetOrientation();
+	Vec3 playerPos = m_map->m_player->m_worldCamera->GetPosition();
+	EulerAngles playerOrientation = m_map->m_player->m_worldCamera->GetOrientation();
 
 	// Convert player position from world space to self portal space
 	Mat44 selfMatrixWorldToModel = GetWorldToModelTransform();
@@ -161,12 +160,31 @@ void Portal::Update_MoveCamera()
 	m_portalCamera->SetPositionAndOrientation(newCameraPosition, playerOrientationInOtherPortalSpace);
 
 	// Calculate what the near plane should be at based on the player's position to the portal and the player's camera orientation.
-	Vec3 playerToSelfPortal = m_position - m_game->m_player->m_position;
+	Vec3 playerToSelfPortal = m_position - m_map->m_player->m_position;
 	float agreementBetweenCameraFwdAndCameraToPortal = DotProduct3D(playerToSelfPortal.GetNormalized(), playerOrientation.GetForwardDir_IFwd_JLeft_KUp());
 	m_portalCamera->ChangeNearPlane(lengthOfCameraToPortal * agreementBetweenCameraFwdAndCameraToPortal);
 
 	//std::string portal1CameraRotation = Stringf("Portal 1 Camera Rotation: %.4f, %.4f, %.4f", m_portals[1]->m_portalCamera->GetOrientation().m_yawDegrees, m_portals[1]->m_portalCamera->GetOrientation().m_pitchDegrees, m_portals[1]->m_portalCamera->GetOrientation().m_rollDegrees);
 	//DebugAddMessage(portal1CameraRotation, 0.f, Rgba8::CYAN);
+}
+
+Mat44 Portal::GetModelToWorldTransform() const
+{
+	Mat44 modelToWorld = Mat44();
+
+	modelToWorld.AppendTranslation3D(m_position);
+
+	Mat44 orientationMatrix = m_orientation.GetAsMatrix_IFwd_JLeft_KUp();
+	modelToWorld.Append(orientationMatrix);
+
+	return modelToWorld;
+}
+
+Mat44 Portal::GetWorldToModelTransform() const
+{
+	Mat44 worldToModel = GetModelToWorldTransform();
+	worldToModel = worldToModel.GetOrthonormalInverse();
+	return worldToModel;
 }
 
 void Portal::AssignPortal(Portal* otherPortal)

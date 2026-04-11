@@ -301,6 +301,10 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		{
 			actor->Attack();
 		}
+		if (g_engine->m_input->IsKeyDown(KEYCODE_RIGHT_MOUSE))
+		{
+			actor->SecondaryAttack();
+		}
 		if (g_engine->m_input->WasKeyJustPressed('1') && actor->m_weapons.size() > 0)
 		{
 			actor->m_equippedWeapon = actor->m_weapons[0];

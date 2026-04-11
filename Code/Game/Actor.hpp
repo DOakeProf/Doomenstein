@@ -120,6 +120,7 @@ public:
 	void Jump(float jumpStrength);
 	void CancelJump();
 	void Attack();
+	void SecondaryAttack();
 	void EquipWeapon(Weapon* weapon);
 	void Damage(int damage, ActorHandle* otherActor);
 	void Die();

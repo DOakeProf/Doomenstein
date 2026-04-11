@@ -48,6 +48,7 @@
     <Inventory>
       <Weapon name="Pistol" />
       <Weapon name="PlasmaRifle" />
+	  <Weapon name="PortalGun" />
     </Inventory>
   </ActorDefinition>
   <!-- Demon -->

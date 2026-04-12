@@ -80,4 +80,6 @@ public:
 	std::string m_mapDefinitionString;
 
 	Camera* m_screenCamera = nullptr;
+
+	Shader* m_useTexture1Shader;
 };

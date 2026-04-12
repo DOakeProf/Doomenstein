@@ -19,6 +19,11 @@ void Player::Update()
 {
 	HandleInputs();
 
+	Vec3 cursorBasisPosition = m_position + m_orientation.GetForwardDir_IFwd_JLeft_KUp() * 0.2f;
+	Mat44 cursorBasisMatrix = Mat44();
+	cursorBasisMatrix.SetTranslation3D(cursorBasisPosition);
+	DebugAddBasis(cursorBasisMatrix, 0.f, 0.01f, 0.001f);
+
 	if (m_actorHandle == nullptr)
 	{
 		return;

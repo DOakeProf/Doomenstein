@@ -7,6 +7,7 @@
 #include "Game/Actor.hpp"
 #include "Game/Map.hpp"
 #include "Game/Game.hpp"
+#include "Game/Portal.hpp"
 
 std::vector<WeaponDefinition*> WeaponDefinition::s_definitions;
 
@@ -138,15 +139,54 @@ void Weapon::AlternateFire_Weapon(Actor* actor)
 
 void Weapon::AlternateFire_PortalGun(Actor* actor)
 {
-	if (!m_definition->m_projectileActor.empty())
+	if (m_definition->m_rayCount != -1)
 	{
-		Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_projectileCone);
-		Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.12f);
+		for (int rayIndex = 0; rayIndex < m_definition->m_rayCount; ++rayIndex)
+		{
+			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_rayCone);
+			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.001f);
 
-		SpawnInfo spawnInfo = SpawnInfo(m_definition->m_projectileActor, initialFirePosition, actor->m_orientation);
-		Actor* projectile = actor->m_map->SpawnActor(spawnInfo);
-		projectile->m_owner = actor;
-		projectile->AddImpulse(randomDirection * m_definition->m_projectileSpeed);
+			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, m_definition->m_rayRange, actor);
+			if (result.m_didImpact && result.m_actor != nullptr)
+			{
+				float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
+				result.m_actor->Damage(RandomDamage, actor->m_handle);
+				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
+			}
+			else if (result.m_didImpact)
+			{
+				if (m_rightPortal != nullptr)
+				{
+					m_map->RemovePortal(m_rightPortal);
+					m_rightPortal = nullptr;
+				}
+				//Vec3 portalPosition = actor->m_position + actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp() * 1.f;
+				Vec3 portalPosition = result.m_impactPos;
+				m_rightPortal = new Portal(m_map, portalPosition);
+
+				Vec3 inverseImpactNormal = result.m_impactNormal * -1.f; // Flip the right portal so that it is directing towards the surface its on. This will make the link between both portals shoot things that are entering away from the walls instead of towards them.
+				if (inverseImpactNormal.z == 0.f) // If the impact normal is horizontal
+				{
+					Mat44 portalOrientation = Mat44(inverseImpactNormal, CrossProduct3D(Vec3(0.f, 0.f, 1.f), inverseImpactNormal), Vec3(0.f, 0.f, 1.f), Vec3());
+					m_rightPortal->SetOrientation(EulerAngles(portalOrientation));
+				}
+				else // If the impact normal is vertical
+				{
+					Vec3 jBasis = CrossProduct3D(inverseImpactNormal, actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp());
+					Vec3 kBasis = CrossProduct3D(jBasis, inverseImpactNormal);
+					Mat44 portalOrientation = Mat44(inverseImpactNormal, jBasis, kBasis, Vec3());
+					m_rightPortal->SetOrientation(EulerAngles(portalOrientation));
+				}
+
+				m_rightPortal->AssignPortal(m_leftPortal);
+				if (m_leftPortal != nullptr)
+				{
+					m_leftPortal->AssignPortal(m_rightPortal);
+				}
+
+				m_map->AddPortal(m_rightPortal);
+			}
+		}
 	}
 }
 
@@ -186,14 +226,52 @@ void Weapon::Fire_Weapon(Actor* actor)
 
 void Weapon::Fire_PortalGun(Actor* actor)
 {
-	if (!m_definition->m_projectileActor.empty())
+	if (m_definition->m_rayCount != -1)
 	{
-		Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_projectileCone);
-		Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.12f);
+		for (int rayIndex = 0; rayIndex < m_definition->m_rayCount; ++rayIndex)
+		{
+			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_rayCone);
+			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.001f);
 
-		SpawnInfo spawnInfo = SpawnInfo(m_definition->m_projectileActor, initialFirePosition, actor->m_orientation);
-		Actor* projectile = actor->m_map->SpawnActor(spawnInfo);
-		projectile->m_owner = actor;
-		projectile->AddImpulse(randomDirection * m_definition->m_projectileSpeed);
+			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, m_definition->m_rayRange, actor);
+			if (result.m_didImpact && result.m_actor != nullptr)
+			{
+				float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
+				result.m_actor->Damage(RandomDamage, actor->m_handle);
+				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
+			}
+			else if (result.m_didImpact)
+			{
+				if (m_leftPortal != nullptr)
+				{
+					m_map->RemovePortal(m_leftPortal);
+					m_leftPortal = nullptr;
+				}
+				//Vec3 portalPosition = actor->m_position + actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp() * 1.f;
+				Vec3 portalPosition = result.m_impactPos;
+				m_leftPortal = new Portal(m_map, portalPosition);
+				
+				if (result.m_impactNormal.z == 0.f) // If the impact normal is horizontal
+				{
+					Mat44 portalOrientation = Mat44(result.m_impactNormal, CrossProduct3D(Vec3(0.f,0.f,1.f), result.m_impactNormal), Vec3(0.f,0.f,1.f), Vec3());
+					m_leftPortal->SetOrientation(EulerAngles(portalOrientation));
+				}
+				else // If the impact normal is vertical
+				{
+					Vec3 jBasis = CrossProduct3D(result.m_impactNormal, actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp());
+					Vec3 kBasis = CrossProduct3D(jBasis, result.m_impactNormal);
+					Mat44 portalOrientation = Mat44(result.m_impactNormal, jBasis, kBasis, Vec3());
+					m_leftPortal->SetOrientation(EulerAngles(portalOrientation));
+				}
+
+				m_leftPortal->AssignPortal(m_rightPortal);
+				if (m_rightPortal != nullptr)
+				{
+					m_rightPortal->AssignPortal(m_leftPortal);
+				}
+
+				m_map->AddPortal(m_leftPortal);
+			}
+		}
 	}
 }

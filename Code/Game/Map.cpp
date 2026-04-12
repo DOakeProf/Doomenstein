@@ -17,6 +17,7 @@
 #include "Engine/Renderer/Camera.hpp"
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Math/FloatRange.hpp"
+#include "Engine/Core/ErrorWarningAssert.hpp"
 
 std::vector<MapDefinition*> MapDefinition::s_definitions;
 
@@ -302,6 +303,35 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 	return newActor;
 }
 
+void Map::AddPortal(Portal* portal)
+{
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portalToCheck = m_portals[portalIndex];
+		if (portalToCheck == nullptr)
+		{
+			m_portals[portalIndex] = portal;
+			return;
+		}
+	}
+	m_portals.push_back(portal);
+}
+
+void Map::RemovePortal(Portal* portal)
+{
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portalToCheck = m_portals[portalIndex];
+		if (portal == portalToCheck)
+		{
+			delete portalToCheck;
+			m_portals[portalIndex] = nullptr;
+			return;
+		}
+	}
+	ERROR_AND_DIE("Attempted to remove portal that wasn't in map.");
+}
+
 void Map::Update()
 {
 	XboxController* controller = &g_engine->m_input->m_controllers[0];
@@ -320,11 +350,20 @@ void Map::Update()
 
 	Update_DebugInput();
 	
+	Update_Actors_BeforePreventative(); // Assigns each actors a desired position
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Update Actors
-	Update_Actors();
+	// Preventative physics
+	// Modifies desired position based on preventative checks.
+	CollideActorsWithPortals();
+
+	Update_Actors_AfterPreventative(); // Updates the actual position of each actor to be the desired position.
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Corrective Physics
 	CollideActors();
 	CollideActorsWithMap();
+
+	Update_Portals();
 
 	DestroyIfGarbage();
 }
@@ -670,7 +709,7 @@ void Map::Update_AddDebugScreenText()
 	DebugAddScreenText(lightingText, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y)), SCREEN_SIZE_Y * 0.02f, Vec2(0.98f, 0.94f), 0.f);
 }
 
-void Map::Update_Actors()
+void Map::Update_Actors_BeforePreventative()
 {
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
 	{
@@ -678,6 +717,30 @@ void Map::Update_Actors()
 		if (actor != nullptr)
 		{
 			m_actors[actorIndex]->Update();
+		}
+	}
+}
+
+void Map::Update_Actors_AfterPreventative()
+{
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		Actor* actor = m_actors[actorIndex];
+		if (actor != nullptr)
+		{
+			m_actors[actorIndex]->Update_Position();
+		}
+	}
+}
+
+void Map::Update_Portals()
+{
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portal = m_portals[portalIndex];
+		if (portal != nullptr)
+		{
+			portal->Update();
 		}
 	}
 }
@@ -819,6 +882,105 @@ void Map::CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition)
 	}
 }
 
+void Map::CollideActorsWithPortals()
+{
+	// Maybe do a sphere vs sphere check first to see if an actor is close enough with a portal, and if so do a ray cast?
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		Actor* actor = m_actors[actorIndex];
+		if (actor != nullptr)
+		{
+			for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+			{
+				Portal* portal = m_portals[portalIndex];
+				if (portal != nullptr && portal->GetOtherPortal() != nullptr)
+				{
+					bool didCollideWithPortal = CollideActorWithPortal(actor, portal);
+					if (didCollideWithPortal)
+					{
+						break; // Makes it so that the actor can only collide with ONE portal per frame.
+					}
+				}
+			}
+		}
+	}
+}
+
+bool Map::CollideActorWithPortal(Actor* actor, Portal* portal)
+{
+	Vec3 rayStart = actor->m_position;
+	Vec3 actorTranslationThisFrame = actor->m_desiredPosition - actor->m_position;
+	Vec3 rayFwdNormal = actorTranslationThisFrame.GetNormalized();
+	float rayLength = actorTranslationThisFrame.GetLength();
+
+	Vec3 portalToActor = actor->m_position - portal->GetPosition();
+	Vec3 portalFwdVector = portal->GetOrientation().GetForwardDir_IFwd_JLeft_KUp();
+	float PtPdotPFwd = DotProduct3D(portalToActor, portalFwdVector);
+	if (actor->m_controller != nullptr && actor->m_controller->IsPlayer()) // TODO: Make this work with multiple players
+	{
+		if (PtPdotPFwd > 0.f)
+		{
+			portal->m_isPlayerOnFrontSide = true;
+		}
+		else
+		{
+			portal->m_isPlayerOnFrontSide = false;
+		}
+	}
+	Mat44 portalTransform = portal->GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+	Mat44 otherPortalTransform = portal->GetOtherPortal()->GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+	Vec3 bottomLeft = portalTransform.TransformPosition3D(portal->bl);
+	Vec3 bottomRight = portalTransform.TransformPosition3D(portal->br);
+	Vec3 topRight = portalTransform.TransformPosition3D(portal->tr);
+	Vec3 topLeft = portalTransform.TransformPosition3D(portal->tl);
+	RaycastResult3D raycastResult = RaycastVSQuad3D(rayStart, rayFwdNormal, rayLength,
+		bottomLeft + portal->GetPosition(),
+		bottomRight + portal->GetPosition(),
+		topRight + portal->GetPosition(),
+		topLeft + portal->GetPosition()
+	);
+	if (raycastResult.m_didImpact)
+	{
+		// Calculate the proper position in the other portal space and set the actors desired position to that.
+		portalToActor = actor->m_desiredPosition - portal->GetPosition();
+		portalTransform.Transpose();
+		portalToActor = portalTransform.TransformPosition3D(portalToActor);
+		portalToActor = otherPortalTransform.TransformPosition3D(portalToActor);
+		actorTranslationThisFrame = portalTransform.TransformPosition3D(actorTranslationThisFrame);
+		actorTranslationThisFrame = otherPortalTransform.TransformPosition3D(actorTranslationThisFrame);
+		actor->m_desiredPosition = portal->GetOtherPortal()->GetPosition() + portalToActor;
+
+		// Calculate the proper orientation in the other portal space.
+		EulerAngles actorOrientation = actor->m_orientation;
+		Mat44 selfMatrixWorldToModel = portal->GetWorldToModelTransform();
+		Mat44 otherPortalMatrixModelToWorld = portal->GetOtherPortal()->GetModelToWorldTransform();
+		selfMatrixWorldToModel.Append(actorOrientation.GetAsMatrix_IFwd_JLeft_KUp()); // Transform the actor's orientation into self model space by appending
+		Mat44 newOrientationMatrix = otherPortalMatrixModelToWorld;
+		newOrientationMatrix.Append(selfMatrixWorldToModel); // Transform actor's orientation from self model space back to world space with reference to the other portal's space.
+		EulerAngles actorOrientationInOtherPortalSpace = EulerAngles(newOrientationMatrix);
+		actor->m_orientation = actorOrientationInOtherPortalSpace;
+		if (actor->m_controller != nullptr && actor->m_controller->IsPlayer())
+		{
+			((Player*)actor->m_controller)->m_orientation = actorOrientationInOtherPortalSpace;
+		}
+
+		// Calculate proper physics (velocity/acceleration?) in the other portal space.
+		Vec3 actorVelocity = actor->m_velocity;
+		actorVelocity = portalTransform.TransformPosition3D(actorVelocity);
+		actorVelocity = otherPortalTransform.TransformPosition3D(actorVelocity);
+		actor->m_velocity = actorVelocity;
+		Vec3 actorAcceleration = actor->m_acceleration; // Most likely will be 0.
+		actorAcceleration = portalTransform.TransformPosition3D(actorAcceleration);
+		actorAcceleration = otherPortalTransform.TransformPosition3D(actorAcceleration);
+		actor->m_acceleration = actorAcceleration;
+
+		DebugAddMessage("ENTERED PORTAL", 2.f, Rgba8::RED, Rgba8::RED);
+		return true;
+	}
+
+	return false;
+}
+
 bool Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
 {
 	Vec2 savedPosition = Vec2(actor->m_position.x, actor->m_position.y);
@@ -880,11 +1042,9 @@ void Map::Render()
 	g_engine->m_render->BeginCamera(m_player->m_worldCamera);
 
 	// Render Everything
-	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
-	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
-	Render_Tiles();
-	Render_Actors();
-	DebugRenderWorld(*m_player->m_worldCamera);
+	Render_World();
+
+	Render_Portals();
 
 	g_engine->m_render->EndCamera(m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_game->m_screenCamera);
@@ -893,6 +1053,25 @@ void Map::Render()
 	DebugRenderScreen(*m_game->m_screenCamera);
 
 	g_engine->m_render->EndCamera(m_game->m_screenCamera);
+}
+
+void Map::Render_World() const
+{
+	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
+	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
+	Render_Tiles();
+	Render_Actors();
+
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portal = m_portals[portalIndex];
+		if (portal != nullptr)
+		{
+			//portal->RenderOutline();
+		}
+	}
+
+	DebugRenderWorld(*m_player->m_worldCamera);
 }
 
 void Map::Render_Tiles() const
@@ -914,6 +1093,18 @@ void Map::Render_Actors() const
 		if (actor != nullptr)
 		{
 			m_actors[actorIndex]->Render();
+		}
+	}
+}
+
+void Map::Render_Portals() const
+{
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portal = m_portals[portalIndex];
+		if (portal != nullptr)
+		{
+			portal->RenderPortal();
 		}
 	}
 }

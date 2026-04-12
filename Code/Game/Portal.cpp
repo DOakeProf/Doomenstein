@@ -13,6 +13,7 @@
 
 Portal::Portal(Map* map, Vec3 const& startingPosition)
 	: m_map(map)
+	, m_position(startingPosition)
 {
 	m_portalCamera = new Camera();
 	m_portalCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
@@ -23,10 +24,13 @@ Portal::Portal(Map* map, Vec3 const& startingPosition)
 	tr = Vec3(0.f, -0.5f, 1.f);
 	tl = Vec3(0.f, 0.5f, 1.f);
 
-	Vec3 xOffset = Vec3(0.15f, 0.f, 0.f);
+	//Vec3 xOffset = Vec3(0.15f, 0.f, 0.f);
+	//AddVertsForQuad3D(m_frontVertexes, bl + xOffset, br + xOffset, tr + xOffset, tl + xOffset); // This is for the rendering trick where you render the portal plane further away from the camera.
+	//AddVertsForQuad3D(m_backVertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
 
-	AddVertsForQuad3D(m_frontVertexes, bl + xOffset, br + xOffset, tr + xOffset, tl + xOffset);
-	AddVertsForQuad3D(m_backVertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
+	Vec3 xOffset = Vec3(0.05f, 0.f, 0.f);
+	AddVertsForQuad3D(m_frontVertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
+	AddVertsForQuad3D(m_backVertexes, bl + xOffset, br + xOffset, tr + xOffset, tl + xOffset);
 
 	float borderSize = 0.12f;
 
@@ -56,7 +60,7 @@ void Portal::Update()
 	Update_MoveCamera();
 }
 
-void Portal::Render() const
+void Portal::RenderOutline() const
 {
 	// Draw Outline
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
@@ -79,14 +83,14 @@ void Portal::RenderPortal() const
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Switch to rendering to the target texture instead of back buffer
 	g_engine->m_render->ChangeRenderTargetToTextureBuffer();
-	g_engine->m_render->ClearTargetTextureBuffer(Rgba8::WHITE);
+	g_engine->m_render->ClearTargetTextureBuffer(m_map->m_game->m_backgroundClearColor);
 	g_engine->m_render->ClearTargetTextureDepthBuffer();
 
 	// Render Everything from the other portal's camera
 	g_engine->m_render->EndCamera(m_map->m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_portalCamera);
 
-	m_map->Render();
+	m_map->Render_World();
 
 	g_engine->m_render->EndCamera(m_portalCamera);
 	g_engine->m_render->BeginCamera(m_map->m_player->m_worldCamera);
@@ -109,10 +113,10 @@ void Portal::RenderPortal() const
 	}
 
 	g_engine->m_render->EndCamera(m_map->m_player->m_worldCamera);
-	g_engine->m_render->BeginCamera(m_map->m_player->m_screenCamera);
+	g_engine->m_render->BeginCamera(m_map->m_game->m_screenCamera);
 
 	// Draw full screen quad only where stencil is drawn to
-	//g_engine->m_render->BindShader(m_map->m_useTexture1Shader); TODO: create and bind this shader
+	g_engine->m_render->BindShader(m_map->m_game->m_useTexture1Shader);
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::ONLY_DRAW_ON_STENCIL);
 	std::vector<Vertex> screenVerts;
 	AddVertsForQuad3D(screenVerts,
@@ -123,7 +127,7 @@ void Portal::RenderPortal() const
 	);
 	g_engine->m_render->DrawVertexList(&screenVerts);
 
-	g_engine->m_render->EndCamera(m_map->m_player->m_screenCamera);
+	g_engine->m_render->EndCamera(m_map->m_game->m_screenCamera);
 	g_engine->m_render->BeginCamera(m_map->m_player->m_worldCamera);
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -192,13 +196,28 @@ void Portal::AssignPortal(Portal* otherPortal)
 	m_otherPortal = otherPortal;
 }
 
-Camera* Portal::GetCamera()
+Camera* Portal::GetCamera() const
 {
 	return m_portalCamera;
 }
 
-Portal* Portal::GetOtherPortal()
+Portal* Portal::GetOtherPortal() const
 {
 	return m_otherPortal;
+}
+
+EulerAngles Portal::GetOrientation() const
+{
+	return m_orientation;
+}
+
+Vec3 Portal::GetPosition() const
+{
+	return m_position;
+}
+
+void Portal::SetOrientation(EulerAngles const& newOrientation)
+{
+	m_orientation = newOrientation;
 }
 

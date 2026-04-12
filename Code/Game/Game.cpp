@@ -95,6 +95,8 @@ void Game::Startup()
 	m_player->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
 
 	m_squirrelFont = g_engine->m_render->CreateOrGetBitmapFont("Data/Fonts/SquirrelFixedFont");
+
+	m_useTexture1Shader = g_engine->m_render->CreateShader("Data/Shaders/PortalShader");
 }
 
 void Game::AddScreenShake(float screenShake)

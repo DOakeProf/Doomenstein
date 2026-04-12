@@ -15,7 +15,7 @@ public:
 	~Portal();
 
 	void Update();
-	void Render() const;
+	void RenderOutline() const;
 	void RenderPortal() const;
 
 	void Update_MoveCamera();
@@ -24,8 +24,12 @@ public:
 	Mat44 GetWorldToModelTransform() const;
 
 	void AssignPortal(Portal* otherPortal);
-	Camera* GetCamera();
-	Portal* GetOtherPortal();
+	Camera* GetCamera() const;
+	Portal* GetOtherPortal() const;
+	EulerAngles GetOrientation() const;
+	Vec3 GetPosition() const;
+
+	void SetOrientation(EulerAngles const& newOrientation);
 
 	Vec3 bl;
 	Vec3 br;

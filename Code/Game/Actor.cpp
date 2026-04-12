@@ -162,7 +162,7 @@ void Actor::Update_Physics()
 		m_velocity += dragForce;
 
 		m_velocity += m_acceleration * deltaSeconds;
-		m_position += m_velocity * deltaSeconds;
+		m_desiredPosition = m_position + m_velocity * deltaSeconds;
 
 		m_acceleration = Vec3();
 	}
@@ -203,6 +203,11 @@ void Actor::Update_Gameplay()
 	{
 		m_isGarbage = true;
 	}
+}
+
+void Actor::Update_Position()
+{
+	m_position = m_desiredPosition;
 }
 
 void Actor::SetActorHandle(ActorHandle* handle)

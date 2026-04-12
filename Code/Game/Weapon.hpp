@@ -9,6 +9,7 @@
 #include "Engine/Math/FloatRange.hpp"
 
 class Actor;
+class Portal;
 
 enum class WeaponType
 {
@@ -59,6 +60,10 @@ public:
 	WeaponDefinition const* m_definition;
 	Timer* m_fireTimer;
 	Timer* m_alternateFireTimer;
+
+	// Only for portal gun
+	Portal* m_leftPortal;
+	Portal* m_rightPortal;
 
 	void Fire(Actor* actor);
 	void Fire_Weapon(Actor* actor);

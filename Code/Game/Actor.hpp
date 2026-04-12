@@ -83,6 +83,7 @@ public:
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Physics
 	Vec3 m_position;
+	Vec3 m_desiredPosition; // For preventative physics
 	EulerAngles m_orientation;
 	Vec3 m_velocity;
 	Vec3 m_acceleration;
@@ -110,8 +111,8 @@ public:
 	void Update_Physics();
 	void AddForce(Vec3 const& force);
 	void AddImpulse(Vec3 const& impulse);
-	
 	void Update_Gameplay();
+	void Update_Position();
 
 	void SetActorHandle(ActorHandle* handle);
 

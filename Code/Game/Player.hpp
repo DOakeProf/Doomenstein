@@ -56,7 +56,6 @@ public:
 	bool IsPlayer() const override;
 
 	Camera* m_worldCamera = nullptr;
-	Camera* m_screenCamera = nullptr;
 
 	Vec3 m_position; // Not initialized like the others because by simply just defining a new object of these classes, they are already initialized in their constructors.
 	Vec3 m_velocity;

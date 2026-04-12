@@ -12,6 +12,7 @@
 #include "Game/Tile.hpp"
 #include "Game/ActorHandle.hpp"
 #include "Game/SpawnInfo.hpp"
+#include "Game/Portal.hpp"
 
 class Game;
 class Image;
@@ -85,6 +86,8 @@ public:
 	// Utility functions
 	int AddActorToMap(Actor* actor);
 	Actor* SpawnActor(const SpawnInfo& spawnInfo);
+	void AddPortal(Portal* portal);
+	void RemovePortal(Portal* portal);
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Update
@@ -94,20 +97,28 @@ public:
 	bool Update_ControllerInput();
 	void Update_DebugInput();
 	void Update_AddDebugScreenText();
-	void Update_Actors();
+	void Update_Actors_BeforePreventative();
+	void Update_Actors_AfterPreventative();
+	void Update_Portals();
 	void CollideActors();
 	void CollideActors(Actor* actorA, Actor* actorB);
 	void CollideActorsWithMap();
 	void CollideActorsWithSurroundingTilesXYZ(Actor* actor, Vec3 const& position);
 	void CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition);
+	void CollideActorsWithPortals();
+	bool CollideActorWithPortal(Actor* actor, Portal* portal);
 	bool PushActorOutOfTileXY(Actor* actor, Tile const& tile);
 	void DestroyIfGarbage();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Render
 	void Render();
+
+	void Render_World() const;
 	void Render_Tiles() const;
 	void Render_Actors() const;
+
+	void Render_Portals() const;
 
 	RaycastResultDoomenstein RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
 	RaycastResult3D RaycastWorldXY(const Vec3& start, const Vec3& direction, float distance) const;
@@ -151,6 +162,7 @@ protected:
 	// Lists of owned objects
 	std::vector<Tile> m_tiles;
 	std::vector<Actor*> m_actors;
+	std::vector<Portal*> m_portals;
 	unsigned int m_nextActorUID = 0;
 	Actor* m_bulletActor;
 

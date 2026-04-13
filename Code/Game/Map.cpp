@@ -205,6 +205,15 @@ const Tile* Map::GetTile(int x, int y) const
 	return &m_tiles[indexToReturn];
 }
 
+const Tile* Map::GetTile(int index) const
+{
+	if (index < 0 || index > m_dimensions.x * m_dimensions.y * m_definition->m_mapImages.size())
+	{
+		return nullptr;
+	}
+	return &m_tiles[index];
+}
+
 int Map::GetTileIndexFromWorldPosition(Vec3 position) const
 {
 	if (position.x < 0.f || 
@@ -831,46 +840,58 @@ void Map::CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition)
 	bool didCollide = false;
 	FloatRange actorZRange = FloatRange(actor->m_position.z, actor->m_position.z + actor->m_definition->m_height);
 	FloatRange tilezRange = FloatRange(tile.m_bounds.m_mins.z + 0.1f, tile.m_bounds.m_maxs.z - 0.1f);
+
+	bool doesActorOverlapAABB2D = DoesDiscOverlapAABB2D(Vec2(actor->m_position.x, actor->m_position.y), actor->m_definition->m_radius, AABB2(Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y), Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_maxs.y)));
+	bool doesActorOverlapPortal = false;
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portal = m_portals[portalIndex];
+		// Is the portal vertical and in our tile's Z range?
+		EulerAngles portalOrientation = portal->GetOrientation();
+		Vec3 portalForward = portalOrientation.GetForwardDir_IFwd_JLeft_KUp();
+		float portalPosInMiddleOfTile = (float)RoundDownToInt(portal->GetPosition().z) + 0.5f;
+		if (portalForward.z != 0.f &&
+			tilezRange.IsOnRange(portalPosInMiddleOfTile)
+			)
+		{
+			Vec3 portalJBasis = portalOrientation.GetLeftDir_IFwd_JLeft_KUp();
+			if (
+				IsDiscInsideOBB2D(
+					Vec2(actor->m_position.x, actor->m_position.y)
+					, actor->m_definition->m_radius
+					, OBB2(Vec2(portal->GetPosition().x, portal->GetPosition().y), Vec2(portalJBasis.x, portalJBasis.y), Vec2(portal->tl.y, portal->tl.z))
+				)
+				) // Is the actor over/under the portal
+			{
+				doesActorOverlapPortal = true;
+			}
+		}
+	}
+
 	//FloatRange tilezRange = FloatRange(-1.f, -1.f);
-	// Collide with ceiling
-	if (tile.m_tileDefinition->m_ceilingSpriteCoords != IntVec2(-1, -1))
-	{
-		if (DoesDiscOverlapAABB2D(
-			Vec2(actor->m_position.x, actor->m_position.y)
-			, actor->m_definition->m_radius,
-			AABB2(Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y), Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_maxs.y))
+	if (doesActorOverlapAABB2D &&
+		!doesActorOverlapPortal
 		)
-			)
+	{
+		// Collide with ceiling
+		if (tile.m_tileDefinition->m_ceilingSpriteCoords != IntVec2(-1, -1) &&
+			actorZRange.IsOnRange(tile.m_bounds.m_maxs.z))
 		{
-			// IsCollidingWithCeiling
-			if (actorZRange.IsOnRange(tile.m_bounds.m_maxs.z))
-			{
-				actor->m_position.z = tile.m_bounds.m_maxs.z - actor->m_definition->m_height;
-				didCollide = true;
-				//actor->m_velocity.z = 0.f;
-			}
+			actor->m_position.z = tile.m_bounds.m_maxs.z - actor->m_definition->m_height;
+			didCollide = true;
+			//actor->m_velocity.z = 0.f;
+		}
+		// Collide with floor
+		if (tile.m_tileDefinition->m_floorSpriteCoords != IntVec2(-1, -1) &&
+			actorZRange.IsOnRange(tile.m_bounds.m_mins.z))
+		{
+			actor->m_position.z = tile.m_bounds.m_mins.z;
+			actor->m_isGrounded = true;
+			actor->m_isJumping = false;
+			didCollide = true;
 		}
 	}
-	// Collide with floor
-	if (tile.m_tileDefinition->m_floorSpriteCoords != IntVec2(-1, -1))
-	{
-		if (DoesDiscOverlapAABB2D(
-			Vec2(actor->m_position.x, actor->m_position.y)
-			, actor->m_definition->m_radius,
-			AABB2(Vec2(tile.m_bounds.m_mins.x + 0.01f, tile.m_bounds.m_mins.y + 0.01f), Vec2(tile.m_bounds.m_maxs.x - 0.01f, tile.m_bounds.m_maxs.y - 0.01f))
-		)
-			)
-		{
-			// IsCollidingWithFloor
-			if (actorZRange.IsOnRange(tile.m_bounds.m_mins.z))
-			{
-				actor->m_position.z = tile.m_bounds.m_mins.z;
-				actor->m_isGrounded = true;
-				actor->m_isJumping = false;
-				didCollide = true;
-			}
-		}
-	}
+
 	if (tile.m_tileDefinition->m_isSolid && actorZRange.IsOverlappingWith(tilezRange))
 	{
 		didCollide = PushActorOutOfTileXY(actor, tile);
@@ -908,12 +929,15 @@ void Map::CollideActorsWithPortals()
 
 bool Map::CollideActorWithPortal(Actor* actor, Portal* portal)
 {
-	Vec3 rayStart = actor->m_position;
-	Vec3 actorTranslationThisFrame = actor->m_desiredPosition - actor->m_position;
+	Vec3 actorEyePos = actor->m_position + Vec3(0.f,0.f, actor->m_definition->m_eyeHeight);
+	Vec3 actorDesiredEyePos = actor->m_desiredPosition + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
+
+	Vec3 rayStart = actorEyePos;
+	Vec3 actorTranslationThisFrame = actorDesiredEyePos - actorEyePos;
 	Vec3 rayFwdNormal = actorTranslationThisFrame.GetNormalized();
 	float rayLength = actorTranslationThisFrame.GetLength();
 
-	Vec3 portalToActor = actor->m_position - portal->GetPosition();
+	Vec3 portalToActor = actorEyePos - portal->GetPosition();
 	Vec3 portalFwdVector = portal->GetOrientation().GetForwardDir_IFwd_JLeft_KUp();
 	float PtPdotPFwd = DotProduct3D(portalToActor, portalFwdVector);
 	if (actor->m_controller != nullptr && actor->m_controller->IsPlayer()) // TODO: Make this work with multiple players
@@ -1140,11 +1164,11 @@ RaycastResultDoomenstein Map::RaycastAll(const Vec3& start, const Vec3& directio
 		result = worldActorsResult;
 	}
 
-	DebugAddWorldCylinder(start, start + direction * distance, Vec3(), 0.01f, 10.f);
+	DebugAddWorldCylinder(start, start + direction * distance, Vec3(), 0.01f, 1.f);
 	if (raycastResult.m_didImpact)
 	{
-		DebugAddWorldSphere(raycastResult.m_impactPos, 0.06f, 10.f);
-		DebugAddWorldArrow(raycastResult.m_impactPos, raycastResult.m_impactPos + raycastResult.m_impactNormal * 0.3f, Vec3(), 0.03f, 10.f, Rgba8::BLUE, Rgba8::BLUE);
+		DebugAddWorldSphere(raycastResult.m_impactPos, 0.06f, 1.f);
+		DebugAddWorldArrow(raycastResult.m_impactPos, raycastResult.m_impactPos + raycastResult.m_impactNormal * 0.3f, Vec3(), 0.03f, 1.f, Rgba8::BLUE, Rgba8::BLUE);
 	}
 
 	return result;

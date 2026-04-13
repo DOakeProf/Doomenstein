@@ -44,6 +44,9 @@ struct WeaponDefinition
 	FloatRange m_meleeDamage;
 	float m_meleeImpulse;
 
+	float m_portalHeight;
+	float m_portalWidth;
+
 	static void InitializeDefinitions(const char* path);
 	static void ClearDefinitions();
 	static const WeaponDefinition* GetByName(const std::string& name);
@@ -72,4 +75,6 @@ public:
 	void AlternateFire(Actor* actor);
 	void AlternateFire_Weapon(Actor* actor);
 	void AlternateFire_PortalGun(Actor* actor);
+
+	void PushImpactPointToFitSurface(RaycastResultDoomenstein& result);
 };

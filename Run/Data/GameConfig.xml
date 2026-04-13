@@ -7,7 +7,7 @@
 	windowAspect="2.0"
 
 	perspectiveFOV = "60.f"
-	rollSensitivity = "90.f"
+	rollSensitivity = "360.f"
 	mouseSensitivity = "0.075f"
 	controllerSensitivity = "1.f"
 	moveSpeed = "1.f"

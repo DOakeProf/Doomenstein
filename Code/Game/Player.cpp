@@ -36,6 +36,12 @@ void Player::Update()
 	m_jumpBuffer += m_map->m_game->m_gameClock->GetDeltaSeconds();
 
 	m_worldCamera->SetPositionAndOrientation(m_position, m_orientation);
+
+	if (m_orientation.m_rollDegrees != 0.f)
+	{
+		float maxTurnThisFrame = m_map->m_game->m_rollSensitivity * m_map->m_game->m_gameClock->GetDeltaSeconds();
+		m_orientation.m_rollDegrees += GetClamped(GetShortestAngularDispDegrees(m_orientation.m_rollDegrees, 0.f), -maxTurnThisFrame, maxTurnThisFrame);
+	}
 }
 
 void Player::HandleInputs()
@@ -96,16 +102,7 @@ void Player::HandleInputs_FreeFly_Keyboard()
 	EulerAngles newOrientation = m_orientation;
 	newOrientation.m_yawDegrees += g_engine->m_input->GetCursorClientDelta().x * m_map->m_game->m_mouseSensitivity;
 	newOrientation.m_pitchDegrees -= g_engine->m_input->GetCursorClientDelta().y * m_map->m_game->m_mouseSensitivity;
-	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
-	if (g_engine->m_input->IsKeyDown('Q'))
-	{
-		newOrientation.m_rollDegrees -= (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-	}
-	if (g_engine->m_input->IsKeyDown('E'))
-	{
-		newOrientation.m_rollDegrees += (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-	}
-	newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
+	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
 	m_orientation = newOrientation;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -177,12 +174,7 @@ void Player::HandleInputs_FreeFly_Controller()
 	EulerAngles newOrientation = m_orientation;
 	newOrientation.m_yawDegrees -= controller->GetRightStick().GetPosition().x * m_map->m_game->m_controllerSensitivity;
 	newOrientation.m_pitchDegrees -= controller->GetRightStick().GetPosition().y * m_map->m_game->m_controllerSensitivity;
-	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
-
-	newOrientation.m_rollDegrees += controller->GetRightTrigger() * (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-	newOrientation.m_rollDegrees -= controller->GetLeftTrigger() * (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-
-	newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
+	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
 	m_orientation = newOrientation;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -242,16 +234,7 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		EulerAngles newOrientation = m_orientation;
 		newOrientation.m_yawDegrees += g_engine->m_input->GetCursorClientDelta().x * m_map->m_game->m_mouseSensitivity;
 		newOrientation.m_pitchDegrees -= g_engine->m_input->GetCursorClientDelta().y * m_map->m_game->m_mouseSensitivity;
-		newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
-		if (g_engine->m_input->IsKeyDown('Q'))
-		{
-			newOrientation.m_rollDegrees -= (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-		}
-		if (g_engine->m_input->IsKeyDown('E'))
-		{
-			newOrientation.m_rollDegrees += (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-		}
-		newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
+		newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
 		m_orientation = newOrientation;
 
 		actor->m_orientation = m_orientation;
@@ -355,12 +338,7 @@ void Player::HandleInputs_FirstPerson_Controller()
 	EulerAngles newOrientation = m_orientation;
 	newOrientation.m_yawDegrees -= controller->GetRightStick().GetPosition().x * m_map->m_game->m_controllerSensitivity;
 	newOrientation.m_pitchDegrees -= controller->GetRightStick().GetPosition().y * m_map->m_game->m_controllerSensitivity;
-	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
-
-	newOrientation.m_rollDegrees += controller->GetRightTrigger() * (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-	newOrientation.m_rollDegrees -= controller->GetLeftTrigger() * (float)s_systemClock->GetDeltaSeconds() * m_map->m_game->m_rollSensitivity;
-
-	newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
+	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
 	m_orientation = newOrientation;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

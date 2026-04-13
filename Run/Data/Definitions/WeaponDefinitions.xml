@@ -26,7 +26,7 @@
     </Sounds>
   </WeaponDefinition>
   <!-- Portal Gun -->
-  <WeaponDefinition name="PortalGun" refireTime="0.4" rayCount="1" rayCone="0.0" rayRange="40.0" rayDamage="1.0~2.0" rayImpulse="1.0">
+  <WeaponDefinition name="PortalGun" refireTime="0.4" rayCount="1" rayCone="0.0" rayRange="40.0" rayDamage="1.0~2.0" rayImpulse="1.0" portalHeight="1.0" portalWidth="1.0">
     <HUD shader="Default" gltfModel="Data/glTFModels/PortalGun/PortalGun.gltf" gltfBin="Data/glTFModels/PortalGun/PortalGun.bin" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">
       <Animation name="Idle" shader="Default" spriteSheet="Data/Images/Weapon_Plasma.png" cellCount="4,1" secondsPerFrame="0.125" startFrame="0" endFrame="0" />
       <Animation name="Attack" shader="Default" spriteSheet="Data/Images/Weapon_Plasma.png" cellCount="4,1" secondsPerFrame="0.125" startFrame="1" endFrame="2" />

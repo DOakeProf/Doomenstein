@@ -11,7 +11,7 @@ class Map;
 class Portal
 {
 public:
-	Portal(Map* map, Vec3 const& startingPosition);
+	Portal(Map* map, Vec3 const& startingPosition, float height, float width);
 	~Portal();
 
 	void Update();

@@ -76,6 +76,7 @@ public:
 	bool IsPositionInBounds(const Vec3& position) const;
 	bool AreCoordsInBounds(int x, int y) const;
 	const Tile* GetTile(int x, int y) const;
+	const Tile* GetTile(int index) const;
 	int GetTileIndexFromWorldPosition(Vec3 position) const;
 	int GetTileIndexFromCoordinates(IntVec3 coordinates) const;
 	Actor* GetActorByHandle(const ActorHandle handle) const;

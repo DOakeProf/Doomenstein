@@ -11,24 +11,26 @@
 #include "Game/GameCommon.hpp"
 #include "Game/Map.hpp"
 
-Portal::Portal(Map* map, Vec3 const& startingPosition)
+Portal::Portal(Map* map, Vec3 const& startingPosition, float height, float width)
 	: m_map(map)
 	, m_position(startingPosition)
 {
 	m_portalCamera = new Camera();
 	m_portalCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
 	m_portalCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
-
-	bl = Vec3(0.f, 0.5f, -1.f);
-	br = Vec3(0.f, -0.5f, -1.f);
-	tr = Vec3(0.f, -0.5f, 1.f);
-	tl = Vec3(0.f, 0.5f, 1.f);
+	
+	float halfWidth = width * 0.5f;
+	float halfHeight = height * 0.5f;
+	bl = Vec3(0.f, halfWidth, -halfHeight);
+	br = Vec3(0.f, -halfWidth, -halfHeight);
+	tr = Vec3(0.f, -halfWidth, halfHeight);
+	tl = Vec3(0.f, halfWidth, halfHeight);
 
 	//Vec3 xOffset = Vec3(0.15f, 0.f, 0.f);
 	//AddVertsForQuad3D(m_frontVertexes, bl + xOffset, br + xOffset, tr + xOffset, tl + xOffset); // This is for the rendering trick where you render the portal plane further away from the camera.
 	//AddVertsForQuad3D(m_backVertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
 
-	Vec3 xOffset = Vec3(0.05f, 0.f, 0.f);
+	Vec3 xOffset = Vec3(0.01f, 0.f, 0.f);
 	AddVertsForQuad3D(m_frontVertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
 	AddVertsForQuad3D(m_backVertexes, bl + xOffset, br + xOffset, tr + xOffset, tl + xOffset);
 
@@ -58,6 +60,9 @@ void Portal::Update()
 	}
 
 	Update_MoveCamera();
+
+	//Mat44 portalMatrix = GetModelToWorldTransform();
+	//DebugAddBasis(portalMatrix, 0.f, 0.5f, 0.1f);
 }
 
 void Portal::RenderOutline() const

@@ -127,5 +127,8 @@
     <FxCompile Include="..\..\Run\Data\Shaders\Diffuse.hlsl">
       <Filter>Data\Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="..\..\Run\Data\Shaders\PortalShader.hlsl">
+      <Filter>Data\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

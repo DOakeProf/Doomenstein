@@ -8,6 +8,7 @@
 #include "Engine/VertexBuffer.hpp"
 #include "Engine/IndexBuffer.hpp"
 #include "Engine/Core/Image.hpp"
+#include "Engine/Math/Vec4.hpp"
 
 #include "Game/Tile.hpp"
 #include "Game/ActorHandle.hpp"
@@ -18,6 +19,7 @@ class Game;
 class Image;
 class Player;
 class Actor;
+class ConstantBuffer;
 
 struct Camera;
 struct RaycastResult3D;
@@ -25,6 +27,7 @@ struct AABB3;
 struct AABB2;
 struct Vec3;
 struct Vertex_PCUTBN;
+struct FloatRange;
 
 struct RaycastResultDoomenstein
 {
@@ -52,6 +55,23 @@ struct MapDefinition
 	static const MapDefinition* GetByName(const std::string& name);
 	static std::vector<MapDefinition*> s_definitions;
 };
+
+struct ClipPlaneConstants
+{
+	Vec4 gClipPlane;
+	int isEnabled;
+	Vec3 padding;
+};
+static const int k_clipPlaneConstantsSlot = 5;
+
+struct PortalAABB3Constants
+{
+	Vec3 aabb3Mins;
+	int isEnabled;
+	Vec3 aabb3Maxs;
+	int padding;
+};
+static const int k_portalAABB3ConstantsSlot = 6;
 
 class Map
 {
@@ -106,6 +126,8 @@ public:
 	void CollideActorsWithMap();
 	void CollideActorsWithSurroundingTilesXYZ(Actor* actor, Vec3 const& position);
 	void CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition);
+	bool IsActorOverlappingHorizontalPortal(Actor* actor, FloatRange& tileZRange);
+	bool IsActorOverlappingVerticalPortal(Actor* actor);
 	void CollideActorsWithPortals();
 	bool CollideActorWithPortal(Actor* actor, Portal* portal);
 	bool PushActorOutOfTileXY(Actor* actor, Tile const& tile);
@@ -127,6 +149,8 @@ public:
 	RaycastResultDoomenstein RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
 
 	Game* m_game = nullptr;
+	ConstantBuffer* m_clipPlaneCBO = nullptr;
+	ConstantBuffer* m_portalAABB3CBO = nullptr;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Player

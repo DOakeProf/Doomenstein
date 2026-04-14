@@ -96,7 +96,7 @@ void Game::Startup()
 
 	m_squirrelFont = g_engine->m_render->CreateOrGetBitmapFont("Data/Fonts/SquirrelFixedFont");
 
-	m_useTexture1Shader = g_engine->m_render->CreateShader("Data/Shaders/PortalShader");
+	m_useTexture1Shader = g_engine->m_render->CreateShader("Data/Shaders/PortalShader", VertexType::VERTEX_PCU);
 }
 
 void Game::AddScreenShake(float screenShake)
@@ -175,8 +175,8 @@ void Game::Render_LobbyMode() const
 void Game::Update_PlayingMode()
 {
 	// Entity updates
-	m_currentMap->Update();
 	m_player->Update();
+	m_currentMap->Update();
 
 	// Camera updates
 }

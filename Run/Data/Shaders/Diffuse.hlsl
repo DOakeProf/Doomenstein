@@ -13,6 +13,7 @@ struct vs_input_t
 struct v2p_t
 {
 	float4 clipPosition : SV_Position;
+    float4 worldPosition : TEXCOORD1;
 	float4 color : COLOR;
 	float2 uv : TEXCOORD;
 	float4 worldTangent : TANGENT;
@@ -43,11 +44,36 @@ cbuffer ModelConstants : register(b3)
 	float4 ModelColor;
 };
 
+cbuffer ClipPlaneConstants : register(b5)
+{
+    float4 gClipPlane;
+    int isEnabledClipPlane;
+    float3 paddingClipPlane;
+};
+
+cbuffer PortalAABB3Constants : register(b6)
+{
+    float3 aabb3Mins;
+    int isEnabledAABB3;
+    float3 aabb3Maxs;
+    int paddingAABB3;
+}
+
 //------------------------------------------------------------------------------------------------
 Texture2D diffuseTexture : register(t0);
 
 //------------------------------------------------------------------------------------------------
 SamplerState samplerState : register(s0);
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+float isPointInAABB(float3 pointToCheck, float3 mins, float3 maxs)
+{
+    float3 minCheck = step(mins, pointToCheck);
+    float3 maxCheck = step(pointToCheck, maxs);
+    float3 combined = minCheck * maxCheck;
+	
+    return combined.x * combined.y * combined.z;
+}
 
 //------------------------------------------------------------------------------------------------
 v2p_t VertexMain(vs_input_t input)
@@ -58,12 +84,13 @@ v2p_t VertexMain(vs_input_t input)
 	float4 renderPosition = mul(CameraToRenderTransform, cameraPosition);
 	float4 clipPosition = mul(RenderToClipTransform, renderPosition);
 
-	float4 worldTangent = mul(ModelToWorldTransform, float4(input.modelNormal, 0.0f));
-	float4 worldBitangent = mul(ModelToWorldTransform, float4(input.modelNormal, 0.0f));
+	float4 worldTangent = mul(ModelToWorldTransform, float4(input.modelTangent, 0.0f));
+	float4 worldBitangent = mul(ModelToWorldTransform, float4(input.modelBitangent, 0.0f));
 	float4 worldNormal = mul(ModelToWorldTransform, float4(input.modelNormal, 0.0f));
 
 	v2p_t v2p;
 	v2p.clipPosition = clipPosition;
+    v2p.worldPosition = worldPosition;
 	v2p.color = input.color;
 	v2p.uv = input.uv;
 	v2p.worldTangent = worldTangent;
@@ -83,5 +110,20 @@ float4 PixelMain(v2p_t input) : SV_Target0
 	float4 modelColor = ModelColor;
 	float4 color = lightColor * textureColor * vertexColor * modelColor;
 	clip(color.a - 0.01f);
-	return color;
+	
+    float distance = dot(input.worldPosition.xyz, gClipPlane.xyz) + gClipPlane.w;
+    if (isEnabledClipPlane)
+    {
+        clip(distance);
+    }
+	
+    float isPointInside = isPointInAABB(input.worldPosition.xyz, aabb3Mins, aabb3Maxs);
+    if (isEnabledAABB3)
+    {
+        clip(0.5 - isPointInside);
+    }
+	
+    return color;
 }
+
+// return float4(aabb3Mins.x, aabb3Mins.y, aabb3Mins.z, 1.f);

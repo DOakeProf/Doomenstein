@@ -158,8 +158,7 @@ void Actor::Update_Physics()
 			m_acceleration += gravityForce;
 		}
 
-		Vec3 dragForce = m_definition->m_drag * m_velocity * -1 * deltaSeconds;
-		m_velocity += dragForce;
+		AddForce(m_definition->m_drag * m_velocity * -1);
 
 		m_velocity += m_acceleration * deltaSeconds;
 		m_desiredPosition = m_position + m_velocity * deltaSeconds;

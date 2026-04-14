@@ -170,6 +170,7 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 
 				Vec3 portalPosition = result.m_impactPos;
 				m_rightPortal = new Portal(m_map, portalPosition, m_definition->m_portalHeight, m_definition->m_portalWidth);
+				m_rightPortal->m_isFlipped = true;
 
 				Vec3 inverseImpactNormal = result.m_impactNormal * -1.f; // Flip the right portal so that it is directing towards the surface its on. This will make the link between both portals shoot things that are entering away from the walls instead of towards them.
 				if (inverseImpactNormal.z == 0.f) // If the impact normal is horizontal

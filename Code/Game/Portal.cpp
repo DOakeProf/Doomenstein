@@ -30,9 +30,10 @@ Portal::Portal(Map* map, Vec3 const& startingPosition, float height, float width
 	//AddVertsForQuad3D(m_frontVertexes, bl + xOffset, br + xOffset, tr + xOffset, tl + xOffset); // This is for the rendering trick where you render the portal plane further away from the camera.
 	//AddVertsForQuad3D(m_backVertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
 
-	Vec3 xOffset = Vec3(0.01f, 0.f, 0.f);
-	AddVertsForQuad3D(m_frontVertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
-	AddVertsForQuad3D(m_backVertexes, bl + xOffset, br + xOffset, tr + xOffset, tl + xOffset);
+	Vec3 xOffset = Vec3(-0.2f, 0.f, 0.f);
+	AABB3 portalRenderAABB3 = AABB3(bl + Vec3(0.01f, 0.f, 0.f), Vec3(tr + xOffset));
+	AddVertsForAABB3D(m_vertexes, portalRenderAABB3);
+	//AddVertsForQuad3D(m_vertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
 
 	float borderSize = 0.12f;
 
@@ -95,7 +96,39 @@ void Portal::RenderPortal() const
 	g_engine->m_render->EndCamera(m_map->m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_portalCamera);
 
+	Vec3 portalNormal = m_otherPortal->GetOrientation().GetForwardDir_IFwd_JLeft_KUp();
+	Vec4 portalPlane;
+	if (m_isFlipped)
+	{
+		portalPlane = Vec4(portalNormal.x, portalNormal.y, portalNormal.z, DotProduct3D(-portalNormal, m_otherPortal->GetPosition()));
+	}
+	else
+	{
+		portalPlane = Vec4(-portalNormal.x, -portalNormal.y, -portalNormal.z, DotProduct3D(portalNormal, m_otherPortal->GetPosition()));
+	}
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Render world
+	ClipPlaneConstants clipPlaneConstants = ClipPlaneConstants();
+	clipPlaneConstants.gClipPlane = portalPlane;
+	clipPlaneConstants.isEnabled = 1;
+	g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_map->m_clipPlaneCBO);
+
+	PortalAABB3Constants portalAABB3Constants = PortalAABB3Constants();
+	AABB3 portalAABB3 = GetPortalAsAABB3();
+	portalAABB3Constants.aabb3Mins = portalAABB3.m_mins;
+	portalAABB3Constants.aabb3Maxs = portalAABB3.m_maxs;
+	portalAABB3Constants.isEnabled = 1;
+	g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_map->m_portalAABB3CBO);
+
+	//DebugAddWorldSphere(portalAABB3Constants.aabb3Mins, 0.1f, 0.001f);
+	//DebugAddWorldSphere(portalAABB3Constants.aabb3Maxs, 0.1f, 0.001f);
+
 	m_map->Render_World();
+
+	clipPlaneConstants.isEnabled = 0;
+	g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_map->m_clipPlaneCBO);
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	g_engine->m_render->EndCamera(m_portalCamera);
 	g_engine->m_render->BeginCamera(m_map->m_player->m_worldCamera);
@@ -108,14 +141,16 @@ void Portal::RenderPortal() const
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
-	if (m_isPlayerOnFrontSide)
+
+	if (m_isFlipped)
 	{
-		g_engine->m_render->DrawVertexList(&m_backVertexes);
+		g_engine->m_render->SetModelConstants(GetModelToWorldTransform_OrientationFlipped(), Rgba8::WHITE);
 	}
 	else
 	{
-		g_engine->m_render->DrawVertexList(&m_frontVertexes);
+		g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
 	}
+	g_engine->m_render->DrawVertexList(&m_vertexes);
 
 	g_engine->m_render->EndCamera(m_map->m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_map->m_game->m_screenCamera);
@@ -171,7 +206,7 @@ void Portal::Update_MoveCamera()
 	// Calculate what the near plane should be at based on the player's position to the portal and the player's camera orientation.
 	Vec3 playerToSelfPortal = m_position - m_map->m_player->m_position;
 	float agreementBetweenCameraFwdAndCameraToPortal = DotProduct3D(playerToSelfPortal.GetNormalized(), playerOrientation.GetForwardDir_IFwd_JLeft_KUp());
-	m_portalCamera->ChangeNearPlane(lengthOfCameraToPortal * agreementBetweenCameraFwdAndCameraToPortal);
+	//m_portalCamera->ChangeNearPlane(lengthOfCameraToPortal * agreementBetweenCameraFwdAndCameraToPortal); // TODO: Make this another plane clip in the pixel shader.
 
 	//std::string portal1CameraRotation = Stringf("Portal 1 Camera Rotation: %.4f, %.4f, %.4f", m_portals[1]->m_portalCamera->GetOrientation().m_yawDegrees, m_portals[1]->m_portalCamera->GetOrientation().m_pitchDegrees, m_portals[1]->m_portalCamera->GetOrientation().m_rollDegrees);
 	//DebugAddMessage(portal1CameraRotation, 0.f, Rgba8::CYAN);
@@ -189,11 +224,72 @@ Mat44 Portal::GetModelToWorldTransform() const
 	return modelToWorld;
 }
 
+Mat44 Portal::GetModelToWorldTransform_OrientationFlipped() const
+{
+	Mat44 modelToWorld = Mat44();
+
+	modelToWorld.AppendTranslation3D(m_position);
+
+	EulerAngles flippedOrientation = m_orientation;
+	Vec3 portalNormal = m_orientation.GetForwardDir_IFwd_JLeft_KUp();
+	if (portalNormal.z != 0.f) // If portal is horizontal
+	{
+		flippedOrientation.m_pitchDegrees = m_orientation.m_pitchDegrees + 180.f;
+	}
+	else // If portal is vertical
+	{
+		flippedOrientation.m_yawDegrees = m_orientation.m_yawDegrees + 180.f;
+	}
+	Mat44 orientationMatrix = flippedOrientation.GetAsMatrix_IFwd_JLeft_KUp();
+	modelToWorld.Append(orientationMatrix);
+
+	return modelToWorld;
+}
+
 Mat44 Portal::GetWorldToModelTransform() const
 {
 	Mat44 worldToModel = GetModelToWorldTransform();
 	worldToModel = worldToModel.GetOrthonormalInverse();
 	return worldToModel;
+}
+
+AABB3 Portal::GetPortalAsAABB3() const
+{
+	Mat44 portalToWorld;
+	if (m_isFlipped)
+	{
+		portalToWorld = GetModelToWorldTransform();
+	}
+	else
+	{
+		portalToWorld = GetModelToWorldTransform_OrientationFlipped();
+	}
+	Vec3 xOffset = Vec3(0.2f, 0.f, 0.f);
+	Vec3 mins = bl + Vec3(-0.01f, 0.f, 0.f);
+	Vec3 maxs = tr + xOffset;
+	mins = portalToWorld.TransformPosition3D(mins);
+	maxs = portalToWorld.TransformPosition3D(maxs);
+
+	if (mins.x > maxs.x)
+	{
+		float xStorage = mins.x;
+		mins.x = maxs.x;
+		maxs.x = xStorage;
+	}
+	if (mins.y > maxs.y)
+	{
+		float yStorage = mins.y;
+		mins.y = maxs.y;
+		maxs.y = yStorage;
+	}
+	if (mins.z > maxs.z)
+	{
+		float zStorage = mins.z;
+		mins.z = maxs.z;
+		maxs.z = zStorage;
+	}
+
+	return AABB3(mins, maxs);
 }
 
 void Portal::AssignPortal(Portal* otherPortal)

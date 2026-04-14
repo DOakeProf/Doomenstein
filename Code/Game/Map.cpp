@@ -18,6 +18,7 @@
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Math/FloatRange.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
+#include "Engine/Renderer/ConstantBuffer.hpp"
 
 std::vector<MapDefinition*> MapDefinition::s_definitions;
 
@@ -34,9 +35,13 @@ Map::~Map()
 {
 	delete m_vertexBuffer;
 	delete m_indexBuffer;
+	delete m_clipPlaneCBO;
+	delete m_portalAABB3CBO;
 
 	m_vertexBuffer = nullptr;
 	m_indexBuffer = nullptr;
+	m_clipPlaneCBO = nullptr;
+	m_portalAABB3CBO = nullptr;
 }
 
 void Map::Startup()
@@ -51,6 +56,9 @@ void Map::Startup()
 	m_sunDirection = Vec3(2.f, 1.f, -1.f);
 	m_sunIntensity = 0.85f;
 	m_ambientIntensity = 0.35f;
+
+	m_clipPlaneCBO = new ConstantBuffer(g_engine->m_render->GetDevice(), sizeof(ClipPlaneConstants));
+	m_portalAABB3CBO = new ConstantBuffer(g_engine->m_render->GetDevice(), sizeof(PortalAABB3Constants));
 }
 
 void Map::Startup_InitializeActors()
@@ -358,7 +366,7 @@ void Map::Update()
 	Update_AddDebugScreenText();
 
 	Update_DebugInput();
-	
+
 	Update_Actors_BeforePreventative(); // Assigns each actors a desired position
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Preventative physics
@@ -842,35 +850,11 @@ void Map::CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition)
 	FloatRange tilezRange = FloatRange(tile.m_bounds.m_mins.z + 0.1f, tile.m_bounds.m_maxs.z - 0.1f);
 
 	bool doesActorOverlapAABB2D = DoesDiscOverlapAABB2D(Vec2(actor->m_position.x, actor->m_position.y), actor->m_definition->m_radius, AABB2(Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y), Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_maxs.y)));
-	bool doesActorOverlapPortal = false;
-	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
-	{
-		Portal* portal = m_portals[portalIndex];
-		// Is the portal vertical and in our tile's Z range?
-		EulerAngles portalOrientation = portal->GetOrientation();
-		Vec3 portalForward = portalOrientation.GetForwardDir_IFwd_JLeft_KUp();
-		float portalPosInMiddleOfTile = (float)RoundDownToInt(portal->GetPosition().z) + 0.5f;
-		if (portalForward.z != 0.f &&
-			tilezRange.IsOnRange(portalPosInMiddleOfTile)
-			)
-		{
-			Vec3 portalJBasis = portalOrientation.GetLeftDir_IFwd_JLeft_KUp();
-			if (
-				IsDiscInsideOBB2D(
-					Vec2(actor->m_position.x, actor->m_position.y)
-					, actor->m_definition->m_radius
-					, OBB2(Vec2(portal->GetPosition().x, portal->GetPosition().y), Vec2(portalJBasis.x, portalJBasis.y), Vec2(portal->tl.y, portal->tl.z))
-				)
-				) // Is the actor over/under the portal
-			{
-				doesActorOverlapPortal = true;
-			}
-		}
-	}
+	bool doesActorOverlapHorizontalPortal = IsActorOverlappingHorizontalPortal(actor, tilezRange);
 
 	//FloatRange tilezRange = FloatRange(-1.f, -1.f);
 	if (doesActorOverlapAABB2D &&
-		!doesActorOverlapPortal
+		!doesActorOverlapHorizontalPortal
 		)
 	{
 		// Collide with ceiling
@@ -892,15 +876,133 @@ void Map::CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition)
 		}
 	}
 
-	if (tile.m_tileDefinition->m_isSolid && actorZRange.IsOverlappingWith(tilezRange))
+	bool doesActorOverlapVerticalPortal = IsActorOverlappingVerticalPortal(actor);
+	if (tile.m_tileDefinition->m_isSolid && 
+		actorZRange.IsOverlappingWith(tilezRange) &&
+		!doesActorOverlapVerticalPortal)
 	{
 		didCollide = PushActorOutOfTileXY(actor, tile);
+	}
+
+	if (doesActorOverlapVerticalPortal)
+	{
+		int i = 0;
 	}
 
 	if (didCollide)
 	{
 		actor->OnCollide(nullptr);
 	}
+}
+
+bool Map::IsActorOverlappingHorizontalPortal(Actor* actor, FloatRange& tileZRange)
+{
+	bool doesActorOverlapPortal = false;
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portal = m_portals[portalIndex];
+		// Is the portal vertical and in our tile's Z range?
+		EulerAngles portalOrientation = portal->GetOrientation();
+		Vec3 portalForward = portalOrientation.GetForwardDir_IFwd_JLeft_KUp();
+		float portalPosInMiddleOfTile = (float)RoundDownToInt(portal->GetPosition().z) + 0.5f;
+		if (portalForward.z != 0.f &&
+			tileZRange.IsOnRange(portalPosInMiddleOfTile)
+			)
+		{
+			Vec3 portalJBasis = portalOrientation.GetLeftDir_IFwd_JLeft_KUp();
+			if (
+				IsDiscInsideOBB2D(
+					Vec2(actor->m_position.x, actor->m_position.y)
+					, actor->m_definition->m_radius
+					, OBB2(Vec2(portal->GetPosition().x, portal->GetPosition().y), Vec2(portalJBasis.x, portalJBasis.y), Vec2(portal->tl.y, portal->tl.z))
+				)
+				) // Is the actor over/under the portal
+			{
+				doesActorOverlapPortal = true;
+			}
+		}
+	}
+	return doesActorOverlapPortal;
+}
+
+bool Map::IsActorOverlappingVerticalPortal(Actor* actor)
+{
+	bool doesActorOverlapPortal = false;
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portal = m_portals[portalIndex];
+		EulerAngles portalOrientation = portal->GetOrientation();
+		// Portal along the X axis
+		if (portalOrientation.GetForwardDir_IFwd_JLeft_KUp().x == 0.f)
+		{
+			// Do an AABB2 check with the portal's X and Z and the actor's X and Z. project the actor onto a flat AABB2.
+			AABB2 playerXZAABB = AABB2(
+				Vec2(actor->m_position.x - actor->m_definition->m_radius, actor->m_position.z + 0.001f)
+				, Vec2(actor->m_position.x + actor->m_definition->m_radius, actor->m_position.z + actor->m_definition->m_height)
+			);
+			AABB2 portalXZAABB = AABB2(
+				Vec2(portal->bl.x + portal->GetPosition().x, portal->bl.z + portal->GetPosition().z)
+				, Vec2(portal->tr.x + portal->GetPosition().x, portal->tr.z + portal->GetPosition().z)
+			);
+
+			if (portalXZAABB.m_mins.x > portalXZAABB.m_maxs.x)
+			{
+				float xStorage = portalXZAABB.m_mins.x;
+				portalXZAABB.m_mins.x = portalXZAABB.m_maxs.x;
+				portalXZAABB.m_maxs.x = xStorage;
+			}
+			if (portalXZAABB.m_mins.y > portalXZAABB.m_maxs.y)
+			{
+				float yStorage = portalXZAABB.m_mins.y;
+				portalXZAABB.m_mins.y = portalXZAABB.m_maxs.y;
+				portalXZAABB.m_maxs.y = yStorage;
+			}
+
+			FloatRange actorYRange = FloatRange(actor->m_position.y - actor->m_definition->m_radius, actor->m_position.y + actor->m_definition->m_radius);
+
+			if (ISAABB2InsideAABB2(playerXZAABB, portalXZAABB) &&
+				actorYRange.IsOnRange(portal->GetPosition().y))
+			{
+				return true;
+			}
+		}
+		// Portal is along the Y axis
+		else
+		{
+			// Do an AABB2 check with the portal's Y and Z and the actor's Y and Z. project the actor onto a flat AABB2.
+			AABB2 playerXZAABB = AABB2(
+				Vec2(actor->m_position.y - actor->m_definition->m_radius, actor->m_position.z + 0.001f)
+				, Vec2(actor->m_position.y + actor->m_definition->m_radius, actor->m_position.z + actor->m_definition->m_height)
+			);
+			AABB2 portalXZAABB = AABB2(
+				Vec2(portal->bl.y + portal->GetPosition().y, portal->bl.z + portal->GetPosition().z)
+				, Vec2(portal->tr.y + portal->GetPosition().y, portal->tr.z + portal->GetPosition().z)
+			);
+
+			if (portalXZAABB.m_mins.x > portalXZAABB.m_maxs.x)
+			{
+				float xStorage = portalXZAABB.m_mins.x;
+				portalXZAABB.m_mins.x = portalXZAABB.m_maxs.x;
+				portalXZAABB.m_maxs.x = xStorage;
+			}
+			if (portalXZAABB.m_mins.y > portalXZAABB.m_maxs.y)
+			{
+				float yStorage = portalXZAABB.m_mins.y;
+				portalXZAABB.m_mins.y = portalXZAABB.m_maxs.y;
+				portalXZAABB.m_maxs.y = yStorage;
+			}
+
+			FloatRange actorXRange = FloatRange(actor->m_position.x - actor->m_definition->m_radius, actor->m_position.x + actor->m_definition->m_radius);
+
+			if (ISAABB2InsideAABB2(playerXZAABB, portalXZAABB) &&
+				actorXRange.IsOnRange(portal->GetPosition().x))
+			{
+				return true;
+			}
+		}
+	}
+
+	return doesActorOverlapPortal;
 }
 
 void Map::CollideActorsWithPortals()

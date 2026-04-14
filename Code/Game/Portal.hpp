@@ -4,6 +4,7 @@
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Core/Vertex.hpp"
+#include "Engine/Math/AABB3.hpp"
 
 struct Camera;
 class Map;
@@ -21,7 +22,10 @@ public:
 	void Update_MoveCamera();
 
 	Mat44 GetModelToWorldTransform() const;
+	Mat44 GetModelToWorldTransform_OrientationFlipped() const;
 	Mat44 GetWorldToModelTransform() const;
+
+	AABB3 GetPortalAsAABB3() const;
 
 	void AssignPortal(Portal* otherPortal);
 	Camera* GetCamera() const;
@@ -37,6 +41,7 @@ public:
 	Vec3 tl;
 
 	bool m_isPlayerOnFrontSide = false;
+	bool m_isFlipped = false; // For checking which side of the portal should be clipped in the portal's view.
 	Camera* m_portalCamera = nullptr;
 
 private:
@@ -46,7 +51,6 @@ private:
 	Vec3 m_position;
 	EulerAngles m_orientation;
 	
-	std::vector<Vertex> m_frontVertexes;
-	std::vector<Vertex> m_backVertexes;
+	std::vector<Vertex> m_vertexes;
 	std::vector<Vertex> m_borderVertexes;
 };

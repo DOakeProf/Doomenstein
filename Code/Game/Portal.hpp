@@ -5,6 +5,7 @@
 #include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/Math/AABB3.hpp"
+#include "Engine/Math/MathUtils.hpp"
 
 struct Camera;
 class Map;
@@ -32,6 +33,10 @@ public:
 	Portal* GetOtherPortal() const;
 	EulerAngles GetOrientation() const;
 	Vec3 GetPosition() const;
+
+	RaycastResult3D RaycastAgainst(Vec3 const& start, Vec3 const& direction, float length);
+	Vec3 TransformPointIntoOtherPortalSpace(Vec3& point);
+	EulerAngles TransformOrientationIntoOtherPortalSpace(EulerAngles& orientation);
 
 	void SetOrientation(EulerAngles const& newOrientation);
 

@@ -39,6 +39,7 @@ struct RaycastResultDoomenstein
 	Vec3 m_impactPos;
 	Vec3 m_impactNormal;
 	Actor* m_actor = nullptr;
+	Portal* m_portal = nullptr;
 };
 
 struct MapDefinition
@@ -146,10 +147,11 @@ public:
 
 	void Render_Portals() const;
 
-	RaycastResultDoomenstein RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
-	RaycastResult3D RaycastWorldXY(const Vec3& start, const Vec3& direction, float distance) const;
-	RaycastResult3D RaycastWorldZ(const Vec3& start, const Vec3& direction, float distance) const;
-	RaycastResultDoomenstein RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
+	RaycastResultDoomenstein	RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
+	RaycastResult3D				RaycastWorldXY(const Vec3& start, const Vec3& direction, float distance) const;
+	RaycastResult3D				RaycastWorldZ(const Vec3& start, const Vec3& direction, float distance) const;
+	RaycastResultDoomenstein	RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
+	RaycastResultDoomenstein	RaycastWorldPortals(const Vec3& start, const Vec3& direction, float distance) const;
 
 	Game* m_game = nullptr;
 	ConstantBuffer* m_clipPlaneCBO = nullptr;

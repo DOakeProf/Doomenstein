@@ -148,7 +148,7 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 		for (int rayIndex = 0; rayIndex < m_definition->m_rayCount; ++rayIndex)
 		{
 			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_rayCone);
-			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.001f);
+			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 
 			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, m_definition->m_rayRange, actor);
 			if (result.m_didImpact && result.m_actor != nullptr)
@@ -168,7 +168,7 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 
 				PushImpactPointToFitSurface(result);
 
-				Vec3 portalPosition = result.m_impactPos;
+				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001;
 				m_rightPortal = new Portal(m_map, portalPosition, m_definition->m_portalHeight, m_definition->m_portalWidth);
 				m_rightPortal->m_isFlipped = true;
 
@@ -342,7 +342,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 		for (int rayIndex = 0; rayIndex < m_definition->m_rayCount; ++rayIndex)
 		{
 			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_rayCone);
-			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.001f);
+			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 
 			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, m_definition->m_rayRange, actor);
 			if (result.m_didImpact && result.m_actor != nullptr)
@@ -356,7 +356,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 	if (!m_definition->m_projectileActor.empty())
 	{
 		Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_projectileCone);
-		Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.12f);
+		Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 
 		SpawnInfo spawnInfo = SpawnInfo(m_definition->m_projectileActor, initialFirePosition, actor->m_orientation);
 		Actor* projectile = actor->m_map->SpawnActor(spawnInfo);
@@ -376,7 +376,7 @@ void Weapon::Fire_PortalGun(Actor* actor)
 		for (int rayIndex = 0; rayIndex < m_definition->m_rayCount; ++rayIndex)
 		{
 			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_rayCone);
-			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.001f);
+			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 
 			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, m_definition->m_rayRange, actor);
 			if (result.m_didImpact && result.m_actor != nullptr)
@@ -396,7 +396,7 @@ void Weapon::Fire_PortalGun(Actor* actor)
 
 				PushImpactPointToFitSurface(result);
 
-				Vec3 portalPosition = result.m_impactPos;
+				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001;
 				m_leftPortal = new Portal(m_map, portalPosition, m_definition->m_portalHeight, m_definition->m_portalWidth);
 				
 				if (result.m_impactNormal.z == 0.f) // If the impact normal is horizontal

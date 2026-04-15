@@ -12,8 +12,9 @@
 #include "Game/Map.hpp"
 
 const Vec3 offsetInsidePortalAABB3 = Vec3(0.2f, 0.f, 0.f);
+const Vec3 offsetOutsidePortalAABB3 = Vec3(0.00003f, 0.f, 0.f);
 const Vec3 offsetZValuePortalAABB3 = Vec3(0.f, 0.f, 0.00001f);
-const Vec3 offsetYValuePortalAABB3 = Vec3(0.f, 0.00001f, 0.f);
+const Vec3 offsetYValuePortalAABB3 = Vec3(0.f, 0.0001f, 0.f);
 
 Portal::Portal(Map* map, Vec3 const& startingPosition, float height, float width)
 	: m_map(map)
@@ -36,8 +37,8 @@ Portal::Portal(Map* map, Vec3 const& startingPosition, float height, float width
 
 
 	AABB3 portalRenderAABB3 = AABB3(
-		bl + offsetZValuePortalAABB3 + offsetYValuePortalAABB3, 
-		tr - offsetInsidePortalAABB3 - offsetZValuePortalAABB3 - offsetYValuePortalAABB3
+		bl + offsetOutsidePortalAABB3 + offsetZValuePortalAABB3 - offsetYValuePortalAABB3,
+		tr - offsetInsidePortalAABB3 - offsetZValuePortalAABB3 + offsetYValuePortalAABB3
 	);
 	AddVertsForAABB3D(m_vertexes, portalRenderAABB3);
 	//AddVertsForQuad3D(m_vertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
@@ -263,8 +264,8 @@ AABB3 Portal::GetPortalAsAABB3() const
 		portalToWorld = GetModelToWorldTransform_OrientationFlipped();
 	}
 
-	mins = bl + offsetZValuePortalAABB3 + offsetYValuePortalAABB3 - Vec3(0.0001f, 0.f, 0.f); // To prevent z fighting by clipping pixels the portal is almost on.
-	maxs = tr + offsetInsidePortalAABB3 - offsetZValuePortalAABB3 - offsetYValuePortalAABB3;
+	mins = bl + offsetZValuePortalAABB3 - offsetYValuePortalAABB3 - Vec3(0.0001f, 0.f, 0.f); // To prevent z fighting by clipping pixels the portal is almost on.
+	maxs = tr + offsetInsidePortalAABB3 - offsetZValuePortalAABB3 + offsetYValuePortalAABB3;
 
 	mins = portalToWorld.TransformPosition3D(mins);
 	maxs = portalToWorld.TransformPosition3D(maxs);
@@ -314,6 +315,61 @@ EulerAngles Portal::GetOrientation() const
 Vec3 Portal::GetPosition() const
 {
 	return m_position;
+}
+
+RaycastResult3D Portal::RaycastAgainst(Vec3 const& start, Vec3 const& direction, float length)
+{
+	Mat44 portalTransform = GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+	Vec3 bottomLeft = portalTransform.TransformPosition3D(bl);
+	Vec3 bottomRight = portalTransform.TransformPosition3D(br);
+	Vec3 topRight = portalTransform.TransformPosition3D(tr);
+	Vec3 topLeft = portalTransform.TransformPosition3D(tl);
+	RaycastResult3D result = RaycastVSQuad3D(start, direction, length,
+		bottomLeft + GetPosition(),
+		bottomRight + GetPosition(),
+		topRight + GetPosition(),
+		topLeft + GetPosition()
+	);
+	return result;
+}
+
+Vec3 Portal::TransformPointIntoOtherPortalSpace(Vec3& point)
+{
+	if (m_otherPortal == nullptr)
+	{
+		return point;
+	}
+
+	Mat44 portalTransform = GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+	Mat44 otherPortalTransform = GetOtherPortal()->GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+
+	// Calculate the proper position in the other portal space and set the actors desired position to that.
+	Vec3 portalToPoint = point - m_position;
+	portalTransform.Transpose();
+	portalToPoint = portalTransform.TransformPosition3D(portalToPoint);
+	portalToPoint = otherPortalTransform.TransformPosition3D(portalToPoint);
+	point = GetOtherPortal()->GetPosition() + portalToPoint;
+
+	return point;
+}
+
+EulerAngles Portal::TransformOrientationIntoOtherPortalSpace(EulerAngles& orientation)
+{
+	if (m_otherPortal == nullptr)
+	{
+		return orientation;
+	}
+
+	EulerAngles newOrientation = orientation;
+	Mat44 selfMatrixWorldToModel = GetWorldToModelTransform();
+	Mat44 otherPortalMatrixModelToWorld = GetOtherPortal()->GetModelToWorldTransform();
+	selfMatrixWorldToModel.Append(newOrientation.GetAsMatrix_IFwd_JLeft_KUp()); // Transform the actor's orientation into self model space by appending
+	Mat44 newOrientationMatrix = otherPortalMatrixModelToWorld;
+	newOrientationMatrix.Append(selfMatrixWorldToModel); // Transform actor's orientation from self model space back to world space with reference to the other portal's space.
+	EulerAngles orientationInOtherPortalSpace = EulerAngles(newOrientationMatrix);
+	orientation = orientationInOtherPortalSpace;
+
+	return orientation;
 }
 
 void Portal::SetOrientation(EulerAngles const& newOrientation)

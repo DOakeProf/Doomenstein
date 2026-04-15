@@ -306,7 +306,7 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 			actor->m_equippedWeapon = actor->m_weapons[2];
 		}
 
-		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height);
+		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 	}
 
 	if (g_engine->m_input->WasKeyJustPressed('P'))

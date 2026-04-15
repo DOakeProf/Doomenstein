@@ -928,7 +928,8 @@ bool Map::IsActorOverlappingHorizontalPortal(Actor* actor, FloatRange& tileZRang
 					Vec2(actor->m_position.x, actor->m_position.y)
 					, actor->m_definition->m_radius
 					, OBB2(Vec2(portal->GetPosition().x, portal->GetPosition().y), Vec2(portalJBasis.x, portalJBasis.y), Vec2(portal->tl.y, portal->tl.z))
-				)
+				) &&
+				portal->GetOtherPortal() != nullptr
 				) // Is the actor over/under the portal
 			{
 				doesActorOverlapPortal = true;
@@ -971,10 +972,14 @@ bool Map::IsActorOverlappingVerticalPortal(Actor* actor)
 				portalXZAABB.m_maxs.y = yStorage;
 			}
 
+			portalXZAABB.m_maxs += Vec2(0.001f, 0.001f);
+			portalXZAABB.m_mins -= Vec2(0.001f, 0.001f);
+
 			FloatRange actorYRange = FloatRange(actor->m_position.y - actor->m_definition->m_radius, actor->m_position.y + actor->m_definition->m_radius);
 
 			if (ISAABB2InsideAABB2(playerXZAABB, portalXZAABB) &&
-				actorYRange.IsOnRange(portal->GetPosition().y))
+				actorYRange.IsOnRange(portal->GetPosition().y) &&
+				portal->GetOtherPortal() != nullptr)
 			{
 				return true;
 			}
@@ -1008,7 +1013,8 @@ bool Map::IsActorOverlappingVerticalPortal(Actor* actor)
 			FloatRange actorXRange = FloatRange(actor->m_position.x - actor->m_definition->m_radius, actor->m_position.x + actor->m_definition->m_radius);
 
 			if (ISAABB2InsideAABB2(playerXZAABB, portalXZAABB) &&
-				actorXRange.IsOnRange(portal->GetPosition().x))
+				actorXRange.IsOnRange(portal->GetPosition().x) &&
+				portal->GetOtherPortal() != nullptr)
 			{
 				return true;
 			}
@@ -1068,16 +1074,8 @@ bool Map::CollideActorWithPortal(Actor* actor, Portal* portal)
 	}
 	Mat44 portalTransform = portal->GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
 	Mat44 otherPortalTransform = portal->GetOtherPortal()->GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
-	Vec3 bottomLeft = portalTransform.TransformPosition3D(portal->bl);
-	Vec3 bottomRight = portalTransform.TransformPosition3D(portal->br);
-	Vec3 topRight = portalTransform.TransformPosition3D(portal->tr);
-	Vec3 topLeft = portalTransform.TransformPosition3D(portal->tl);
-	RaycastResult3D raycastResult = RaycastVSQuad3D(rayStart, rayFwdNormal, rayLength,
-		bottomLeft + portal->GetPosition(),
-		bottomRight + portal->GetPosition(),
-		topRight + portal->GetPosition(),
-		topLeft + portal->GetPosition()
-	);
+
+	RaycastResult3D raycastResult = portal->RaycastAgainst(rayStart, rayFwdNormal, rayLength);
 	if (raycastResult.m_didImpact)
 	{
 		// Calculate the proper position in the other portal space and set the actors desired position to that.
@@ -1186,14 +1184,14 @@ void Map::Render()
 	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
 	{
 		Portal* portal = m_portals[portalIndex];
-		AABB3 portalAABB3 = portal->GetPortalAsAABB3();
-		portalAABB3Constants.aabb3Mins[portalAmount] = Vec4(portalAABB3.m_mins.x, portalAABB3.m_mins.y, portalAABB3.m_mins.z, 0.f);
-		portalAABB3Constants.aabb3Maxs[portalAmount] = Vec4(portalAABB3.m_maxs.x, portalAABB3.m_maxs.y, portalAABB3.m_maxs.z, 0.f);
+		if (portal->GetOrientation().GetForwardDir_IFwd_JLeft_KUp().z == 0.f && portal->GetOtherPortal() != nullptr)
+		{
+			AABB3 portalAABB3 = portal->GetPortalAsAABB3();
+			portalAABB3Constants.aabb3Mins[portalAmount] = Vec4(portalAABB3.m_mins.x, portalAABB3.m_mins.y, portalAABB3.m_mins.z, 0.f);
+			portalAABB3Constants.aabb3Maxs[portalAmount] = Vec4(portalAABB3.m_maxs.x, portalAABB3.m_maxs.y, portalAABB3.m_maxs.z, 0.f);
 
-		++portalAmount;
-
-		//DebugAddWorldSphere(portalAABB3Constants.aabb3Mins[portalIndex], 0.1f, 0.001f);
-		//DebugAddWorldSphere(portalAABB3Constants.aabb3Maxs[portalIndex], 0.1f, 0.001f);
+			++portalAmount;
+		}
 	}
 	portalAABB3Constants.isEnabled = 1;
 	portalAABB3Constants.amountOfPortals = GetNumPortals();
@@ -1297,11 +1295,38 @@ RaycastResultDoomenstein Map::RaycastAll(const Vec3& start, const Vec3& directio
 		result = worldActorsResult;
 	}
 
-	DebugAddWorldCylinder(start, start + direction * distance, Vec3(), 0.01f, 1.f);
+	RaycastResultDoomenstein portalResult = RaycastWorldPortals(start, direction, distance);
+	if (portalResult.m_impactDist < raycastResult.m_impactDist)
+	{
+		result = portalResult;
+	}
+
+	// Draw debug raycast
+	Vec3 raycastStartOffset;
+	if (owner != nullptr)
+	{
+		raycastStartOffset = owner->m_orientation.GetAsMatrix_IFwd_JLeft_KUp().TransformPosition3D(Vec3(0.16f, 0.f, -0.03f));
+	}
+	DebugAddWorldCylinder(start + raycastStartOffset, start + direction * distance, Vec3(), 0.01f, 1.f);
 	if (raycastResult.m_didImpact)
 	{
 		DebugAddWorldSphere(raycastResult.m_impactPos, 0.06f, 1.f);
 		DebugAddWorldArrow(raycastResult.m_impactPos, raycastResult.m_impactPos + raycastResult.m_impactNormal * 0.3f, Vec3(), 0.03f, 1.f, Rgba8::BLUE, Rgba8::BLUE);
+	}
+
+	if (result.m_portal != nullptr)
+	{
+		Vec3 newStart = result.m_impactPos;
+
+		Vec3 jBasis = CrossProduct3D(Vec3(0.f, 0.f, 1.f), direction);
+		Vec3 kBasis = CrossProduct3D(direction, jBasis);
+		Mat44 directionAsMatrix = Mat44(direction, jBasis, kBasis, Vec3());
+		EulerAngles newDirection = EulerAngles(directionAsMatrix); // Make this euler angles
+
+		result.m_portal->TransformPointIntoOtherPortalSpace(newStart);
+		result.m_portal->TransformOrientationIntoOtherPortalSpace(newDirection);
+
+		result = RaycastAll(newStart + result.m_portal->GetOtherPortal()->GetOrientation().GetForwardDir_IFwd_JLeft_KUp() * 0.0001f, newDirection.GetForwardDir_IFwd_JLeft_KUp(), distance - result.m_impactDist);
 	}
 
 	return result;
@@ -1530,6 +1555,38 @@ RaycastResultDoomenstein Map::RaycastWorldActors(const Vec3& start, const Vec3& 
 	result.m_rayDirection = raycastResult.m_rayDirection;
 	result.m_rayLength = raycastResult.m_rayLength;
 	result.m_rayStartPosition = raycastResult.m_rayStartPosition;
+	return result;
+}
+
+RaycastResultDoomenstein Map::RaycastWorldPortals(const Vec3& start, const Vec3& direction, float distance) const
+{
+	RaycastResult3D raycastResult;
+	raycastResult.m_impactDist = distance;
+	Portal* portalHit = nullptr;
+
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portal = m_portals[portalIndex];
+		if (portal != nullptr && portal->GetOtherPortal() != nullptr)
+		{
+			RaycastResult3D newRaycastResult = portal->RaycastAgainst(start, direction, distance);
+			if (newRaycastResult.m_impactDist != 0.f && newRaycastResult.m_impactDist < raycastResult.m_impactDist)
+			{
+				raycastResult = newRaycastResult;
+				portalHit = portal;
+			}
+		}
+	}
+
+	RaycastResultDoomenstein result;
+	result.m_didImpact = raycastResult.m_didImpact;
+	result.m_impactDist = raycastResult.m_impactDist;
+	result.m_impactNormal = raycastResult.m_impactNormal;
+	result.m_impactPos = raycastResult.m_impactPos;
+	result.m_rayDirection = raycastResult.m_rayDirection;
+	result.m_rayLength = raycastResult.m_rayLength;
+	result.m_rayStartPosition = raycastResult.m_rayStartPosition;
+	result.m_portal = portalHit;
 	return result;
 }
 

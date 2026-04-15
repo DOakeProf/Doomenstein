@@ -1326,7 +1326,14 @@ RaycastResultDoomenstein Map::RaycastAll(const Vec3& start, const Vec3& directio
 		result.m_portal->TransformPointIntoOtherPortalSpace(newStart);
 		result.m_portal->TransformOrientationIntoOtherPortalSpace(newDirection);
 
-		result = RaycastAll(newStart + result.m_portal->GetOtherPortal()->GetOrientation().GetForwardDir_IFwd_JLeft_KUp() * 0.0001f, newDirection.GetForwardDir_IFwd_JLeft_KUp(), distance - result.m_impactDist);
+		if (result.m_portal->GetOrientation().GetForwardDir_IFwd_JLeft_KUp().z != 0.f) // Is a horizontal portal
+		{
+			result = RaycastAll(newStart + result.m_portal->GetOtherPortal()->GetOrientation().GetForwardDir_IFwd_JLeft_KUp() * -0.01f, newDirection.GetForwardDir_IFwd_JLeft_KUp(), distance - result.m_impactDist);
+		}
+		else
+		{
+			result = RaycastAll(newStart + result.m_portal->GetOtherPortal()->GetOrientation().GetForwardDir_IFwd_JLeft_KUp() * 0.01f, newDirection.GetForwardDir_IFwd_JLeft_KUp(), distance - result.m_impactDist);
+		}
 	}
 
 	return result;

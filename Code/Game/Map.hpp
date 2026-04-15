@@ -64,12 +64,14 @@ struct ClipPlaneConstants
 };
 static const int k_clipPlaneConstantsSlot = 5;
 
+const int MAX_PORTAL_AABB3_SIZE = 4;
 struct PortalAABB3Constants
 {
-	Vec3 aabb3Mins;
-	int isEnabled;
-	Vec3 aabb3Maxs;
-	int padding;
+	Vec4 aabb3Mins[MAX_PORTAL_AABB3_SIZE] = { Vec4() };
+	Vec4 aabb3Maxs[MAX_PORTAL_AABB3_SIZE] = { Vec4() };
+	uint32_t isEnabled;
+	uint32_t amountOfPortals;
+	Vec2 padding;
 };
 static const int k_portalAABB3ConstantsSlot = 6;
 
@@ -102,6 +104,7 @@ public:
 	Actor* GetActorByHandle(const ActorHandle handle) const;
 	Player* GetCurrentRenderedPlayer();
 	std::vector<Actor*> GetActors();
+	int GetNumPortals();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Utility functions

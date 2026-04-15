@@ -11,6 +11,10 @@
 #include "Game/GameCommon.hpp"
 #include "Game/Map.hpp"
 
+const Vec3 offsetInsidePortalAABB3 = Vec3(0.2f, 0.f, 0.f);
+const Vec3 offsetZValuePortalAABB3 = Vec3(0.f, 0.f, 0.00001f);
+const Vec3 offsetYValuePortalAABB3 = Vec3(0.f, 0.00001f, 0.f);
+
 Portal::Portal(Map* map, Vec3 const& startingPosition, float height, float width)
 	: m_map(map)
 	, m_position(startingPosition)
@@ -30,8 +34,11 @@ Portal::Portal(Map* map, Vec3 const& startingPosition, float height, float width
 	//AddVertsForQuad3D(m_frontVertexes, bl + xOffset, br + xOffset, tr + xOffset, tl + xOffset); // This is for the rendering trick where you render the portal plane further away from the camera.
 	//AddVertsForQuad3D(m_backVertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
 
-	Vec3 xOffset = Vec3(-0.2f, 0.f, 0.f);
-	AABB3 portalRenderAABB3 = AABB3(bl + Vec3(0.01f, 0.f, 0.f), Vec3(tr + xOffset));
+
+	AABB3 portalRenderAABB3 = AABB3(
+		bl + offsetZValuePortalAABB3 + offsetYValuePortalAABB3, 
+		tr - offsetInsidePortalAABB3 - offsetZValuePortalAABB3 - offsetYValuePortalAABB3
+	);
 	AddVertsForAABB3D(m_vertexes, portalRenderAABB3);
 	//AddVertsForQuad3D(m_vertexes, bl - xOffset, br - xOffset, tr - xOffset, tl - xOffset);
 
@@ -114,16 +121,6 @@ void Portal::RenderPortal() const
 	clipPlaneConstants.isEnabled = 1;
 	g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_map->m_clipPlaneCBO);
 
-	PortalAABB3Constants portalAABB3Constants = PortalAABB3Constants();
-	AABB3 portalAABB3 = GetPortalAsAABB3();
-	portalAABB3Constants.aabb3Mins = portalAABB3.m_mins;
-	portalAABB3Constants.aabb3Maxs = portalAABB3.m_maxs;
-	portalAABB3Constants.isEnabled = 1;
-	g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_map->m_portalAABB3CBO);
-
-	//DebugAddWorldSphere(portalAABB3Constants.aabb3Mins, 0.1f, 0.001f);
-	//DebugAddWorldSphere(portalAABB3Constants.aabb3Maxs, 0.1f, 0.001f);
-
 	m_map->Render_World();
 
 	clipPlaneConstants.isEnabled = 0;
@@ -140,7 +137,6 @@ void Portal::RenderPortal() const
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::WRITE_TO_STENCIL);
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
-	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
 
 	if (m_isFlipped)
 	{
@@ -256,6 +252,8 @@ Mat44 Portal::GetWorldToModelTransform() const
 AABB3 Portal::GetPortalAsAABB3() const
 {
 	Mat44 portalToWorld;
+	Vec3 mins;
+	Vec3 maxs;
 	if (m_isFlipped)
 	{
 		portalToWorld = GetModelToWorldTransform();
@@ -264,9 +262,10 @@ AABB3 Portal::GetPortalAsAABB3() const
 	{
 		portalToWorld = GetModelToWorldTransform_OrientationFlipped();
 	}
-	Vec3 xOffset = Vec3(0.2f, 0.f, 0.f);
-	Vec3 mins = bl + Vec3(-0.01f, 0.f, 0.f);
-	Vec3 maxs = tr + xOffset;
+
+	mins = bl + offsetZValuePortalAABB3 + offsetYValuePortalAABB3 - Vec3(0.0001f, 0.f, 0.f); // To prevent z fighting by clipping pixels the portal is almost on.
+	maxs = tr + offsetInsidePortalAABB3 - offsetZValuePortalAABB3 - offsetYValuePortalAABB3;
+
 	mins = portalToWorld.TransformPosition3D(mins);
 	maxs = portalToWorld.TransformPosition3D(maxs);
 

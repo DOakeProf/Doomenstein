@@ -279,6 +279,19 @@ std::vector<Actor*> Map::GetActors()
 	return m_actors;
 }
 
+int Map::GetNumPortals()
+{
+	int numOfPortals = 0;
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		if (m_portals[portalIndex] != nullptr)
+		{
+			++numOfPortals;
+		}
+	}
+	return numOfPortals;
+}
+
 int Map::AddActorToMap(Actor* actor)
 {
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
@@ -1168,6 +1181,24 @@ void Map::Render()
 	g_engine->m_render->BeginCamera(m_player->m_worldCamera);
 
 	// Render Everything
+	PortalAABB3Constants portalAABB3Constants = PortalAABB3Constants();
+	int portalAmount = 0;
+	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	{
+		Portal* portal = m_portals[portalIndex];
+		AABB3 portalAABB3 = portal->GetPortalAsAABB3();
+		portalAABB3Constants.aabb3Mins[portalAmount] = Vec4(portalAABB3.m_mins.x, portalAABB3.m_mins.y, portalAABB3.m_mins.z, 0.f);
+		portalAABB3Constants.aabb3Maxs[portalAmount] = Vec4(portalAABB3.m_maxs.x, portalAABB3.m_maxs.y, portalAABB3.m_maxs.z, 0.f);
+
+		++portalAmount;
+
+		//DebugAddWorldSphere(portalAABB3Constants.aabb3Mins[portalIndex], 0.1f, 0.001f);
+		//DebugAddWorldSphere(portalAABB3Constants.aabb3Maxs[portalIndex], 0.1f, 0.001f);
+	}
+	portalAABB3Constants.isEnabled = 1;
+	portalAABB3Constants.amountOfPortals = GetNumPortals();
+	g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
+
 	Render_World();
 
 	Render_Portals();

@@ -53,11 +53,11 @@ cbuffer ClipPlaneConstants : register(b5)
 
 cbuffer PortalAABB3Constants : register(b6)
 {
-    float3 aabb3Mins;
+    float4 aabb3Mins[4];
+    float4 aabb3Maxs[4];
     int isEnabledAABB3;
-    float3 aabb3Maxs;
-    int paddingAABB3;
-}
+    int amountOfPortals;
+};
 
 //------------------------------------------------------------------------------------------------
 Texture2D diffuseTexture : register(t0);
@@ -117,10 +117,13 @@ float4 PixelMain(v2p_t input) : SV_Target0
         clip(distance);
     }
 	
-    float isPointInside = isPointInAABB(input.worldPosition.xyz, aabb3Mins, aabb3Maxs);
-    if (isEnabledAABB3)
+    for (int portalAABB3Index = 0; portalAABB3Index < amountOfPortals; ++portalAABB3Index)
     {
-        clip(0.5 - isPointInside);
+        float isPointInside = isPointInAABB(input.worldPosition.xyz, aabb3Mins[portalAABB3Index].xyz, aabb3Maxs[portalAABB3Index].xyz);
+        if (isEnabledAABB3)
+        {
+            clip(0.5 - isPointInside);
+        }
     }
 	
     return color;

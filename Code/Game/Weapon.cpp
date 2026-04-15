@@ -396,7 +396,7 @@ void Weapon::Fire_PortalGun(Actor* actor)
 
 				PushImpactPointToFitSurface(result);
 
-				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.01f;
+				Vec3 portalPosition = result.m_impactPos;
 				m_leftPortal = new Portal(m_map, portalPosition, m_definition->m_portalHeight, m_definition->m_portalWidth);
 				
 				if (result.m_impactNormal.z == 0.f) // If the impact normal is horizontal

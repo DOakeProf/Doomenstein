@@ -20,7 +20,6 @@ constexpr float SCREEN_SIZE_X = SCREEN_SIZE_Y * SCREEN_ASPECT;
 constexpr float SCREEN_CENTER_X = SCREEN_SIZE_X / 2.f;
 constexpr float SCREEN_CENTER_Y = SCREEN_SIZE_Y / 2.f;
 
-
 constexpr float COMMON_PI = 3.14159265358979323846f;
 
 void DebugDrawRing(Vec2 const& center, float radius, float thickness, Rgba8 const& color);

@@ -192,6 +192,7 @@ protected:
 	// Lists of owned objects
 	std::vector<Tile> m_tiles;
 	std::vector<Actor*> m_actors;
+	std::vector<Actor*> m_spawnPoints;
 	std::vector<Portal*> m_portals;
 	unsigned int m_nextActorUID = 0;
 	Actor* m_bulletActor;

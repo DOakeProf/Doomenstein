@@ -3,6 +3,7 @@
 #include "Game/Map.hpp"
 #include "Game/ActorHandle.hpp"
 #include "Game/Actor.hpp"
+#include "Game/AI.hpp"
 
 Controller::Controller(Map* map)
 	: m_map(map)
@@ -20,7 +21,12 @@ void Controller::Depossess()
 {
 	if (m_actorHandle != nullptr)
 	{
-		m_map->GetActorByHandle(*m_actorHandle)->m_controller = nullptr;
+		Actor* actor = m_map->GetActorByHandle(*m_actorHandle);
+		actor->m_controller = nullptr;
+		if (actor->m_AIController != nullptr)
+		{
+			actor->m_AIController->Possess(m_actorHandle);
+		}
 		m_actorHandle = nullptr;
 	}
 }

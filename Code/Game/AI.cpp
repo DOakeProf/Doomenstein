@@ -34,11 +34,31 @@ void AI::Update()
 			}
 			else
 			{
+				// Move towards target.
 				float deltaSeconds = m_map->m_game->m_gameClock->GetDeltaSeconds();
 				Vec3 selfToOtherActor = otherActor->m_position - actor->m_position;
+				selfToOtherActor.z = 0.f; // Flatten the vector to the XY plane.
 				Vec3 selfToOtherActorNormalized = selfToOtherActor.GetNormalized();
-				actor->MoveInDirection(selfToOtherActorNormalized, actor->m_definition->m_walkSpeed);
 
+				float distToStop = 0.7f;
+				float distToStartSlowingDown = 2.f;
+				float distBetweenSelfAndTarget = selfToOtherActor.GetLength();
+				if (distBetweenSelfAndTarget < distToStop) // Stop and attack when near player.
+				{
+					m_map->GetActorByHandle(*m_actorHandle)->Attack();
+				}
+				else if (distBetweenSelfAndTarget < distToStartSlowingDown) // Slow down when near player.
+				{
+					actor->MoveInDirection(selfToOtherActorNormalized, actor->m_definition->m_runSpeed * 
+					(distBetweenSelfAndTarget - distToStop) / (distToStartSlowingDown - distToStop));
+					m_map->GetActorByHandle(*m_actorHandle)->Attack();
+				}
+				else
+				{
+					actor->MoveInDirection(selfToOtherActorNormalized, actor->m_definition->m_runSpeed);
+				}
+
+				// Orient towards target.
 				Vec3 forwardVector = actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp();
 				float selfToOtherLength = selfToOtherActor.GetLength();
 				float angleOfSelfToOther2D = Atan2Degrees(selfToOtherActorNormalized.y, selfToOtherActorNormalized.x);

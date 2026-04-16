@@ -19,6 +19,8 @@
 #include "Engine/Math/FloatRange.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
 #include "Engine/Renderer/ConstantBuffer.hpp"
+#include "Engine/Math/RandomNumberGenerator.hpp"
+#include "ENgine/BitmapFont.hpp"
 
 std::vector<MapDefinition*> MapDefinition::s_definitions;
 
@@ -65,7 +67,18 @@ void Map::Startup_InitializeActors()
 {
 	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
 	{
-		SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "SpawnPoint")
+		{
+			Actor* spawnPoint = SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
+			m_spawnPoints.push_back(spawnPoint);
+		}
+	}
+	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
+	{
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name != "SpawnPoint")
+		{
+			SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
+		}
 	}
 }
 
@@ -323,6 +336,10 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 	if (newActor->m_definition->m_name == "Marine")
 	{
 		m_player->Possess(actorHandle);
+		int randomSpawnPointIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, m_spawnPoints.size() - 1);
+		newActor->m_position = m_spawnPoints[randomSpawnPointIndex]->m_position;
+		newActor->m_orientation = m_spawnPoints[randomSpawnPointIndex]->m_orientation;
+		m_player->SetPlayerState(PlayerState::FIRSTPERSON);
 	}
 	if (newActor->m_definition->m_aiEnabled)
 	{
@@ -718,6 +735,38 @@ void Map::Update_DebugInput()
 		m_ambientIntensity = GetClamped(m_ambientIntensity, 0.f, 1.f);
 		std::string message = Stringf("Ambient Intensity: %.2f", m_ambientIntensity);
 		DebugAddMessage(message, 2.f);
+	}
+
+	if (g_engine->m_input->WasKeyJustPressed('N'))
+	{
+		Actor* newActorToPossess = nullptr;
+		int startingActorIndex = m_player->m_actorHandle->GetIndex();
+		for (int actorIndex = startingActorIndex + 1; actorIndex < m_actors.size(); ++actorIndex)
+		{
+			Actor* actor = m_actors[actorIndex];
+			if (actor != nullptr && actor->m_definition->m_canBePossessed)
+			{
+				newActorToPossess = actor;
+				break;
+			}
+		}
+		if (newActorToPossess == nullptr) // If we reached the end of the list of actors, cycle back to the beginning.
+		{
+			for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+			{
+				Actor* actor = m_actors[actorIndex];
+				if (actor != nullptr && actor->m_definition->m_canBePossessed)
+				{
+					newActorToPossess = actor;
+					break;
+				}
+			}
+		}
+		if (newActorToPossess != nullptr)
+		{
+			m_player->Depossess();
+			m_player->Possess(newActorToPossess->m_handle);
+		}
 	}
 
 	//if (g_engine->m_input->WasKeyJustPressed(KEYCODE_LEFT_MOUSE))
@@ -1204,6 +1253,17 @@ void Map::Render()
 	g_engine->m_render->EndCamera(m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_game->m_screenCamera);
 
+
+	// HUD
+	std::vector<Vertex> uiHealthVerts;
+	Actor* playerActor = m_player->GetActor();
+	std::string uiHealthText = Stringf("HEALTH: %.2f", (float)playerActor->m_health);
+	AABB2 SCREEN_AABB2 = AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	m_game->m_squirrelFont->AddVertsForTextInBox2D(uiHealthVerts, uiHealthText, SCREEN_AABB2, SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.2f));
+	g_engine->m_render->BindTexture(&m_game->m_squirrelFont->GetTexture());
+	g_engine->m_render->DrawVertexList(&uiHealthVerts);
+
+	// Debug
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	DebugRenderScreen(*m_game->m_screenCamera);
 

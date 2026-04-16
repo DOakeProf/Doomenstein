@@ -356,7 +356,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 	if (!m_definition->m_projectileActor.empty())
 	{
 		Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_projectileCone);
-		Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
+		Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.1f);
 
 		SpawnInfo spawnInfo = SpawnInfo(m_definition->m_projectileActor, initialFirePosition, actor->m_orientation);
 		Actor* projectile = actor->m_map->SpawnActor(spawnInfo);
@@ -365,7 +365,21 @@ void Weapon::Fire_Weapon(Actor* actor)
 	}
 	if (m_definition->m_meleeCount != -1)
 	{
-
+		std::vector<Actor*> actors = m_map->GetActors();
+		for (int actorIndex = 0; actorIndex < actors.size(); ++actorIndex)
+		{
+			Actor* currentActor = actors[actorIndex];
+			if (currentActor != nullptr && currentActor != actor)
+			{
+				Vec3 distFromSelfToOther = currentActor->m_position - actor->m_position;
+				if (distFromSelfToOther.GetLength() < m_definition->m_meleeRange) // TODO: make this only work in an arc
+				{
+					float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_meleeDamage.m_min, m_definition->m_meleeDamage.m_max);
+					currentActor->Damage(RandomDamage, actor->m_handle);
+					currentActor->AddImpulse(distFromSelfToOther.GetNormalized() * m_definition->m_meleeImpulse);
+				}
+			}
+		}
 	}
 }
 

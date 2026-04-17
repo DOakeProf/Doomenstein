@@ -74,13 +74,16 @@ void Actor::Update()
 void Actor::Render() const
 {
 	Player* currentlyRenderedPlayer = m_map->GetCurrentRenderedPlayer();
-	if (m_controller != nullptr && m_controller->IsPlayer() && currentlyRenderedPlayer->m_desiredPlayerState == PlayerState::FIRSTPERSON)
+	if (
+	(m_controller != nullptr && m_controller->IsPlayer() && currentlyRenderedPlayer->m_desiredPlayerState == PlayerState::FIRSTPERSON) ||
+		!m_definition->m_visible
+		)
 	{
 		return;
 	}
 
 	g_engine->m_render->SetModelConstants(GetModelMatrixOnlyYaw());
-	std::vector<Vertex> m_verts;
+	std::vector<Vertex> debugVerts;
 
 	Rgba8 colorToUse = m_color;
 	if (m_isDead)
@@ -88,7 +91,7 @@ void Actor::Render() const
 		colorToUse.ScaleColor(0.5f);
 	}
 
-	AddVertsForCylinder3D(m_verts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height), m_definition->m_radius, colorToUse, AABB2::ZERO_TO_ONE, 16);
+	AddVertsForCylinder3D(debugVerts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height), m_definition->m_radius, colorToUse, AABB2::ZERO_TO_ONE, 16);
 	Vec3 displacementFromCenter = Vec3(m_definition->m_radius, 0.f, 0.f);
 	displacementFromCenter.GetRotatedAboutZDegrees(m_orientation.m_yawDegrees);
 
@@ -96,24 +99,24 @@ void Actor::Render() const
 	{
 		Vec3 noseStart = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter;
 		Vec3 noseEnd = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter + displacementFromCenter * 0.3f;
-		AddVertsForCone3D(m_verts, noseStart, noseEnd, 0.1f, colorToUse, AABB2::ZERO_TO_ONE, 16);
+		AddVertsForCone3D(debugVerts, noseStart, noseEnd, 0.1f, colorToUse, AABB2::ZERO_TO_ONE, 16);
 	}
 
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
-	g_engine->m_render->DrawVertexList(&m_verts);
+	g_engine->m_render->DrawVertexList(&debugVerts);
 
-	m_verts.clear();
-	AddVertsForCylinder3D(m_verts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height + 0.001f), m_definition->m_radius + 0.001f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 16);
+	debugVerts.clear();
+	AddVertsForCylinder3D(debugVerts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height + 0.001f), m_definition->m_radius + 0.001f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 16);
 
 	if (!m_definition->m_isFlying)
 	{
 		Vec3 noseStart = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter;
 		Vec3 noseEnd = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter + displacementFromCenter * 0.3f;
-		AddVertsForCone3D(m_verts, noseStart, noseEnd, 0.1f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 16);
+		AddVertsForCone3D(debugVerts, noseStart, noseEnd, 0.1f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 16);
 	}
 
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::WIREFRAME_CULL_BACK);
-	g_engine->m_render->DrawVertexList(&m_verts);
+	g_engine->m_render->DrawVertexList(&debugVerts);
 }
 
 Mat44 Actor::GetModelMatrix() const
@@ -141,11 +144,16 @@ Mat44 Actor::GetModelMatrixOnlyYaw() const
 	return modelToWorld;
 }
 
+Vec3 Actor::GetEyePos()
+{
+	return m_position + Vec3(0.f, 0.f, m_definition->m_eyeHeight);
+}
+
 void Actor::Update_Physics()
 {
 	if (m_definition->m_physicsIsSimulated && !m_isDead)
 	{
-		float deltaSeconds = m_map->m_game->m_gameClock->GetDeltaSeconds();
+		float deltaSeconds = (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 		if (!m_definition->m_isFlying)
 		{
 			Vec3 gravityForce = Vec3(0.f, 0.f, -9.81f * 1.1f);
@@ -195,7 +203,7 @@ void Actor::Update_Gameplay()
 	}
 	else
 	{
-		m_coyoteTime += m_map->m_game->m_gameClock->GetDeltaSeconds();
+		m_coyoteTime += (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 	}
 
 	if (m_deathTimer->HasPeriodElapsed())
@@ -206,7 +214,10 @@ void Actor::Update_Gameplay()
 
 void Actor::Update_Position()
 {
-	m_position = m_desiredPosition;
+	if (m_definition->m_physicsIsSimulated)
+	{
+		m_position = m_desiredPosition;
+	}
 }
 
 void Actor::SetActorHandle(ActorHandle* handle)
@@ -233,7 +244,7 @@ void Actor::TurnInDirection(float angleToTurnTowards, float maximumTurn)
 
 void Actor::Jump(float jumpStrength)
 {
-	if (!m_isDead)
+	if (!m_isDead && m_coyoteTime < m_coyoteTimeMax)
 	{
 		m_velocity.z = 0.f;
 		AddImpulse(Vec3(0.f, 0.f, jumpStrength));
@@ -296,7 +307,7 @@ void Actor::OnCollide(Actor* otherActor)
 	if (otherActor != nullptr && m_definition->m_damageOnCollide != FloatRange(-1, -1))
 	{
 		float damage = m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_damageOnCollide.m_min, m_definition->m_damageOnCollide.m_max);
-		otherActor->Damage(damage, m_owner->m_handle);
+		otherActor->Damage(RoundDownToInt(damage), m_owner->m_handle);
 	}
 	if (otherActor != nullptr && m_definition->m_impulseOnCollide != -1.f)
 	{
@@ -337,7 +348,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 		newActorDef->m_health = ParseXmlAttribute(*actorDefElement, "health", -1);
 		newActorDef->m_canBePossessed = ParseXmlAttribute(*actorDefElement, "canBePossessed", false);
 		newActorDef->m_corpseLifetime = ParseXmlAttribute(*actorDefElement, "corpseLifetime", -1.f);
-		newActorDef->m_visible = ParseXmlAttribute(*actorDefElement, "visible", true);
+		newActorDef->m_visible = ParseXmlAttribute(*actorDefElement, "visible", false);
 
 		XmlElement* collisionElement = actorDefElement->FirstChildElement("Collision");
 		if (collisionElement != nullptr)

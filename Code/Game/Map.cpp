@@ -305,6 +305,17 @@ int Map::GetNumPortals()
 	return numOfPortals;
 }
 
+bool Map::AreActorsSameFaction(Actor* actorA, Actor* actorB)
+{
+	if (
+		actorA != nullptr && actorB != nullptr &&
+		actorA->m_definition->m_faction == actorB->m_definition->m_faction)
+	{
+		return true;
+	}
+	return false;
+}
+
 int Map::AddActorToMap(Actor* actor)
 {
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
@@ -323,7 +334,7 @@ int Map::AddActorToMap(Actor* actor)
 
 Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 {
-	Actor* newActor = new Actor(this, spawnInfo.m_name, spawnInfo.m_position, spawnInfo.m_orientation);
+	Actor* newActor = new Actor(this, spawnInfo.m_name, spawnInfo.m_position + Vec3(0.f, 0.f, 0.01f), spawnInfo.m_orientation);
 	int actorIndex = AddActorToMap(newActor);
 	ActorHandle* actorHandle = new ActorHandle(m_nextActorUID, actorIndex);
 	newActor->m_handle = actorHandle;
@@ -337,7 +348,7 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 	{
 		m_player->Possess(actorHandle);
 		int randomSpawnPointIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, m_spawnPoints.size() - 1);
-		newActor->m_position = m_spawnPoints[randomSpawnPointIndex]->m_position;
+		newActor->m_position = m_spawnPoints[randomSpawnPointIndex]->m_position + Vec3(0.f,0.f,0.01f);
 		newActor->m_orientation = m_spawnPoints[randomSpawnPointIndex]->m_orientation;
 		m_player->SetPlayerState(PlayerState::FIRSTPERSON);
 	}
@@ -348,6 +359,18 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 	}
 
 	return newActor;
+}
+
+Actor* Map::SpawnPlayer()
+{
+	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
+	{
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "Marine")
+		{
+			return SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
+		}
+	}
+	return nullptr;
 }
 
 void Map::AddPortal(Portal* portal)
@@ -1255,13 +1278,8 @@ void Map::Render()
 
 
 	// HUD
-	std::vector<Vertex> uiHealthVerts;
-	Actor* playerActor = m_player->GetActor();
-	std::string uiHealthText = Stringf("HEALTH: %.2f", (float)playerActor->m_health);
-	AABB2 SCREEN_AABB2 = AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
-	m_game->m_squirrelFont->AddVertsForTextInBox2D(uiHealthVerts, uiHealthText, SCREEN_AABB2, SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.2f));
-	g_engine->m_render->BindTexture(&m_game->m_squirrelFont->GetTexture());
-	g_engine->m_render->DrawVertexList(&uiHealthVerts);
+
+	Render_HUD_Health();
 
 	// Debug
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
@@ -1309,6 +1327,28 @@ void Map::Render_Actors() const
 		{
 			m_actors[actorIndex]->Render();
 		}
+	}
+}
+
+void Map::Render_HUD_Health() const
+{
+	Actor* playerActor = m_player->GetActor();
+	if (playerActor != nullptr)
+	{
+		std::vector<Vertex> uiHealthVerts;
+		std::string uiHealthText;
+		if ((float)playerActor->m_health > 0.f)
+		{
+			uiHealthText = Stringf("HEALTH: %.2f", (float)playerActor->m_health);
+		}
+		else
+		{
+			uiHealthText = Stringf("DEAD :(");
+		}
+		AABB2 SCREEN_AABB2 = AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+		m_game->m_squirrelFont->AddVertsForTextInBox2D(uiHealthVerts, uiHealthText, SCREEN_AABB2, SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.2f));
+		g_engine->m_render->BindTexture(&m_game->m_squirrelFont->GetTexture());
+		g_engine->m_render->DrawVertexList(&uiHealthVerts);
 	}
 }
 

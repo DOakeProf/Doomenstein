@@ -13,7 +13,7 @@
 
 const Vec3 offsetInsidePortalAABB3 = Vec3(0.2f, 0.f, 0.f);
 const Vec3 offsetOutsidePortalAABB3 = Vec3(0.00003f, 0.f, 0.f);
-const Vec3 offsetZValuePortalAABB3 = Vec3(0.f, 0.f, 0.00001f);
+const Vec3 offsetZValuePortalAABB3 = Vec3(0.f, 0.f, 0.0001f);
 const Vec3 offsetYValuePortalAABB3 = Vec3(0.f, 0.0001f, 0.f);
 
 Portal::Portal(Map* map, Vec3 const& startingPosition, float height, float width)

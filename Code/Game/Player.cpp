@@ -29,18 +29,33 @@ void Player::Update()
 		return;
 	}
 	Actor* actor = m_map->GetActorByHandle(*m_actorHandle);
-	if (m_jumpBuffer < 0.05f && actor->m_coyoteTime < 0.09f)
+	if (m_jumpBuffer < 0.05f)
 	{
 		actor->Jump(13.5f);
 	}
 	m_jumpBuffer += m_map->m_game->m_gameClock->GetDeltaSeconds();
 
-	m_worldCamera->SetPositionAndOrientation(m_position, m_orientation);
+	if (actor != nullptr && actor->m_isDead)
+	{
+		float cameraFallTime = actor->m_deathTimer->GetElapsedFraction();
+		Vec3 cameraFallDisplacement = Vec3(0.f,0.f,-actor->m_definition->m_eyeHeight);
+		cameraFallDisplacement *= GetClamped(cameraFallTime, 0.f, 0.5f) * 1.5f;
+		m_worldCamera->SetPositionAndOrientation(m_position + cameraFallDisplacement, m_orientation);
+	}
+	else
+	{
+		m_worldCamera->SetPositionAndOrientation(m_position, m_orientation);
+	}
 
 	if (m_orientation.m_rollDegrees != 0.f)
 	{
 		float maxTurnThisFrame = m_map->m_game->m_rollSensitivity * m_map->m_game->m_gameClock->GetDeltaSeconds();
 		m_orientation.m_rollDegrees += GetClamped(GetShortestAngularDispDegrees(m_orientation.m_rollDegrees, 0.f), -maxTurnThisFrame, maxTurnThisFrame);
+	}
+
+	if (actor == nullptr)
+	{
+		m_map->SpawnPlayer();
 	}
 }
 

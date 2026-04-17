@@ -98,6 +98,7 @@ public:
 	int m_health = 1;
 	std::vector<Weapon*> m_weapons; 
 	Weapon* m_equippedWeapon;
+	float m_coyoteTimeMax = 0.09f;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Timers
@@ -107,6 +108,8 @@ public:
 	void Render() const;
 	Mat44 GetModelMatrix() const;
 	Mat44 GetModelMatrixOnlyYaw() const;
+
+	Vec3 GetEyePos();
 
 	void Update_Physics();
 	void AddForce(Vec3 const& force);

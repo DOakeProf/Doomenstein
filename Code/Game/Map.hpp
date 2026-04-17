@@ -106,11 +106,13 @@ public:
 	Player* GetCurrentRenderedPlayer();
 	std::vector<Actor*> GetActors();
 	int GetNumPortals();
+	bool AreActorsSameFaction(Actor* actorA, Actor* actorB);
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Utility functions
 	int AddActorToMap(Actor* actor);
 	Actor* SpawnActor(const SpawnInfo& spawnInfo);
+	Actor* SpawnPlayer();
 	void AddPortal(Portal* portal);
 	void RemovePortal(Portal* portal);
 
@@ -144,6 +146,8 @@ public:
 	void Render_World() const;
 	void Render_Tiles() const;
 	void Render_Actors() const;
+
+	void Render_HUD_Health() const;
 
 	void Render_Portals() const;
 

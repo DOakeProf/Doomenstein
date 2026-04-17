@@ -66,6 +66,12 @@ void AI::Update()
 				float angleBetweenVectors2D = GetShortestAngularDispDegrees(angleOfSelfToOther2D, angleOfForwardVector2D);
 				float maxTurnSpeedThisFrame = actor->m_definition->m_turnSpeed * m_map->m_game->m_gameClock->GetDeltaSeconds();
 				actor->m_orientation.m_yawDegrees -= GetClamped(angleBetweenVectors2D, -maxTurnSpeedThisFrame, maxTurnSpeedThisFrame);
+
+				RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
+				if (result.m_didImpact)
+				{
+					actor->Jump(13.f);
+				}
 			}
 		}
 	}
@@ -85,7 +91,7 @@ void AI::Update_FindTargetActor()
 			Actor* otherActor = actors[actorIndex];
 			if (otherActor != nullptr && otherActor->m_definition->m_faction == "Marine")
 			{
-				Vec3 selfToOther = otherActor->m_position - actor->m_position;
+				Vec3 selfToOther = otherActor->GetEyePos() - actor->GetEyePos();
 				Vec3 forwardVector = actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp();
 
 				Vec3 selfToOtherNormalized = selfToOther.GetNormalized();
@@ -97,8 +103,8 @@ void AI::Update_FindTargetActor()
 				if ((selfToOtherLength < actor->m_definition->m_sightRadius) &&
 					(angleBetweenVectors2D < (actor->m_definition->m_sightAngle * 0.5f)))
 				{
-					RaycastResult3D resultXY = m_map->RaycastWorldXY(actor->m_position, selfToOtherNormalized, selfToOtherLength);
-					RaycastResult3D resultZ = m_map->RaycastWorldZ(actor->m_position, selfToOtherNormalized, selfToOtherLength);
+					RaycastResult3D resultXY = m_map->RaycastWorldXY(actor->GetEyePos(), selfToOtherNormalized, selfToOtherLength);
+					RaycastResult3D resultZ = m_map->RaycastWorldZ(actor->GetEyePos(), selfToOtherNormalized, selfToOtherLength);
 
 					if (!resultXY.m_didImpact && !resultZ.m_didImpact)
 					{

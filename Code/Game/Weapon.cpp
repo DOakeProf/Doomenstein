@@ -369,10 +369,14 @@ void Weapon::Fire_Weapon(Actor* actor)
 		for (int actorIndex = 0; actorIndex < actors.size(); ++actorIndex)
 		{
 			Actor* currentActor = actors[actorIndex];
-			if (currentActor != nullptr && currentActor != actor)
+			bool isActorSameFaction = m_map->AreActorsSameFaction(actor, currentActor);
+
+			if (currentActor != nullptr && currentActor != actor && !isActorSameFaction)
 			{
 				Vec3 distFromSelfToOther = currentActor->m_position - actor->m_position;
-				if (distFromSelfToOther.GetLength() < m_definition->m_meleeRange) // TODO: make this only work in an arc
+				float angleBetweenSelfToOtherAndForward = ConvertRadiansToDegrees(GetAngleDegreesBetweenVectors3D(distFromSelfToOther.GetNormalized(), currentActor->m_orientation.GetForwardDir_IFwd_JLeft_KUp()));
+				if (distFromSelfToOther.GetLength() < m_definition->m_meleeRange &&
+					angleBetweenSelfToOtherAndForward < m_definition->m_meleeArc)
 				{
 					float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_meleeDamage.m_min, m_definition->m_meleeDamage.m_max);
 					currentActor->Damage(RandomDamage, actor->m_handle);

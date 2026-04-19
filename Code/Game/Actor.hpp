@@ -110,6 +110,7 @@ public:
 	Mat44 GetModelMatrixOnlyYaw() const;
 
 	Vec3 GetEyePos();
+	int GetEquippedWeaponIndex();
 
 	void Update_Physics();
 	void AddForce(Vec3 const& force);

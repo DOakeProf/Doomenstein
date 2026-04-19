@@ -68,4 +68,5 @@ public:
 	ControlState m_desiredControlState = ControlState::KEYBOARD;
 
 	float m_jumpBuffer = 1.f;
+	bool m_sprintToggle = false;
 };

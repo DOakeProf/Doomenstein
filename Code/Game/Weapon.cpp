@@ -136,7 +136,7 @@ void Weapon::AlternateFire(Actor* actor)
 	}
 }
 
-void Weapon::AlternateFire_Weapon(Actor* actor)
+void Weapon::AlternateFire_Weapon([[maybe_unused]] Actor* actor)
 {
 
 }
@@ -154,7 +154,7 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 			if (result.m_didImpact && result.m_actor != nullptr)
 			{
 				float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
-				result.m_actor->Damage(RandomDamage, actor->m_handle);
+				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
 			}
 			else if (result.m_didImpact)
@@ -168,7 +168,7 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 
 				PushImpactPointToFitSurface(result);
 
-				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001;
+				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001f;
 				m_rightPortal = new Portal(m_map, portalPosition, m_definition->m_portalHeight, m_definition->m_portalWidth);
 				m_rightPortal->m_isFlipped = true;
 
@@ -232,13 +232,13 @@ void Weapon::PushImpactPointToFitSurface(RaycastResultDoomenstein& result)
 		float halfPortalWidth = m_definition->m_portalWidth * 0.5f;
 
 		// Has a floor and portal is over it
-		if (tileInFrontOfPortal->m_tileDefinition->m_floorSpriteCoords != IntVec2(-1.f, -1.f) &&
+		if (tileInFrontOfPortal->m_tileDefinition->m_floorSpriteCoords != IntVec2(-1, -1) &&
 			result.m_impactPos.z - halfPortalHeight < tileInFrontOfPortal->m_bounds.m_mins.z)
 		{
 			result.m_impactPos.z = tileInFrontOfPortal->m_bounds.m_mins.z + halfPortalHeight;
 		}
 		// Has a Ceiling and portal is over it
-		if (tileInFrontOfPortal->m_tileDefinition->m_ceilingSpriteCoords != IntVec2(-1.f, -1.f) &&
+		if (tileInFrontOfPortal->m_tileDefinition->m_ceilingSpriteCoords != IntVec2(-1, -1) &&
 			result.m_impactPos.z + halfPortalHeight > tileInFrontOfPortal->m_bounds.m_maxs.z)
 		{
 			result.m_impactPos.z = tileInFrontOfPortal->m_bounds.m_maxs.z - halfPortalHeight;
@@ -260,21 +260,21 @@ void Weapon::PushImpactPointToFitSurface(RaycastResultDoomenstein& result)
 
 		// Portal hanging off top
 		if (tileAbovePortal == nullptr ||
-			(tileAbovePortal->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1.f, -1.f) &&
+			(tileAbovePortal->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1) &&
 				result.m_impactPos.z + halfPortalHeight > tileAbovePortal->m_bounds.m_mins.z))
 		{
 			result.m_impactPos.z = tileInFrontOfPortal->m_bounds.m_maxs.z - halfPortalHeight;
 		}
 		// Portal hanging off bottom
 		if (tileBelowPortal == nullptr ||
-			(tileBelowPortal->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1.f, -1.f) &&
+			(tileBelowPortal->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1) &&
 				result.m_impactPos.z + halfPortalHeight < tileBelowPortal->m_bounds.m_maxs.z))
 		{
 			result.m_impactPos.z = tileInFrontOfPortal->m_bounds.m_mins.z + halfPortalHeight;
 		}
 		// Portal hanging off right side
 		if (tileRightOfPortal == nullptr ||
-			(tileRightOfPortal->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1.f, -1.f) &&
+			(tileRightOfPortal->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1) &&
 				IsPointInsideAABB3D((result.m_impactPos + result.m_impactNormal * -0.01f + rotatedWidthVec), tileRightOfPortal->m_bounds)))
 		{
 			if (result.m_impactNormal.x == 0) // Portal is along x axis
@@ -302,7 +302,7 @@ void Weapon::PushImpactPointToFitSurface(RaycastResultDoomenstein& result)
 		}
 		// Portal hanging off left side
 		if (tileLeftOfPortal == nullptr ||
-			(tileLeftOfPortal->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1.f, -1.f) &&
+			(tileLeftOfPortal->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1) &&
 				IsPointInsideAABB3D((result.m_impactPos + result.m_impactNormal * -0.01f - rotatedWidthVec), tileLeftOfPortal->m_bounds)))
 		{
 			if (result.m_impactNormal.x == 0) // Portal is along x axis
@@ -348,7 +348,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 			if (result.m_didImpact && result.m_actor != nullptr)
 			{
 				float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
-				result.m_actor->Damage(RandomDamage, actor->m_handle);
+				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
 			}
 		}
@@ -379,7 +379,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 					angleBetweenSelfToOtherAndForward < m_definition->m_meleeArc)
 				{
 					float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_meleeDamage.m_min, m_definition->m_meleeDamage.m_max);
-					currentActor->Damage(RandomDamage, actor->m_handle);
+					currentActor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 					currentActor->AddImpulse(distFromSelfToOther.GetNormalized() * m_definition->m_meleeImpulse);
 				}
 			}
@@ -400,7 +400,7 @@ void Weapon::Fire_PortalGun(Actor* actor)
 			if (result.m_didImpact && result.m_actor != nullptr)
 			{
 				float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
-				result.m_actor->Damage(RandomDamage, actor->m_handle);
+				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
 			}
 			else if (result.m_didImpact)
@@ -414,7 +414,7 @@ void Weapon::Fire_PortalGun(Actor* actor)
 
 				PushImpactPointToFitSurface(result);
 
-				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001;
+				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001f;
 				m_leftPortal = new Portal(m_map, portalPosition, m_definition->m_portalHeight, m_definition->m_portalWidth);
 				
 				if (result.m_impactNormal.z == 0.f) // If the impact normal is horizontal

@@ -196,13 +196,13 @@ void Portal::Update_MoveCamera()
 	newOrientationMatrix.Append(selfMatrixWorldToModelCopy); // Transform player's orientation from self model space back to world space with reference to the other portal's space.
 	EulerAngles playerOrientationInOtherPortalSpace = EulerAngles(newOrientationMatrix);
 
-	float lengthOfCameraToPortal = playerPosInSelfPortalSpace.GetLength();
+	//float lengthOfCameraToPortal = playerPosInSelfPortalSpace.GetLength();
 
 	m_portalCamera->SetPositionAndOrientation(newCameraPosition, playerOrientationInOtherPortalSpace);
 
 	// Calculate what the near plane should be at based on the player's position to the portal and the player's camera orientation.
 	Vec3 playerToSelfPortal = m_position - m_map->m_player->m_position;
-	float agreementBetweenCameraFwdAndCameraToPortal = DotProduct3D(playerToSelfPortal.GetNormalized(), playerOrientation.GetForwardDir_IFwd_JLeft_KUp());
+	//float agreementBetweenCameraFwdAndCameraToPortal = DotProduct3D(playerToSelfPortal.GetNormalized(), playerOrientation.GetForwardDir_IFwd_JLeft_KUp());
 	//m_portalCamera->ChangeNearPlane(lengthOfCameraToPortal * agreementBetweenCameraFwdAndCameraToPortal); // TODO: Make this another plane clip in the pixel shader.
 
 	//std::string portal1CameraRotation = Stringf("Portal 1 Camera Rotation: %.4f, %.4f, %.4f", m_portals[1]->m_portalCamera->GetOrientation().m_yawDegrees, m_portals[1]->m_portalCamera->GetOrientation().m_pitchDegrees, m_portals[1]->m_portalCamera->GetOrientation().m_rollDegrees);

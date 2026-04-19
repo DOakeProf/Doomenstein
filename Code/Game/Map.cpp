@@ -347,7 +347,7 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 	if (newActor->m_definition->m_name == "Marine")
 	{
 		m_player->Possess(actorHandle);
-		int randomSpawnPointIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, m_spawnPoints.size() - 1);
+		int randomSpawnPointIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, (int)m_spawnPoints.size() - 1);
 		newActor->m_position = m_spawnPoints[randomSpawnPointIndex]->m_position + Vec3(0.f,0.f,0.01f);
 		newActor->m_orientation = m_spawnPoints[randomSpawnPointIndex]->m_orientation;
 		m_player->SetPlayerState(PlayerState::FIRSTPERSON);
@@ -969,11 +969,6 @@ void Map::CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition)
 		didCollide = PushActorOutOfTileXY(actor, tile);
 	}
 
-	if (doesActorOverlapVerticalPortal)
-	{
-		int i = 0;
-	}
-
 	if (didCollide)
 	{
 		actor->OnCollide(nullptr);
@@ -1348,6 +1343,7 @@ void Map::Render_HUD_Health() const
 		AABB2 SCREEN_AABB2 = AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
 		m_game->m_squirrelFont->AddVertsForTextInBox2D(uiHealthVerts, uiHealthText, SCREEN_AABB2, SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.2f));
 		g_engine->m_render->BindTexture(&m_game->m_squirrelFont->GetTexture());
+		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 		g_engine->m_render->DrawVertexList(&uiHealthVerts);
 	}
 }

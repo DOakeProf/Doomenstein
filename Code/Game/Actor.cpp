@@ -149,6 +149,18 @@ Vec3 Actor::GetEyePos()
 	return m_position + Vec3(0.f, 0.f, m_definition->m_eyeHeight);
 }
 
+int Actor::GetEquippedWeaponIndex()
+{
+	for (int weaponIndex = 0; weaponIndex < m_weapons.size(); ++weaponIndex)
+	{
+		if (m_weapons[weaponIndex] == m_equippedWeapon)
+		{
+			return weaponIndex;
+		}
+	}
+	return -1;
+}
+
 void Actor::Update_Physics()
 {
 	if (m_definition->m_physicsIsSimulated && !m_isDead)

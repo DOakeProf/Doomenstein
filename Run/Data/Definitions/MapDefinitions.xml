@@ -17,6 +17,11 @@
 		<MapImage image="Data/Maps/TestMap0.png"/>
 		<MapImage image="Data/Maps/TestMap1.png"/>
 		<MapImage image="Data/Maps/TestMap2.png"/>
+		<MapImage image="Data/Maps/TestMap3.png"/>
+		<MapImage image="Data/Maps/TestMap4.png"/>
+		<MapImage image="Data/Maps/TestMap5.png"/>
+		<MapImage image="Data/Maps/TestMap6.png"/>
+		<MapImage image="Data/Maps/TestMap7.png"/>
 	</MapImages>
   </MapDefinition>
   <MapDefinition name="MPMap" image="Data/Maps/MPMap.png" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8">

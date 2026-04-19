@@ -17,6 +17,9 @@
     <Filter Include="Data\Shaders">
       <UniqueIdentifier>{dc5069b5-ad48-4c1b-9224-cbf068031d3f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Data\Definitions">
+      <UniqueIdentifier>{62a430ef-c8a4-404f-b6d7-cb1ffec763c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main_Windows.cpp">
@@ -121,6 +124,21 @@
     </Xml>
     <Xml Include="..\..\Run\Data\GameConfig.xml">
       <Filter>Framework</Filter>
+    </Xml>
+    <Xml Include="..\..\Run\Data\Definitions\ActorDefinitions.xml">
+      <Filter>Data\Definitions</Filter>
+    </Xml>
+    <Xml Include="..\..\Run\Data\Definitions\MapDefinitions.xml">
+      <Filter>Data\Definitions</Filter>
+    </Xml>
+    <Xml Include="..\..\Run\Data\Definitions\ProjectileActorDefinitions.xml">
+      <Filter>Data\Definitions</Filter>
+    </Xml>
+    <Xml Include="..\..\Run\Data\Definitions\TileDefinitions.xml">
+      <Filter>Data\Definitions</Filter>
+    </Xml>
+    <Xml Include="..\..\Run\Data\Definitions\WeaponDefinitions.xml">
+      <Filter>Data\Definitions</Filter>
     </Xml>
   </ItemGroup>
   <ItemGroup>

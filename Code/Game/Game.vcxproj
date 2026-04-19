@@ -222,6 +222,11 @@
     <Text Include="..\..\ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Xml Include="..\..\Run\Data\Definitions\ActorDefinitions.xml" />
+    <Xml Include="..\..\Run\Data\Definitions\MapDefinitions.xml" />
+    <Xml Include="..\..\Run\Data\Definitions\ProjectileActorDefinitions.xml" />
+    <Xml Include="..\..\Run\Data\Definitions\TileDefinitions.xml" />
+    <Xml Include="..\..\Run\Data\Definitions\WeaponDefinitions.xml" />
     <Xml Include="..\..\Run\Data\EngineConfig.xml" />
     <Xml Include="..\..\Run\Data\GameConfig.xml" />
   </ItemGroup>

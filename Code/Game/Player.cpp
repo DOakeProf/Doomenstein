@@ -33,11 +33,11 @@ void Player::Update()
 	{
 		actor->Jump(13.5f);
 	}
-	m_jumpBuffer += m_map->m_game->m_gameClock->GetDeltaSeconds();
+	m_jumpBuffer += (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 
 	if (actor != nullptr && actor->m_isDead)
 	{
-		float cameraFallTime = actor->m_deathTimer->GetElapsedFraction();
+		float cameraFallTime = (float)actor->m_deathTimer->GetElapsedFraction();
 		Vec3 cameraFallDisplacement = Vec3(0.f,0.f,-actor->m_definition->m_eyeHeight);
 		cameraFallDisplacement *= GetClamped(cameraFallTime, 0.f, 0.5f) * 1.5f;
 		m_worldCamera->SetPositionAndOrientation(m_position + cameraFallDisplacement, m_orientation);
@@ -49,7 +49,7 @@ void Player::Update()
 
 	if (m_orientation.m_rollDegrees != 0.f)
 	{
-		float maxTurnThisFrame = m_map->m_game->m_rollSensitivity * m_map->m_game->m_gameClock->GetDeltaSeconds();
+		float maxTurnThisFrame = m_map->m_game->m_rollSensitivity * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 		m_orientation.m_rollDegrees += GetClamped(GetShortestAngularDispDegrees(m_orientation.m_rollDegrees, 0.f), -maxTurnThisFrame, maxTurnThisFrame);
 	}
 
@@ -231,11 +231,15 @@ void Player::HandleInputs_FirstPerson()
 		m_controlState = m_desiredControlState;
 	}
 
-	switch (m_controlState)
-	{
-		case ControlState::KEYBOARD: HandleInputs_FirstPerson_Keyboard(); break;
-		case ControlState::CONTROLLER: HandleInputs_FirstPerson_Controller(); break;
-	}
+	//switch (m_controlState)
+	//{
+	//	case ControlState::KEYBOARD: HandleInputs_FirstPerson_Keyboard(); break;
+	//	case ControlState::CONTROLLER: HandleInputs_FirstPerson_Controller(); break;
+	//}
+
+	// Just do both for now
+	HandleInputs_FirstPerson_Keyboard();
+	HandleInputs_FirstPerson_Controller();
 }
 
 void Player::HandleInputs_FirstPerson_Keyboard()
@@ -320,6 +324,32 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		{
 			actor->m_equippedWeapon = actor->m_weapons[2];
 		}
+		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_LEFTARROW))
+		{
+			int weaponIndex = actor->GetEquippedWeaponIndex();
+			int newWeaponIndex = --weaponIndex;
+			if (newWeaponIndex < 0)
+			{
+				actor->m_equippedWeapon = actor->m_weapons[actor->m_weapons.size() - 1];
+			}
+			else
+			{
+				actor->m_equippedWeapon = actor->m_weapons[newWeaponIndex];
+			}
+		}
+		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_RIGHTARROW))
+		{
+			int weaponIndex = actor->GetEquippedWeaponIndex();
+			int newWeaponIndex = ++weaponIndex;
+			if (newWeaponIndex >= actor->m_weapons.size())
+			{
+				actor->m_equippedWeapon = actor->m_weapons[0];
+			}
+			else
+			{
+				actor->m_equippedWeapon = actor->m_weapons[newWeaponIndex];
+			}
+		}
 
 		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 	}
@@ -341,45 +371,115 @@ void Player::HandleInputs_FirstPerson_Controller()
 	// Controller
 	XboxController* controller = &g_engine->m_input->m_controllers[0];
 
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	float currentMoveSpeed = m_map->m_game->m_moveSpeed;
-	if (controller->IsButtonDown(XboxButtonID::GAMEPAD_A))
+	if (m_actorHandle != nullptr && m_map->GetActorByHandle(*m_actorHandle) != nullptr)
 	{
-		currentMoveSpeed *= 15.f;
+		Actor* actor = m_map->GetActorByHandle(*m_actorHandle);
+		float deltaSeconds = (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
+
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Camera Orientation
+		EulerAngles newOrientation = m_orientation;
+		newOrientation.m_yawDegrees -= controller->GetRightStick().GetPosition().x * actor->m_definition->m_turnSpeed * deltaSeconds;
+		newOrientation.m_pitchDegrees -= controller->GetRightStick().GetPosition().y * actor->m_definition->m_turnSpeed * deltaSeconds;m_map->m_game->m_controllerSensitivity;
+		newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
+		m_orientation = newOrientation;
+
+		actor->m_orientation = m_orientation;
+
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Movement
+		Vec3 currentPosition = actor->m_position;
+		Vec2 leftStickPos = controller->GetLeftStick().GetPosition();
+		Vec3 newAddedPosition = Vec3(leftStickPos.x, leftStickPos.y, 0.f);
+
+		float currentMoveSpeed = actor->m_definition->m_walkSpeed;
+		if (controller->WasButtonJustPressed(XboxButtonID::LEFT_THUMB))
+		{
+			m_sprintToggle = !m_sprintToggle;
+		}
+		if (leftStickPos == Vec2())
+		{
+			m_sprintToggle = false;
+		}
+		if (m_sprintToggle)
+		{
+			currentMoveSpeed = actor->m_definition->m_runSpeed;
+		}
+
+		if (newAddedPosition != Vec3())
+		{
+			newAddedPosition = newAddedPosition.GetRotatedAboutZDegrees(m_orientation.m_yawDegrees - 90.f); // Minus 90 to get pos Y as our forward instead of X.
+			actor->MoveInDirection(newAddedPosition, currentMoveSpeed);
+		}
+
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Gameplay
+		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_A))
+		{
+			m_jumpBuffer = 0.f;
+		}
+		if (controller->WasButtonJustReleased(XboxButtonID::GAMEPAD_A) && actor->m_isJumping && actor->m_velocity.z > 0.f)
+		{
+			actor->CancelJump();
+		}
+		if (controller->GetRightTrigger() != 0.f)
+		{
+			actor->Attack();
+		}
+		if (controller->GetLeftTrigger() != 0.f)
+		{
+			actor->SecondaryAttack();
+		}
+		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_X) && actor->m_weapons.size() > 0)
+		{
+			actor->m_equippedWeapon = actor->m_weapons[0];
+		}
+		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_Y) && actor->m_weapons.size() > 1)
+		{
+			actor->m_equippedWeapon = actor->m_weapons[1];
+		}
+		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_B) && actor->m_weapons.size() > 2)
+		{
+			actor->m_equippedWeapon = actor->m_weapons[2];
+		}
+		if (controller->WasButtonJustPressed(XboxButtonID::DPAD_LEFT) || controller->WasButtonJustPressed(XboxButtonID::DPAD_DOWN))
+		{
+			int weaponIndex = actor->GetEquippedWeaponIndex();
+			int newWeaponIndex = --weaponIndex;
+			if (newWeaponIndex < 0)
+			{
+				actor->m_equippedWeapon = actor->m_weapons[actor->m_weapons.size() - 1];
+			}
+			else
+			{
+				actor->m_equippedWeapon = actor->m_weapons[newWeaponIndex];
+			}
+		}
+		if (controller->WasButtonJustPressed(XboxButtonID::DPAD_RIGHT) || controller->WasButtonJustPressed(XboxButtonID::DPAD_UP))
+		{
+			int weaponIndex = actor->GetEquippedWeaponIndex();
+			int newWeaponIndex = ++weaponIndex;
+			if (newWeaponIndex >= actor->m_weapons.size())
+			{
+				actor->m_equippedWeapon = actor->m_weapons[0];
+			}
+			else
+			{
+				actor->m_equippedWeapon = actor->m_weapons[newWeaponIndex];
+			}
+		}
+
+		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 	}
 
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Camera Orientation
-	EulerAngles newOrientation = m_orientation;
-	newOrientation.m_yawDegrees -= controller->GetRightStick().GetPosition().x * m_map->m_game->m_controllerSensitivity;
-	newOrientation.m_pitchDegrees -= controller->GetRightStick().GetPosition().y * m_map->m_game->m_controllerSensitivity;
-	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
-	m_orientation = newOrientation;
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Movement
-	Vec3 currentPosition = m_position;
-	Vec3 newAddedPosition;
-	newAddedPosition.y -= controller->GetLeftStick().GetPosition().x * (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	newAddedPosition.x += controller->GetLeftStick().GetPosition().y * (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-
-	Mat44 orientationMatrix = newOrientation.GetAsMatrix_IFwd_JLeft_KUp();
-	orientationMatrix.AppendTranslation3D(newAddedPosition);
-	Vec3 newTranslation = orientationMatrix.GetTranslation3D();
-
-	if (controller->IsButtonDown(XboxButtonID::LEFT_SHOULDER))
+	if (g_engine->m_input->WasKeyJustPressed('P'))
 	{
-		newTranslation.z -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (controller->IsButtonDown(XboxButtonID::RIGHT_SHOULDER))
-	{
-		newTranslation.z += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
+		m_map->m_game->m_gameClock->TogglePause();
 	}
 
-	if (controller->IsButtonDown(XboxButtonID::START))
+	if (g_engine->m_input->WasKeyJustPressed('O'))
 	{
-		m_position = Vec3();
-		m_orientation = EulerAngles();
+		m_map->m_game->m_gameClock->StepSingleFrame();
 	}
 }
 

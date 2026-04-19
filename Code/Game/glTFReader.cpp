@@ -419,19 +419,19 @@ void glTF_Asset::Initialize_LoadBufferInformationForAnimations()
 	std::vector<uint8_t> jointsBuffer = ReadBytesFromAccessor(*jointAccessor);
 	uint16_t* jointsBufferAs16bitArray = reinterpret_cast<uint16_t*>(jointsBuffer.data());
 
-	int sizeOfType = jointsBuffer.size() / jointAccessor->m_count;
-	unsigned short firstJoint = jointsBufferAs16bitArray[0];
-	unsigned short lastJoint = jointsBufferAs16bitArray[(jointAccessor->m_count * 4) - 1];
+	//int sizeOfType = (int)jointsBuffer.size() / jointAccessor->m_count;
+	//unsigned short firstJoint = jointsBufferAs16bitArray[0];
+	//unsigned short lastJoint = jointsBufferAs16bitArray[(jointAccessor->m_count * 4) - 1];
 
 	int weightAccessorIndex = m_meshes[2]->m_primitives[0]->m_attributes["WEIGHTS_0"];
 	glTF_Accessor* weightAccessor = m_accessors[weightAccessorIndex];
 	std::vector<uint8_t> weightsBuffer = ReadBytesFromAccessor(*weightAccessor);
 	float* weightsBufferAsFloatsArray = reinterpret_cast<float*>(weightsBuffer.data());
 
-	int sizeOfTypeWeight = weightsBuffer.size() / weightAccessor->m_count;
-	unsigned short firstWeight = weightsBufferAsFloatsArray[0];
-	unsigned short lastWeight = weightsBufferAsFloatsArray[(weightAccessor->m_count * 4) - 1];
-	int i = 0;
+	//int sizeOfTypeWeight = (int)weightsBuffer.size() / weightAccessor->m_count;
+	unsigned short firstWeight = (unsigned short)weightsBufferAsFloatsArray[0];
+	//unsigned short lastWeight = (unsigned short)weightsBufferAsFloatsArray[(weightAccessor->m_count * 4) - 1];
+	//int i = 0;
 }
 
 std::vector<uint8_t> glTF_Asset::ReadBytesFromAccessor(glTF_Accessor const& accessor)
@@ -695,7 +695,7 @@ void glTF_Node::RenderNode()
 					g_engine->m_render->DrawIndexedVertexArray(
 						(int)currentPrimitive->m_verts.size(),
 						currentPrimitive->m_verts.data(),
-						indexesAs32Bit.size(),
+						(int)indexesAs32Bit.size(),
 						indexesAs32Bit.data()
 					);
 					break;
@@ -715,7 +715,7 @@ void glTF_Node::RenderNode()
 					g_engine->m_render->DrawIndexedVertexArray(
 						(int)currentPrimitive->m_verts.size(),
 						currentPrimitive->m_verts.data(),
-						indexesAs32Bit.size(),
+						(int)indexesAs32Bit.size(),
 						indexesAs32Bit.data()
 					);
 					break;

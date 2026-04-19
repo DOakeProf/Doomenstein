@@ -413,23 +413,23 @@ void glTF_Asset::Initialize_LoadBufferInformationForAnimations()
 {
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Test
-	// This throws errors if theres no animations i believe.
-	int jointAccessorIndex = m_meshes[2]->m_primitives[0]->m_attributes["JOINTS_0"];
-	glTF_Accessor* jointAccessor = m_accessors[jointAccessorIndex];
-	std::vector<uint8_t> jointsBuffer = ReadBytesFromAccessor(*jointAccessor);
-	uint16_t* jointsBufferAs16bitArray = reinterpret_cast<uint16_t*>(jointsBuffer.data());
+	// This throws errors if theres no animations I believe.
+	//int jointAccessorIndex = m_meshes[2]->m_primitives[0]->m_attributes["JOINTS_0"];
+	//glTF_Accessor* jointAccessor = m_accessors[jointAccessorIndex];
+	//std::vector<uint8_t> jointsBuffer = ReadBytesFromAccessor(*jointAccessor);
+	//uint16_t* jointsBufferAs16bitArray = reinterpret_cast<uint16_t*>(jointsBuffer.data());
 
 	//int sizeOfType = (int)jointsBuffer.size() / jointAccessor->m_count;
 	//unsigned short firstJoint = jointsBufferAs16bitArray[0];
 	//unsigned short lastJoint = jointsBufferAs16bitArray[(jointAccessor->m_count * 4) - 1];
 
-	int weightAccessorIndex = m_meshes[2]->m_primitives[0]->m_attributes["WEIGHTS_0"];
-	glTF_Accessor* weightAccessor = m_accessors[weightAccessorIndex];
-	std::vector<uint8_t> weightsBuffer = ReadBytesFromAccessor(*weightAccessor);
-	float* weightsBufferAsFloatsArray = reinterpret_cast<float*>(weightsBuffer.data());
+	//int weightAccessorIndex = m_meshes[2]->m_primitives[0]->m_attributes["WEIGHTS_0"];
+	//glTF_Accessor* weightAccessor = m_accessors[weightAccessorIndex];
+	//std::vector<uint8_t> weightsBuffer = ReadBytesFromAccessor(*weightAccessor);
+	//float* weightsBufferAsFloatsArray = reinterpret_cast<float*>(weightsBuffer.data());
 
 	//int sizeOfTypeWeight = (int)weightsBuffer.size() / weightAccessor->m_count;
-	unsigned short firstWeight = (unsigned short)weightsBufferAsFloatsArray[0];
+	//unsigned short firstWeight = (unsigned short)weightsBufferAsFloatsArray[0];
 	//unsigned short lastWeight = (unsigned short)weightsBufferAsFloatsArray[(weightAccessor->m_count * 4) - 1];
 	//int i = 0;
 }

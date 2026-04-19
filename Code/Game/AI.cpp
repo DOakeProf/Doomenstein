@@ -35,7 +35,6 @@ void AI::Update()
 			else
 			{
 				// Move towards target.
-				float deltaSeconds = m_map->m_game->m_gameClock->GetDeltaSeconds();
 				Vec3 selfToOtherActor = otherActor->m_position - actor->m_position;
 				selfToOtherActor.z = 0.f; // Flatten the vector to the XY plane.
 				Vec3 selfToOtherActorNormalized = selfToOtherActor.GetNormalized();
@@ -60,11 +59,10 @@ void AI::Update()
 
 				// Orient towards target.
 				Vec3 forwardVector = actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp();
-				float selfToOtherLength = selfToOtherActor.GetLength();
 				float angleOfSelfToOther2D = Atan2Degrees(selfToOtherActorNormalized.y, selfToOtherActorNormalized.x);
 				float angleOfForwardVector2D = Atan2Degrees(forwardVector.y, forwardVector.x);
 				float angleBetweenVectors2D = GetShortestAngularDispDegrees(angleOfSelfToOther2D, angleOfForwardVector2D);
-				float maxTurnSpeedThisFrame = actor->m_definition->m_turnSpeed * m_map->m_game->m_gameClock->GetDeltaSeconds();
+				float maxTurnSpeedThisFrame = actor->m_definition->m_turnSpeed * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 				actor->m_orientation.m_yawDegrees -= GetClamped(angleBetweenVectors2D, -maxTurnSpeedThisFrame, maxTurnSpeedThisFrame);
 
 				RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);

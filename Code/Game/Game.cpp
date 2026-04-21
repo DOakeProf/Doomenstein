@@ -118,6 +118,11 @@ void Game::Startup_PopulateFromBlackboard()
 	m_controllerSensitivity = g_gameConfigBlackboard.GetValue("controllerSensitivity", 0.f);
 	m_moveSpeed = g_gameConfigBlackboard.GetValue("moveSpeed", 0.f);
 
+	m_musicVolume = g_gameConfigBlackboard.GetValue("musicVolume", 0.1f);
+	m_mainMenuMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("mainMenuMusic", ""));
+	m_gameMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("gameMusic", ""));
+	m_buttonClickSound = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("buttonClickSound", ""));
+
 	m_mapDefinitionString = g_gameConfigBlackboard.GetValue("defaultMap", "");
 }
 

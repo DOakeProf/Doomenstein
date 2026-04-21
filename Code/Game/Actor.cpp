@@ -401,6 +401,89 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 			newActorDef->m_sightAngle = ParseXmlAttribute(*AIElement, "sightAngle", -1.f);
 		}
 
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Visuals
+		XmlElement* VisualsElement = actorDefElement->FirstChildElement("Visuals");
+
+		if (VisualsElement != nullptr)
+		{
+			newActorDef->m_size = ParseXmlAttribute(*VisualsElement, "size", Vec2());
+			newActorDef->m_pivot = ParseXmlAttribute(*VisualsElement, "pivot", Vec2());
+			//newActorDef->m_billboardType = ParseXmlAttribute(*VisualsElement, "billboardType", Vec2());
+			newActorDef->m_renderLit = ParseXmlAttribute(*VisualsElement, "renderLit", false);
+			newActorDef->m_renderRounded = ParseXmlAttribute(*VisualsElement, "renderRounded", false);
+			std::string shaderPath = ParseXmlAttribute(*VisualsElement, "shader", "");
+			newActorDef->m_shader = g_engine->m_render->CreateOrGetShader(shaderPath.c_str(), VertexType::VERTEX_PCUTBN);
+			std::string spriteSheetPath = ParseXmlAttribute(*VisualsElement, "spriteSheet", "");
+			newActorDef->m_cellCount = ParseXmlAttribute(*VisualsElement, "cellCount", IntVec2());
+			newActorDef->m_spriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(spriteSheetPath.c_str()), newActorDef->m_cellCount);
+		}
+
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// AnimationGroup
+		if (VisualsElement != nullptr)
+		{
+			XmlElement* AnimGroupElement = VisualsElement->FirstChildElement();
+
+			while (AnimGroupElement)
+			{
+				ActorDefinition::AnimationGroup animGroup = ActorDefinition::AnimationGroup();
+				animGroup.m_name = ParseXmlAttribute(*AnimGroupElement, "name", "");
+				animGroup.m_secondsPerFrame = ParseXmlAttribute(*AnimGroupElement, "secondsPerFrame", -1.f);
+				std::string playbackMode = ParseXmlAttribute(*AnimGroupElement, "playbackMode", "");
+				if (playbackMode == "Once")
+				{
+					animGroup.m_playbackMode = SpriteAnimPlaybackType::ONCE;
+				}
+				else if (playbackMode == "Loop")
+				{
+					animGroup.m_playbackMode = SpriteAnimPlaybackType::LOOP;
+				}
+				else if (playbackMode == "PingPong")
+				{
+					animGroup.m_playbackMode = SpriteAnimPlaybackType::PINGPONG;
+				}
+
+				XmlElement* AnimationElement = AnimGroupElement->FirstChildElement();
+
+				while (AnimationElement)
+				{
+					ActorDefinition::AnimationGroup::Animation animation = ActorDefinition::AnimationGroup::Animation();
+
+					animation.m_direction = ParseXmlAttribute(*AnimGroupElement, "vector", Vec3()).GetNormalized(); // Direction needs to be normalized.
+					XmlElement* AnimationDataElement = AnimationElement->FirstChildElement();
+					animation.m_startFrame = ParseXmlAttribute(*AnimationDataElement, "startFrame", -1);
+					animation.m_endFrame = ParseXmlAttribute(*AnimationDataElement, "endFrame", -1);
+
+					animGroup.m_animations.push_back(animation);
+					AnimationElement = AnimationElement->NextSiblingElement();
+				}
+
+				newActorDef->m_animationGroups.push_back(animGroup);
+				AnimGroupElement = AnimGroupElement->NextSiblingElement();
+			}
+		}
+
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Sound
+		XmlElement* SoundsElement = actorDefElement->FirstChildElement("Sounds");
+		if (SoundsElement != nullptr)
+		{
+			XmlElement* SoundElement = SoundsElement->FirstChildElement();
+
+			while (SoundElement)
+			{
+				ActorDefinition::Sound newSound = ActorDefinition::Sound();
+
+				newSound.m_name = ParseXmlAttribute(*SoundElement, "sound", "");
+				std::string soundPath = ParseXmlAttribute(*SoundElement, "name", "");
+				newSound.m_sound = g_engine->m_audio->CreateOrGetSound(soundPath);
+
+				newActorDef->m_sounds.push_back(newSound);
+				SoundElement = SoundElement->NextSiblingElement();
+			}
+		}
+
 		XmlElement* InventoryElement = actorDefElement->FirstChildElement("Inventory");
 		if (InventoryElement != nullptr)
 		{

@@ -72,11 +72,15 @@ public:
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Blackboard values
-	float m_perspectiveFOV = 0.f;
-	float m_rollSensitivity = 0.f;
-	float m_mouseSensitivity = 0.f;
-	float m_controllerSensitivity = 0.f;
-	float m_moveSpeed = 0.f;
+	float		m_perspectiveFOV = 0.f;
+	float		m_rollSensitivity = 0.f;
+	float		m_mouseSensitivity = 0.f;
+	float		m_controllerSensitivity = 0.f;
+	float		m_moveSpeed = 0.f;
+	float		m_musicVolume = 0.f;
+	SoundID		m_mainMenuMusic;
+	SoundID		m_gameMusic;
+	SoundID		m_buttonClickSound;
 	std::string m_mapDefinitionString;
 
 	Camera* m_screenCamera = nullptr;

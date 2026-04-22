@@ -3,7 +3,9 @@
 #include "Engine/Math/FloatRange.hpp"
 #include "Engine/Math/RandomNumberGenerator.hpp"
 #include "Engine/Math/MathUtils.hpp"
-#include "Engine/DebugRender.hpp"
+//#include "Engine/DebugRender.hpp"
+#include "Engine/Core/Engine.hpp"
+#include "Engine/Renderer/Renderer.hpp"
 
 #include "Game/Actor.hpp"
 #include "Game/Map.hpp"
@@ -53,14 +55,77 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 		newWeaponDef->m_meleeDamage =				ParseXmlAttribute(*weaponDefElement, "meleeDamage", FloatRange());
 		newWeaponDef->m_meleeImpulse =				ParseXmlAttribute(*weaponDefElement, "meleeImpulse", -1.f);
 
-		newWeaponDef->m_portalHeight = ParseXmlAttribute(*weaponDefElement, "portalHeight", -1.f);
-		newWeaponDef->m_portalWidth = ParseXmlAttribute(*weaponDefElement, "portalWidth", -1.f);
+		newWeaponDef->m_portalHeight =				ParseXmlAttribute(*weaponDefElement, "portalHeight", -1.f);
+		newWeaponDef->m_portalWidth =				ParseXmlAttribute(*weaponDefElement, "portalWidth", -1.f);
 
 		//XmlElement* collisionElement = weaponDefElement->FirstChildElement("Collision");
 		//if (collisionElement != nullptr)
 		//{
 		//	newWeaponDef->m_radius = ParseXmlAttribute(*collisionElement, "radius", -1.f);
 		//}
+		// 
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// HUD
+		XmlElement* HUDElement = weaponDefElement->FirstChildElement("HUD");
+		if (HUDElement != nullptr)
+		{
+			std::string shaderName = ParseXmlAttribute(*HUDElement, "shader", "");
+			newWeaponDef->m_shader = g_engine->m_render->CreateOrGetShader(shaderName.c_str(), VertexType::VERTEX_PCUTBN);
+			std::string baseTextureName = ParseXmlAttribute(*HUDElement, "baseTexture", "");
+			if (baseTextureName != "")
+			{
+				newWeaponDef->m_baseTexture = g_engine->m_render->CreateOrGetTextureFromFile(baseTextureName.c_str());
+			}
+			std::string reticleTextureName = ParseXmlAttribute(*HUDElement, "reticleTexture", "");
+			newWeaponDef->m_reticleTexture = g_engine->m_render->CreateOrGetTextureFromFile(reticleTextureName.c_str());
+			newWeaponDef->m_reticleSize = ParseXmlAttribute(*HUDElement, "reticleSize", Vec2());
+			newWeaponDef->m_spriteSize = ParseXmlAttribute(*HUDElement, "spriteSize", IntVec2());
+			newWeaponDef->m_spritePivot = ParseXmlAttribute(*HUDElement, "spriteSize", Vec2());
+		}
+
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Animation
+		struct Animation
+		{
+			std::string		m_name;
+			Shader* m_shader;
+			SpriteSheet* m_spriteSheet;
+			IntVec2			m_cellCount;
+			float			m_secondsPerFrame;
+			int				m_startFrame;
+			int				m_endFrame;
+		};
+		if (HUDElement != nullptr)
+		{
+			XmlElement* AnimationElement = HUDElement->FirstChildElement("Animation");
+			if (AnimationElement != nullptr)
+			{
+				WeaponDefinition::Animation newAnimation = WeaponDefinition::Animation();
+
+				newAnimation.m_name = ParseXmlAttribute(*AnimationElement, "name", "");
+				std::string shaderName = ParseXmlAttribute(*AnimationElement, "shader", "");
+				newAnimation.m_shader = g_engine->m_render->CreateOrGetShader(shaderName.c_str(), VertexType::VERTEX_PCUTBN);
+				newAnimation.m_cellCount = ParseXmlAttribute(*AnimationElement, "cellCount", IntVec2());
+				std::string spriteSheetName = ParseXmlAttribute(*AnimationElement, "spriteSheet", "");
+				newAnimation.m_spriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(spriteSheetName.c_str()), newAnimation.m_cellCount);
+				newAnimation.m_secondsPerFrame = ParseXmlAttribute(*AnimationElement, "secondsPerFrame", -1.f);
+				newAnimation.m_startFrame = ParseXmlAttribute(*AnimationElement, "startFrame", -1);
+				newAnimation.m_endFrame = ParseXmlAttribute(*AnimationElement, "endFrame", -1);
+
+				newWeaponDef->m_animations.push_back(newAnimation);
+			}
+		}
+
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Sound
+		XmlElement* SoundsElement = weaponDefElement->FirstChildElement("Sounds");
+		if (SoundsElement != nullptr)
+		{
+			XmlElement* SoundElement = SoundsElement->FirstChildElement("Sound");
+			newWeaponDef->m_soundName = ParseXmlAttribute(*SoundElement, "sound", "");
+			std::string soundPath = ParseXmlAttribute(*SoundElement, "name", "");
+			newWeaponDef->m_sound = g_engine->m_audio->CreateOrGetSound(soundPath.c_str());
+		}
 
 		s_definitions.push_back(newWeaponDef);
 		weaponDefElement = weaponDefElement->NextSiblingElement();

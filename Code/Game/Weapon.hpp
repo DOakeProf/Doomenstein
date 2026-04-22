@@ -7,6 +7,8 @@
 
 #include "Engine/Core/Timer.hpp"
 #include "Engine/Math/FloatRange.hpp"
+#include "Engine/Core/Engine.hpp"
+#include "Engine/Audio/AudioSystem.hpp"
 
 class Actor;
 class Portal;
@@ -22,30 +24,58 @@ enum class WeaponType
 
 struct WeaponDefinition
 {
-	std::string m_name;
-	WeaponType m_type;
-	float m_refireTime;
+	std::string			m_name;
+	WeaponType			m_type;
+	float				m_refireTime;
 
-	int m_rayCount;
-	float m_rayCone;
-	float m_rayRange;
-	FloatRange m_rayDamage;
-	float m_rayImpulse;
+	int					m_rayCount;
+	float				m_rayCone;
+	float				m_rayRange;
+	FloatRange			m_rayDamage;
+	float				m_rayImpulse;
 
-	int m_projectileCount;
-	std::string m_projectileActor;
-	std::string m_secondaryProjectileActor;
-	float m_projectileCone;
-	float m_projectileSpeed;
+	int					m_projectileCount;
+	std::string			m_projectileActor;
+	std::string			m_secondaryProjectileActor;
+	float				m_projectileCone;
+	float				m_projectileSpeed;
 
-	int m_meleeCount;
-	float m_meleeArc;
-	float m_meleeRange;
-	FloatRange m_meleeDamage;
-	float m_meleeImpulse;
+	int					m_meleeCount;
+	float				m_meleeArc;
+	float				m_meleeRange;
+	FloatRange			m_meleeDamage;
+	float				m_meleeImpulse;
 
-	float m_portalHeight;
-	float m_portalWidth;
+	float				m_portalHeight;
+	float				m_portalWidth;
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// HUD
+	Shader*				m_shader;
+	Texture*			m_baseTexture;
+	Texture*			m_reticleTexture;
+	Vec2				m_reticleSize;
+	IntVec2				m_spriteSize;
+	Vec2				m_spritePivot;
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Animation
+	struct Animation
+	{
+		std::string		m_name;
+		Shader*			m_shader;
+		SpriteSheet*	m_spriteSheet;
+		IntVec2			m_cellCount;
+		float			m_secondsPerFrame;
+		int				m_startFrame;
+		int				m_endFrame;
+	};
+	std::vector<Animation> m_animations;
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Sound
+	std::string			m_soundName;
+	SoundID				m_sound;
 
 	static void InitializeDefinitions(const char* path);
 	static void ClearDefinitions();

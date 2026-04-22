@@ -132,6 +132,7 @@ void Portal::RenderPortal() const
 	g_engine->m_render->BeginCamera(m_map->m_player->m_worldCamera);
 
 	// Draw portal onto stencil buffer
+	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	g_engine->m_render->BindTexture(nullptr);
 	g_engine->m_render->ClearStencilBuffer();
 	g_engine->m_render->ChangeRenderTargetToBackBuffer();

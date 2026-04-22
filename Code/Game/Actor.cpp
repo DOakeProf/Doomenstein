@@ -36,26 +36,34 @@ Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const
 	}
 
 	// Add verts according to visual information.
-	Vec2 pivot = m_definition->m_pivot;
+	Vec2 pivot = m_definition->m_pivot * m_definition->m_size;
 	Vec2 halfSize = m_definition->m_size * 0.5f;
 	float eyeHeight = m_definition->m_eyeHeight;
 	if (m_definition->m_renderRounded)
 	{
-		AddVertsForQuad3D(
+		//AddVertsForQuad3D(
+		//	m_verts,
+		//	m_vertexIndexes,
+		//	Vec3(0.f, -pivot.x + 0.f, -pivot.y + 0.f),
+		//	Vec3(0.f, -pivot.x + halfSize.x, -pivot.y + 0.f),
+		//	Vec3(0.f, -pivot.x + halfSize.x, -pivot.y + m_definition->m_size.y),
+		//	Vec3(0.f, -pivot.x + 0.f, -pivot.y + m_definition->m_size.y)
+		//);
+		//AddVertsForQuad3D(
+		//	m_verts,
+		//	m_vertexIndexes,
+		//	Vec3(0.f, -pivot.x + halfSize.x, -pivot.y + 0.f),
+		//	Vec3(0.f, -pivot.x + m_definition->m_size.x, -pivot.y + 0.f),
+		//	Vec3(0.f, -pivot.x + m_definition->m_size.x, -pivot.y + m_definition->m_size.y),
+		//	Vec3(0.f, -pivot.x + halfSize.x, -pivot.y + m_definition->m_size.y)
+		//);
+		AddVertsForRoundedQuad3D(
 			m_verts,
 			m_vertexIndexes,
-			Vec3(0.f, + halfSize.x, - halfSize.y + eyeHeight),
-			Vec3(0.f, 0.f, - halfSize.y + eyeHeight),
-			Vec3(0.f, 0.f, halfSize.y + eyeHeight),
-			Vec3(0.f, + halfSize.x, halfSize.y + eyeHeight)
-		);
-		AddVertsForQuad3D(
-			m_verts,
-			m_vertexIndexes,
-			Vec3(0.f, 0.f, - halfSize.y + eyeHeight),
-			Vec3(0.f, - halfSize.x, - halfSize.y + eyeHeight),
-			Vec3(0.f, - halfSize.x, halfSize.y + eyeHeight),
-			Vec3(0.f, 0.f, halfSize.y + eyeHeight)
+			Vec3(0.f, -pivot.x + 0.f, -pivot.y + 0.f),
+			Vec3(0.f, -pivot.x + m_definition->m_size.x, -pivot.y + 0.f),
+			Vec3(0.f, -pivot.x + m_definition->m_size.x, -pivot.y + m_definition->m_size.y),
+			Vec3(0.f, -pivot.x + 0.f, -pivot.y + m_definition->m_size.y)
 		);
 	}
 	else
@@ -63,10 +71,10 @@ Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const
 		AddVertsForQuad3D(
 			m_verts,
 			m_vertexIndexes,
-			Vec3(0.f, halfSize.x, - halfSize.y + eyeHeight),
-			Vec3(0.f, - halfSize.x, - halfSize.y + eyeHeight),
-			Vec3(0.f, - halfSize.x, halfSize.y + eyeHeight),
-			Vec3(0.f, halfSize.x, halfSize.y + eyeHeight)
+			Vec3(0.f, -pivot.x + 0.f, -pivot.y + 0.f),
+			Vec3(0.f, -pivot.x + m_definition->m_size.x, -pivot.y + 0.f),
+			Vec3(0.f, -pivot.x + m_definition->m_size.x, -pivot.y + m_definition->m_size.y),
+			Vec3(0.f, -pivot.x + 0.f, -pivot.y + m_definition->m_size.y)
 		);
 	}
 
@@ -83,6 +91,11 @@ Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const
 	m_health = m_definition->m_health;
 
 	m_deathTimer = new Timer(m_definition->m_corpseLifetime, m_map->m_game->m_gameClock);
+
+	if (m_definition->m_animationGroups.size() > 0)
+	{
+		m_animationGroup = m_definition->m_animationGroups[0];
+	}
 }
 
 Actor::~Actor()
@@ -103,37 +116,10 @@ void Actor::Update()
 
 	Update_Gameplay();
 
-	// Set proper UVs
-	if (m_definition->m_spriteSheet != nullptr)
-	{
-		if (m_definition->m_renderRounded)
-		{
-			AABB2 spriteUVs = m_definition->m_spriteSheet->GetUVsForSprite(IntVec2(0, 0));
-			float halfWidth = spriteUVs.GetWidth() * 0.5f;
-			float halfHeight = spriteUVs.GetHeight() * 0.5f;
-			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
-			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_mins.y);
-			m_verts[2].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_maxs.y);
-			m_verts[3].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
-			m_verts[4].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x - halfWidth, spriteUVs.m_mins.y);
-			m_verts[5].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
-			m_verts[6].m_uvTexCoords = spriteUVs.m_maxs;
-			m_verts[7].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x - halfWidth, spriteUVs.m_maxs.y);
-		}
-		else
-		{
-			AABB2 spriteUVs = m_definition->m_spriteSheet->GetUVsForSprite(IntVec2(0, 0));
-			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
-			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
-			m_verts[2].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
-			m_verts[3].m_uvTexCoords = spriteUVs.m_maxs;
-		}
-	}
-
 	m_isGrounded = false;
 }
 
-void Actor::Render() const
+void Actor::Render()
 {
 	Player* currentlyRenderedPlayer = m_map->GetCurrentRenderedPlayer();
 	if (
@@ -142,6 +128,47 @@ void Actor::Render() const
 		)
 	{
 		return;
+	}
+
+	// Set proper UVs
+	if (m_definition->m_spriteSheet != nullptr)
+	{
+		float largestDotProduct = -1.f;
+		ActorDefinition::AnimationGroup::Animation animationInUse = m_animationGroup.m_animations[0];
+		for (int animationIndex = 0; animationIndex < m_animationGroup.m_animations.size(); ++animationIndex)
+		{
+			ActorDefinition::AnimationGroup::Animation currentAnimation = m_animationGroup.m_animations[animationIndex];
+			Vec3 actorToPlayer = m_map->m_currentlyRenderedPlayer->m_position - m_position; // TODO: Put this in a non const render function so that it can properly use current rendered player.
+			float curDotProduct = DotProduct3D(-actorToPlayer, currentAnimation.m_direction.GetRotatedAboutZDegrees(m_orientation.m_yawDegrees));
+			if (curDotProduct > largestDotProduct)
+			{
+				largestDotProduct = curDotProduct;
+				animationInUse = currentAnimation;
+			}
+		}
+		int currentSpriteIndex = animationInUse.m_startFrame;
+		if (m_definition->m_renderRounded)
+		{
+			AABB2 spriteUVs = m_definition->m_spriteSheet->GetUVsForSprite(currentSpriteIndex);
+			float halfWidth = spriteUVs.GetWidth() * 0.5f;
+			float halfHeight = spriteUVs.GetHeight() * 0.5f;
+			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
+			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_mins.y);
+			m_verts[2].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_maxs.y);
+			m_verts[3].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
+			//m_verts[4].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x - halfWidth, spriteUVs.m_mins.y);
+			m_verts[4].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
+			m_verts[5].m_uvTexCoords = spriteUVs.m_maxs;
+			//m_verts[7].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x - halfWidth, spriteUVs.m_maxs.y);
+		}
+		else
+		{
+			AABB2 spriteUVs = m_definition->m_spriteSheet->GetUVsForSprite(currentSpriteIndex);
+			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
+			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
+			m_verts[2].m_uvTexCoords = spriteUVs.m_maxs;
+			m_verts[3].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
+		}
 	}
 
 	g_engine->m_render->BindShader(m_definition->m_shader);
@@ -551,7 +578,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 				{
 					ActorDefinition::AnimationGroup::Animation animation = ActorDefinition::AnimationGroup::Animation();
 
-					animation.m_direction = ParseXmlAttribute(*AnimGroupElement, "vector", Vec3()).GetNormalized(); // Direction needs to be normalized.
+					animation.m_direction = ParseXmlAttribute(*AnimationElement, "vector", Vec3()).GetNormalized(); // Direction needs to be normalized.
 					XmlElement* AnimationDataElement = AnimationElement->FirstChildElement();
 					animation.m_startFrame = ParseXmlAttribute(*AnimationDataElement, "startFrame", -1);
 					animation.m_endFrame = ParseXmlAttribute(*AnimationDataElement, "endFrame", -1);

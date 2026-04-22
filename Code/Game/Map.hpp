@@ -107,6 +107,8 @@ public:
 	std::vector<Actor*> GetActors();
 	int GetNumPortals();
 	bool AreActorsSameFaction(Actor* actorA, Actor* actorB);
+	VertexBuffer* GetVertexBuffer();
+	IndexBuffer* GetIndexBuffer();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Utility functions

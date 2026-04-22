@@ -35,6 +35,41 @@ Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const
 		m_color = Rgba8::BLUE;
 	}
 
+	// Add verts according to visual information.
+	Vec2 pivot = m_definition->m_pivot;
+	Vec2 halfSize = m_definition->m_size * 0.5f;
+	float eyeHeight = m_definition->m_eyeHeight;
+	if (m_definition->m_renderRounded)
+	{
+		AddVertsForQuad3D(
+			m_verts,
+			m_vertexIndexes,
+			Vec3(0.f, + halfSize.x, - halfSize.y + eyeHeight),
+			Vec3(0.f, 0.f, - halfSize.y + eyeHeight),
+			Vec3(0.f, 0.f, halfSize.y + eyeHeight),
+			Vec3(0.f, + halfSize.x, halfSize.y + eyeHeight)
+		);
+		AddVertsForQuad3D(
+			m_verts,
+			m_vertexIndexes,
+			Vec3(0.f, 0.f, - halfSize.y + eyeHeight),
+			Vec3(0.f, - halfSize.x, - halfSize.y + eyeHeight),
+			Vec3(0.f, - halfSize.x, halfSize.y + eyeHeight),
+			Vec3(0.f, 0.f, halfSize.y + eyeHeight)
+		);
+	}
+	else
+	{
+		AddVertsForQuad3D(
+			m_verts,
+			m_vertexIndexes,
+			Vec3(0.f, halfSize.x, - halfSize.y + eyeHeight),
+			Vec3(0.f, - halfSize.x, - halfSize.y + eyeHeight),
+			Vec3(0.f, - halfSize.x, halfSize.y + eyeHeight),
+			Vec3(0.f, halfSize.x, halfSize.y + eyeHeight)
+		);
+	}
+
 	// Populate initial inventory
 	for (int weaponIndex = 0; weaponIndex < m_definition->m_inventory.size(); ++weaponIndex)
 	{
@@ -68,6 +103,33 @@ void Actor::Update()
 
 	Update_Gameplay();
 
+	// Set proper UVs
+	if (m_definition->m_spriteSheet != nullptr)
+	{
+		if (m_definition->m_renderRounded)
+		{
+			AABB2 spriteUVs = m_definition->m_spriteSheet->GetUVsForSprite(IntVec2(0, 0));
+			float halfWidth = spriteUVs.GetWidth() * 0.5f;
+			float halfHeight = spriteUVs.GetHeight() * 0.5f;
+			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
+			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_mins.y);
+			m_verts[2].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_maxs.y);
+			m_verts[3].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
+			m_verts[4].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x - halfWidth, spriteUVs.m_mins.y);
+			m_verts[5].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
+			m_verts[6].m_uvTexCoords = spriteUVs.m_maxs;
+			m_verts[7].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x - halfWidth, spriteUVs.m_maxs.y);
+		}
+		else
+		{
+			AABB2 spriteUVs = m_definition->m_spriteSheet->GetUVsForSprite(IntVec2(0, 0));
+			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
+			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
+			m_verts[2].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
+			m_verts[3].m_uvTexCoords = spriteUVs.m_maxs;
+		}
+	}
+
 	m_isGrounded = false;
 }
 
@@ -82,6 +144,17 @@ void Actor::Render() const
 		return;
 	}
 
+	g_engine->m_render->BindShader(m_definition->m_shader);
+	g_engine->m_render->SetModelConstants(GetModelMatrixBillboarded());
+	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	g_engine->m_render->BindTexture(m_definition->m_spriteSheet->GetTexture());
+	g_engine->m_render->DrawIndexedVertexList(&m_verts, &m_vertexIndexes, m_map->GetVertexBuffer(), m_map->GetIndexBuffer());
+
+	//Render_Debug();
+}
+
+void Actor::Render_Debug() const
+{
 	g_engine->m_render->SetModelConstants(GetModelMatrixOnlyYaw());
 	std::vector<Vertex> debugVerts;
 
@@ -140,6 +213,18 @@ Mat44 Actor::GetModelMatrixOnlyYaw() const
 	EulerAngles orientationOnlyYaw = EulerAngles(m_orientation.m_yawDegrees, 0.f, 0.f);
 	Mat44 orientationMatrix = orientationOnlyYaw.GetAsMatrix_IFwd_JLeft_KUp();
 	modelToWorld.Append(orientationMatrix);
+
+	return modelToWorld;
+}
+
+Mat44 Actor::GetModelMatrixBillboarded() const
+{
+	Mat44 modelToWorld = Mat44();
+
+	//modelToWorld.AppendTranslation3D(m_position);
+
+	Mat44 billboardMatrix = GetBillboardTransform(m_definition->m_billboardType, m_map->m_currentlyRenderedPlayer->GetModelToWorldTransform(), m_position);
+	modelToWorld.Append(billboardMatrix);
 
 	return modelToWorld;
 }
@@ -409,7 +494,23 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 		{
 			newActorDef->m_size = ParseXmlAttribute(*VisualsElement, "size", Vec2());
 			newActorDef->m_pivot = ParseXmlAttribute(*VisualsElement, "pivot", Vec2());
-			//newActorDef->m_billboardType = ParseXmlAttribute(*VisualsElement, "billboardType", Vec2());
+			std::string billboardName = ParseXmlAttribute(*VisualsElement, "billboardType", "");
+			if (billboardName == "WorldUpFacing")
+			{
+				newActorDef->m_billboardType = BillboardType::WORLD_UP_FACING;
+			}
+			else if (billboardName == "WorldUpOpposing")
+			{
+				newActorDef->m_billboardType = BillboardType::WORLD_UP_OPPOSING;
+			}
+			else if (billboardName == "FullFacing")
+			{
+				newActorDef->m_billboardType = BillboardType::FULL_FACING;
+			}
+			else if (billboardName == "FullOpposing")
+			{
+				newActorDef->m_billboardType = BillboardType::FULL_OPPOSING;
+			}
 			newActorDef->m_renderLit = ParseXmlAttribute(*VisualsElement, "renderLit", false);
 			newActorDef->m_renderRounded = ParseXmlAttribute(*VisualsElement, "renderRounded", false);
 			std::string shaderPath = ParseXmlAttribute(*VisualsElement, "shader", "");

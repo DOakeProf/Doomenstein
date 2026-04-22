@@ -316,6 +316,16 @@ bool Map::AreActorsSameFaction(Actor* actorA, Actor* actorB)
 	return false;
 }
 
+VertexBuffer* Map::GetVertexBuffer()
+{
+	return m_vertexBuffer;
+}
+
+IndexBuffer* Map::GetIndexBuffer()
+{
+	return m_indexBuffer;
+}
+
 int Map::AddActorToMap(Actor* actor)
 {
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
@@ -1273,7 +1283,7 @@ void Map::Render()
 
 
 	// HUD
-
+	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	Render_HUD_Health();
 
 	// Debug

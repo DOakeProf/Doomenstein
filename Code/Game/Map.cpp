@@ -1278,6 +1278,8 @@ void Map::Render()
 
 	Render_Portals();
 
+	m_player->GetActor()->m_equippedWeapon->Render_GLTF();
+
 	g_engine->m_render->EndCamera(m_player->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_game->m_screenCamera);
 

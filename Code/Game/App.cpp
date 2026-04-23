@@ -1,6 +1,7 @@
 #include "Game/App.hpp"
 #include "Game/Game.hpp"
 #include "Game/GameCommon.hpp"
+#include "Game/glTFReader.hpp"
 
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Input/InputSystem.hpp"
@@ -110,6 +111,7 @@ void App::Startup()
 	DebugRenderSystemStartup(config.m_debugRenderConfig);
 	DebugRenderSetVisible();
 
+	Startup_LoadAllglTF();
 	m_game = new Game();
 
 	m_lastFrameTime = (float)GetCurrentTimeSeconds();
@@ -119,6 +121,7 @@ void App::Startup()
 	std::string testString;
 
 	FileReadToString(testString, "Data/TestFile.bin");
+
 
 	Startup_DisplayCommandsToDevConsole();
 }
@@ -149,6 +152,24 @@ void App::Startup_DisplayCommandsToDevConsole()
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Slow Mode: T");
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Reset/Exit Game: ESC / Back");
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "----------------");
+}
+
+void App::Startup_LoadAllglTF()
+{
+	XmlDocument gameConfig;
+	gameConfig.LoadFile("Data/glTFModels/gltfModels.xml");
+	XmlElement* gltfModelsRootElement = gameConfig.RootElement();
+	XmlElement* glTFModelElement = gltfModelsRootElement->FirstChildElement("Model");
+	while (glTFModelElement)
+	{
+		std::string gltfPath = ParseXmlAttribute(*glTFModelElement, "gltfModel", "");
+		std::string binPath = ParseXmlAttribute(*glTFModelElement, "gltfBin", "");
+		glTF_Asset* newAsset = new glTF_Asset(gltfPath.c_str(), binPath.c_str());
+		newAsset->m_name = ParseXmlAttribute(*glTFModelElement, "name", "");
+
+		m_gltfModels.push_back(newAsset);
+		glTFModelElement = glTFModelElement->NextSiblingElement();
+	}
 }
 
 void App::SetIsQuitting()

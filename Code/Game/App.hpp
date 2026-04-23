@@ -27,6 +27,7 @@ public:
 
 	void Startup_PopulateBlackboard();
 	void Startup_DisplayCommandsToDevConsole();
+	void Startup_LoadAllglTF();
 
 	void SetIsQuitting();
 	void GameReset();
@@ -39,6 +40,7 @@ public:
 
 	Game* m_game = nullptr;
 
+	std::vector<glTF_Asset*> m_gltfModels;
 private:
 	
 	bool m_isQuitting = false;
@@ -48,4 +50,5 @@ private:
 
 	bool m_isKeyDownArray[256] = { false };
 	bool m_wasKeyDownPrevArray[256] = { false };
+
 };

@@ -12,6 +12,9 @@
 #include "Game/Map.hpp"
 #include "Game/Game.hpp"
 #include "Game/Portal.hpp"
+#include "Game/glTFReader.hpp"
+#include "Game/App.hpp"
+#include "Game/Player.hpp"
 
 std::vector<WeaponDefinition*> WeaponDefinition::s_definitions;
 
@@ -82,6 +85,14 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 			newWeaponDef->m_reticleSize = ParseXmlAttribute(*HUDElement, "reticleSize", Vec2());
 			newWeaponDef->m_spriteSize = ParseXmlAttribute(*HUDElement, "spriteSize", IntVec2());
 			newWeaponDef->m_spritePivot = ParseXmlAttribute(*HUDElement, "spritePivot", Vec2());
+			std::string gltfName = ParseXmlAttribute(*HUDElement, "gltfName", "");
+			for (glTF_Asset* curGltfAsset : g_app->m_gltfModels)
+			{
+				if (gltfName == curGltfAsset->m_name)
+				{
+					newWeaponDef->m_gltfAsset = curGltfAsset;
+				}
+			}
 		}
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -221,6 +232,15 @@ void Weapon::Render()
 	AddVertsForAABB2D(hudVerts, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y * 0.15f)), Rgba8::WHITE);
 	g_engine->m_render->BindTexture(m_definition->m_baseTexture);
 	g_engine->m_render->DrawVertexList(&hudVerts);
+}
+
+void Weapon::Render_GLTF()
+{
+	if (m_definition->m_gltfAsset != nullptr)
+	{
+		g_engine->m_render->SetModelConstants(m_map->m_currentlyRenderedPlayer->GetActor()->GetModelMatrix(), Rgba8::WHITE);
+		m_definition->m_gltfAsset->Test_RenderModel();
+	}
 }
 
 void Weapon::Fire(Actor* actor)

@@ -13,6 +13,7 @@
 
 class Actor;
 class Portal;
+class glTF_Asset;
 
 enum class WeaponType
 {
@@ -58,6 +59,8 @@ struct WeaponDefinition
 	Vec2				m_reticleSize;
 	IntVec2				m_spriteSize;
 	Vec2				m_spritePivot;
+
+	glTF_Asset*			m_gltfAsset = nullptr;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Animation
@@ -108,6 +111,8 @@ public:
 
 	void Update();
 	void Render();
+
+	void Render_GLTF();
 
 	void Fire(Actor* actor);
 	void Fire_Weapon(Actor* actor);

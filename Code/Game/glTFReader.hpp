@@ -161,6 +161,8 @@ public:
 	void Test_RenderModel();
 
 public:
+	std::string m_name;
+
 	std::vector<glTF_Scene*> m_scenes;
 	std::vector<glTF_Node*> m_nodes;
 	std::vector<glTF_Mesh*> m_meshes;

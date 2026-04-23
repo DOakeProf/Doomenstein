@@ -91,8 +91,9 @@ Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const
 
 	m_health = m_definition->m_health;
 
+	m_animClock = new Clock(*m_map->m_game->m_gameClock);
 	m_deathTimer = new Timer(m_definition->m_corpseLifetime, m_map->m_game->m_gameClock);
-	m_animTimer = new Timer(0.f, m_map->m_game->m_gameClock);
+	m_animTimer = new Timer(0.f, m_animClock);
 
 	if (m_definition->m_animationGroups.size() > 0)
 	{
@@ -127,6 +128,16 @@ void Actor::Update()
 		SetAnimGroup(m_defaultAnimationGroup);
 	}
 
+	if (m_animationGroup.m_scaleBySpeed)
+	{
+		float velocityFraction = Vec2(m_velocity.x, m_velocity.y).GetLength() / m_definition->m_runSpeed;
+		m_animClock->SetTimeScale(velocityFraction);
+	}
+	else
+	{
+		m_animClock->SetTimeScale(1.f);
+	}
+
 	m_isGrounded = false;
 }
 
@@ -149,8 +160,8 @@ void Actor::Render()
 		for (int animationIndex = 0; animationIndex < m_animationGroup.m_animations.size(); ++animationIndex)
 		{
 			ActorDefinition::AnimationGroup::Animation currentAnimation = m_animationGroup.m_animations[animationIndex];
-			Vec3 actorToPlayer = m_map->m_currentlyRenderedPlayer->m_position - m_position; // TODO: Put this in a non const render function so that it can properly use current rendered player.
-			float curDotProduct = DotProduct3D(-actorToPlayer, currentAnimation.m_direction.GetRotatedAboutZDegrees(m_orientation.m_yawDegrees));
+			Vec3 actorToCamera = g_engine->m_render->GetCamera()->GetPosition() - m_position; // TODO: Put this in a non const render function so that it can properly use current rendered player.
+			float curDotProduct = DotProduct3D(-actorToCamera, currentAnimation.m_direction.GetRotatedAboutZDegrees(m_orientation.m_yawDegrees));
 			if (curDotProduct > largestDotProduct)
 			{
 				largestDotProduct = curDotProduct;
@@ -260,7 +271,9 @@ Mat44 Actor::GetModelMatrixBillboarded() const
 
 	//modelToWorld.AppendTranslation3D(m_position);
 
-	Mat44 billboardMatrix = GetBillboardTransform(m_definition->m_billboardType, m_map->m_currentlyRenderedPlayer->GetModelToWorldTransform(), m_position);
+	/*Mat44 billboardMatrix = GetBillboardTransform(m_definition->m_billboardType, m_map->m_currentlyRenderedPlayer->GetModelToWorldTransform(), m_position);*/
+	Mat44 cameraTransform = g_engine->m_render->GetCamera()->GetCameraToWorldTransform();
+	Mat44 billboardMatrix = GetBillboardTransform(m_definition->m_billboardType, cameraTransform, m_position);
 	modelToWorld.Append(billboardMatrix);
 
 	return modelToWorld;
@@ -596,6 +609,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 				animGroup.m_name = ParseXmlAttribute(*AnimGroupElement, "name", "");
 				animGroup.m_secondsPerFrame = ParseXmlAttribute(*AnimGroupElement, "secondsPerFrame", -1.f);
 				std::string playbackMode = ParseXmlAttribute(*AnimGroupElement, "playbackMode", "");
+				animGroup.m_scaleBySpeed = ParseXmlAttribute(*AnimGroupElement, "scaleBySpeed", false);
 				if (playbackMode == "Once")
 				{
 					animGroup.m_playbackMode = SpriteAnimPlaybackType::ONCE;

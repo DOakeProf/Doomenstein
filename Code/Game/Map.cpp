@@ -1273,7 +1273,7 @@ void Map::Render()
 	portalAABB3Constants.isEnabled = 1;
 	portalAABB3Constants.amountOfPortals = GetNumPortals();
 	g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
-
+	
 	Render_World();
 
 	Render_Portals();
@@ -1295,6 +1295,7 @@ void Map::Render()
 
 void Map::Render_World() const
 {
+
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
 	Render_Tiles();
@@ -1309,6 +1310,7 @@ void Map::Render_World() const
 		}
 	}
 
+	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	DebugRenderWorld(*m_player->m_worldCamera);
 }
 

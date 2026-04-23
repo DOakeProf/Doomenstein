@@ -149,8 +149,6 @@ public:
 	void Render_Tiles() const;
 	void Render_Actors() const;
 
-	void Render_HUD_Health() const;
-
 	void Render_Portals() const;
 
 	RaycastResultDoomenstein	RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;

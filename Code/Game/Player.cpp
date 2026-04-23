@@ -7,6 +7,8 @@
 #include "Engine/Renderer/Camera.hpp"
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Math/MathUtils.hpp"
+#include "Engine/BitmapFont.hpp"
+#include "Engine/VertexUtils.hpp"
 
 Player::Player(Map* owner, Vec3 const& startingPosition)
 	: Controller(owner)
@@ -56,6 +58,39 @@ void Player::Update()
 	if (actor == nullptr)
 	{
 		m_map->SpawnPlayer();
+	}
+
+	actor->m_equippedWeapon->Update();
+}
+
+void Player::Render()
+{
+	// HUD
+	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
+	Render_HUD_Health();
+	GetActor()->m_equippedWeapon->Render();
+}
+
+void Player::Render_HUD_Health()
+{
+	Actor* playerActor = GetActor();
+	if (playerActor != nullptr)
+	{
+		std::vector<Vertex> uiHealthVerts;
+		std::string uiHealthText;
+		if ((float)playerActor->m_health > 0.f)
+		{
+			uiHealthText = Stringf("HEALTH: %.2f", (float)playerActor->m_health);
+		}
+		else
+		{
+			uiHealthText = Stringf("DEAD :(");
+		}
+		AABB2 SCREEN_AABB2 = AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+		m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiHealthVerts, uiHealthText, SCREEN_AABB2, SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.2f));
+		g_engine->m_render->BindTexture(&m_map->m_game->m_squirrelFont->GetTexture());
+		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+		g_engine->m_render->DrawVertexList(&uiHealthVerts);
 	}
 }
 

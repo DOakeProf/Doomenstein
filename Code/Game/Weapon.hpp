@@ -9,6 +9,7 @@
 #include "Engine/Math/FloatRange.hpp"
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Audio/AudioSystem.hpp"
+#include "Engine/Renderer/SpriteAnimDefinition.hpp"
 
 class Actor;
 class Portal;
@@ -69,6 +70,8 @@ struct WeaponDefinition
 		float			m_secondsPerFrame;
 		int				m_startFrame;
 		int				m_endFrame;
+
+		SpriteAnimDefinition* m_animDef;
 	};
 	std::vector<Animation> m_animations;
 
@@ -94,9 +97,17 @@ public:
 	Timer* m_fireTimer;
 	Timer* m_alternateFireTimer;
 
+	Timer* m_animTimer;
+	WeaponDefinition::Animation m_animation;
+	WeaponDefinition::Animation m_defaultAnimation;
+
+
 	// Only for portal gun
 	Portal* m_leftPortal;
 	Portal* m_rightPortal;
+
+	void Update();
+	void Render();
 
 	void Fire(Actor* actor);
 	void Fire_Weapon(Actor* actor);
@@ -105,6 +116,9 @@ public:
 	void AlternateFire(Actor* actor);
 	void AlternateFire_Weapon(Actor* actor);
 	void AlternateFire_PortalGun(Actor* actor);
+
+	void SetAnimation(std::string animationName);
+	void SetAnimation(WeaponDefinition::Animation animation);
 
 	void PushImpactPointToFitSurface(RaycastResultDoomenstein& result);
 };

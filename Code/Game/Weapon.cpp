@@ -6,6 +6,7 @@
 //#include "Engine/DebugRender.hpp"
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Renderer/Renderer.hpp"
+#include "Engine/VertexUtils.hpp"
 
 #include "Game/Actor.hpp"
 #include "Game/Map.hpp"
@@ -80,7 +81,7 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 			newWeaponDef->m_reticleTexture = g_engine->m_render->CreateOrGetTextureFromFile(reticleTextureName.c_str());
 			newWeaponDef->m_reticleSize = ParseXmlAttribute(*HUDElement, "reticleSize", Vec2());
 			newWeaponDef->m_spriteSize = ParseXmlAttribute(*HUDElement, "spriteSize", IntVec2());
-			newWeaponDef->m_spritePivot = ParseXmlAttribute(*HUDElement, "spriteSize", Vec2());
+			newWeaponDef->m_spritePivot = ParseXmlAttribute(*HUDElement, "spritePivot", Vec2());
 		}
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -98,7 +99,7 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 		if (HUDElement != nullptr)
 		{
 			XmlElement* AnimationElement = HUDElement->FirstChildElement("Animation");
-			if (AnimationElement != nullptr)
+			while (AnimationElement)
 			{
 				WeaponDefinition::Animation newAnimation = WeaponDefinition::Animation();
 
@@ -112,7 +113,11 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 				newAnimation.m_startFrame = ParseXmlAttribute(*AnimationElement, "startFrame", -1);
 				newAnimation.m_endFrame = ParseXmlAttribute(*AnimationElement, "endFrame", -1);
 
+				SpriteAnimDefinition* newAnimDef = new SpriteAnimDefinition(*newAnimation.m_spriteSheet, newAnimation.m_startFrame, newAnimation.m_endFrame, 1.f / newAnimation.m_secondsPerFrame, SpriteAnimPlaybackType::ONCE);
+				newAnimation.m_animDef = newAnimDef;
+
 				newWeaponDef->m_animations.push_back(newAnimation);
+				AnimationElement = AnimationElement->NextSiblingElement();
 			}
 		}
 
@@ -159,12 +164,63 @@ Weapon::Weapon(Map* map, std::string definition)
 	m_fireTimer->Start();
 	m_alternateFireTimer = new Timer(m_definition->m_refireTime, m_map->m_game->m_gameClock);
 	m_alternateFireTimer->Start();
+
+	m_animTimer = new Timer(0.0, m_map->m_game->m_gameClock);
+	if (m_definition->m_animations.size() > 0)
+	{
+		m_defaultAnimation = m_definition->m_animations[0];
+		m_defaultAnimation.m_animDef->SetPlaybackType(SpriteAnimPlaybackType::LOOP);
+		m_animation = m_defaultAnimation;
+		m_animTimer->m_period = m_animation.m_secondsPerFrame;
+		m_animTimer->Start();
+	}
 }
 
 Weapon::~Weapon()
 {
 	delete m_fireTimer;
 	m_fireTimer = nullptr;
+}
+
+void Weapon::Update()
+{
+	if (m_animation.m_name != m_defaultAnimation.m_name && m_animTimer->HasPeriodElapsed())
+	{
+		SetAnimation(m_defaultAnimation);
+	}
+}
+
+void Weapon::Render()
+{
+	// Animation
+	std::vector<Vertex> animationVerts;
+	Vec2 spriteSize = Vec2((float)m_definition->m_spriteSize.x, (float)m_definition->m_spriteSize.y);
+	Vec2 spritePivot = m_definition->m_spritePivot * spriteSize;
+	Vec2 spriteCenter = Vec2(SCREEN_SIZE_X * 0.5f, SCREEN_SIZE_Y * 0.15f);
+	AddVertsForAABB2D(animationVerts, AABB2(spriteCenter - spritePivot, spriteCenter + spriteSize - spritePivot), Rgba8::WHITE);
+	if (m_definition->m_animations.size() > 0)
+	{
+		int currentSpriteIndex = m_animation.m_startFrame;
+		SpriteDef spriteDef = m_animation.m_animDef->GetSpriteDefAtTime(m_animTimer->GetElapsedTime());
+		AABB2 spriteUVs = spriteDef.m_UVs;
+
+		animationVerts[0].m_uvTexCoords = spriteUVs.m_mins;
+		animationVerts[1].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
+		animationVerts[2].m_uvTexCoords = spriteUVs.m_maxs;
+
+		animationVerts[3].m_uvTexCoords = spriteUVs.m_mins;
+		animationVerts[4].m_uvTexCoords = spriteUVs.m_maxs;
+		animationVerts[5].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
+
+		g_engine->m_render->BindTexture(m_animation.m_spriteSheet->GetTexture());
+		g_engine->m_render->DrawVertexList(&animationVerts);
+	}
+
+	// HUD
+	std::vector<Vertex> hudVerts;
+	AddVertsForAABB2D(hudVerts, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y * 0.15f)), Rgba8::WHITE);
+	g_engine->m_render->BindTexture(m_definition->m_baseTexture);
+	g_engine->m_render->DrawVertexList(&hudVerts);
 }
 
 void Weapon::Fire(Actor* actor)
@@ -177,6 +233,7 @@ void Weapon::Fire(Actor* actor)
 	{
 		m_fireTimer->Start();
 		actor->SetAnimGroup("Attack");
+		SetAnimation("Attack");
 	}
 	switch (m_definition->m_type)
 	{
@@ -286,6 +343,31 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 			}
 		}
 	}
+}
+
+void Weapon::SetAnimation(std::string animationName)
+{
+	if (m_animation.m_name == animationName)
+	{
+		return;
+	}
+	for (WeaponDefinition::Animation curAnimation : m_definition->m_animations)
+	{
+		if (curAnimation.m_name == animationName)
+		{
+			m_animation = curAnimation;
+			m_animTimer->m_period = m_animation.m_secondsPerFrame * (m_animation.m_endFrame - m_animation.m_startFrame);
+			m_animTimer->Start();
+			return;
+		}
+	}
+}
+
+void Weapon::SetAnimation(WeaponDefinition::Animation animation)
+{
+	m_animation = animation;
+	m_animTimer->m_period = m_animation.m_secondsPerFrame * (m_animation.m_endFrame - m_animation.m_startFrame);
+	m_animTimer->Start();
 }
 
 void Weapon::PushImpactPointToFitSurface(RaycastResultDoomenstein& result)

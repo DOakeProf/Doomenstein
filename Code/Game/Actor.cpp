@@ -12,6 +12,7 @@
 #include "Engine/Renderer/Renderer.hpp"
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Math/RandomNumberGenerator.hpp"
+#include "Engine/Core/ErrorWarningAssert.hpp"
 
 std::vector<ActorDefinition*> ActorDefinition::s_definitions;
 
@@ -91,10 +92,14 @@ Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const
 	m_health = m_definition->m_health;
 
 	m_deathTimer = new Timer(m_definition->m_corpseLifetime, m_map->m_game->m_gameClock);
+	m_animTimer = new Timer(0.f, m_map->m_game->m_gameClock);
 
 	if (m_definition->m_animationGroups.size() > 0)
 	{
-		m_animationGroup = m_definition->m_animationGroups[0];
+		m_defaultAnimationGroup = m_definition->m_animationGroups[0];
+		m_animationGroup = m_defaultAnimationGroup;
+		m_animTimer->m_period = m_animationGroup.m_secondsPerFrame;
+		m_animTimer->Start();
 	}
 }
 
@@ -115,6 +120,12 @@ void Actor::Update()
 	Update_Physics();
 
 	Update_Gameplay();
+
+	// Reset to default if play once animations have finished
+	if (m_animationGroup.m_playbackMode == SpriteAnimPlaybackType::ONCE && m_animTimer->HasPeriodElapsed())
+	{
+		SetAnimGroup(m_defaultAnimationGroup);
+	}
 
 	m_isGrounded = false;
 }
@@ -147,19 +158,18 @@ void Actor::Render()
 			}
 		}
 		int currentSpriteIndex = animationInUse.m_startFrame;
+		SpriteDef spriteDef = animationInUse.m_animDef->GetSpriteDefAtTime(m_animTimer->GetElapsedTime());
 		if (m_definition->m_renderRounded)
 		{
-			AABB2 spriteUVs = m_definition->m_spriteSheet->GetUVsForSprite(currentSpriteIndex);
+			AABB2 spriteUVs = spriteDef.m_UVs;
 			float halfWidth = spriteUVs.GetWidth() * 0.5f;
 			float halfHeight = spriteUVs.GetHeight() * 0.5f;
 			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
 			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_mins.y);
 			m_verts[2].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_maxs.y);
 			m_verts[3].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
-			//m_verts[4].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x - halfWidth, spriteUVs.m_mins.y);
 			m_verts[4].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
 			m_verts[5].m_uvTexCoords = spriteUVs.m_maxs;
-			//m_verts[7].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x - halfWidth, spriteUVs.m_maxs.y);
 		}
 		else
 		{
@@ -349,6 +359,31 @@ void Actor::SetActorHandle(ActorHandle* handle)
 	m_handle = handle;
 }
 
+void Actor::SetAnimGroup(std::string animGroupName)
+{
+	if (m_animationGroup.m_name == animGroupName)
+	{
+		return;
+	}
+	for (ActorDefinition::AnimationGroup curAnimGroup : m_definition->m_animationGroups)
+	{
+		if (curAnimGroup.m_name == animGroupName)
+		{
+			m_animationGroup = curAnimGroup;
+			m_animTimer->m_period = curAnimGroup.m_secondsPerFrame * (m_animationGroup.m_animations[0].m_endFrame - m_animationGroup.m_animations[0].m_startFrame); // Just take the first animations frame count, all the animations in a group happen to have the same frame count so it should be ok.
+			m_animTimer->Start();
+			return;
+		}
+	}
+}
+
+void Actor::SetAnimGroup(ActorDefinition::AnimationGroup animGroup)
+{
+	m_animationGroup = animGroup;
+	m_animTimer->m_period = animGroup.m_secondsPerFrame * (m_animationGroup.m_animations[0].m_endFrame - m_animationGroup.m_animations[0].m_startFrame);
+	m_animTimer->Start();
+}
+
 void Actor::MoveInDirection(Vec3 const& direction, float speed)
 {
 	if (!m_isDead)
@@ -411,6 +446,7 @@ void Actor::EquipWeapon(Weapon* weapon)
 void Actor::Damage(int damage, ActorHandle* otherActor)
 {
 	m_health -= damage;
+	SetAnimGroup("Hurt");
 	if (m_AIController != nullptr)
 	{
 		m_AIController->DamagedBy(otherActor);
@@ -423,6 +459,7 @@ void Actor::Die()
 	{
 		m_isDead = true;
 		m_deathTimer->Start();
+		SetAnimGroup("Death");
 	}
 }
 
@@ -583,6 +620,9 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 					animation.m_startFrame = ParseXmlAttribute(*AnimationDataElement, "startFrame", -1);
 					animation.m_endFrame = ParseXmlAttribute(*AnimationDataElement, "endFrame", -1);
 
+					SpriteAnimDefinition* newAnimDef = new SpriteAnimDefinition(*newActorDef->m_spriteSheet, animation.m_startFrame, animation.m_endFrame, 1.f / animGroup.m_secondsPerFrame, animGroup.m_playbackMode);
+					animation.m_animDef = newAnimDef;
+
 					animGroup.m_animations.push_back(animation);
 					AnimationElement = AnimationElement->NextSiblingElement();
 				}
@@ -645,4 +685,8 @@ const ActorDefinition* ActorDefinition::GetByName(const std::string& name)
 		}
 	}
 	return nullptr;
+}
+
+ActorDefinition::AnimationGroup::Animation::~Animation()
+{
 }

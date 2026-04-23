@@ -68,7 +68,7 @@ void AI::Update()
 				RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
 				if (result.m_didImpact)
 				{
-					actor->Jump(13.f);
+					actor->Jump(11.f);
 				}
 			}
 		}

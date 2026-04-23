@@ -176,6 +176,7 @@ void Weapon::Fire(Actor* actor)
 	else
 	{
 		m_fireTimer->Start();
+		actor->SetAnimGroup("Attack");
 	}
 	switch (m_definition->m_type)
 	{
@@ -193,6 +194,7 @@ void Weapon::AlternateFire(Actor* actor)
 	else
 	{
 		m_alternateFireTimer->Start();
+		actor->SetAnimGroup("Attack");
 	}
 	switch (m_definition->m_type)
 	{

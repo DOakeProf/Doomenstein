@@ -18,9 +18,9 @@ public:
 
 	void Update();
 	void RenderOutline() const;
-	void RenderPortal() const;
+	void RenderPortal();
 
-	void Update_MoveCamera();
+	void MoveCamera();
 
 	Mat44 GetModelToWorldTransform() const;
 	Mat44 GetModelToWorldTransform_OrientationFlipped() const;

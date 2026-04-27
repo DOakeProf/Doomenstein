@@ -99,8 +99,205 @@
     <Inventory>
       <Weapon name="DemonMelee" />
     </Inventory>
-
-    </ActorDefinition>
+  </ActorDefinition>
+	<!-- DevourerHead -->
+	<ActorDefinition name="DevourerHead" faction="Demon" health="1000" canBePossessed="true" corpseLifetime="1.0" visible="true">
+		<Collision radius="1.0f" height="1.0f" collidesWithWorld="false" collidesWithActors="false"/>
+		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
+		<Camera eyeHeight="0.85f" cameraFOV="130.0f"/>
+		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
+		<Visuals size="2.1,2.1" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Pinky_8x9.png" cellCount="8,9">
+			<AnimationGroup name="Walk" scaleBySpeed="true" secondsPerFrame="0.25" playbackMode="Loop">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="0" endFrame="3"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="8" endFrame="11"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="16" endFrame="19"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="24" endFrame="27"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="32" endFrame="35"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="40" endFrame="43"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="48" endFrame="51"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="56" endFrame="59"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Attack" secondsPerFrame="0.25" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="4" endFrame="6"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="12" endFrame="14"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="20" endFrame="22"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="28" endFrame="30"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="36" endFrame="38"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="44" endFrame="46"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="52" endFrame="54"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="60" endFrame="62"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Hurt" secondsPerFrame="0.75" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="7" endFrame="7"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="15" endFrame="15"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="23" endFrame="23"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="31" endFrame="31"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="39" endFrame="39"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="47" endFrame="47"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="55" endFrame="55"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="63" endFrame="63"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Death" secondsPerFrame="0.25" playbackMode="Once">
+				<Direction vector="1,0,0">
+					<Animation startFrame="64" endFrame="69"/>
+				</Direction>
+			</AnimationGroup>
+		</Visuals>
+		<Sounds>
+			<Sound sound="Hurt" name="Data/Audio/DemonHurt.wav"/>
+			<Sound sound="Death" name="Data/Audio/DemonDeath.wav"/>
+		</Sounds>
+		<Inventory>
+			<Weapon name="DemonMelee" />
+		</Inventory>
+	</ActorDefinition>
+	<!-- DevourerBody -->
+	<ActorDefinition name="DevourerBody" faction="Demon" health="-1" canBePossessed="false" corpseLifetime="1.0" visible="true">
+		<Collision radius="1.0f" height="1.0f" collidesWithWorld="false" collidesWithActors="false"/>
+		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
+		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
+		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
+		<Visuals size="2.1,2.1" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Pinky_8x9.png" cellCount="8,9">
+			<AnimationGroup name="Walk" scaleBySpeed="true" secondsPerFrame="0.25" playbackMode="Loop">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="0" endFrame="3"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="8" endFrame="11"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="16" endFrame="19"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="24" endFrame="27"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="32" endFrame="35"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="40" endFrame="43"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="48" endFrame="51"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="56" endFrame="59"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Attack" secondsPerFrame="0.25" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="4" endFrame="6"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="12" endFrame="14"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="20" endFrame="22"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="28" endFrame="30"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="36" endFrame="38"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="44" endFrame="46"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="52" endFrame="54"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="60" endFrame="62"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Hurt" secondsPerFrame="0.75" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="7" endFrame="7"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="15" endFrame="15"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="23" endFrame="23"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="31" endFrame="31"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="39" endFrame="39"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="47" endFrame="47"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="55" endFrame="55"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="63" endFrame="63"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Death" secondsPerFrame="0.25" playbackMode="Once">
+				<Direction vector="1,0,0">
+					<Animation startFrame="64" endFrame="69"/>
+				</Direction>
+			</AnimationGroup>
+		</Visuals>
+		<Sounds>
+			<Sound sound="Hurt" name="Data/Audio/DemonHurt.wav"/>
+			<Sound sound="Death" name="Data/Audio/DemonDeath.wav"/>
+		</Sounds>
+		<Inventory>
+			<Weapon name="DemonMelee" />
+		</Inventory>
+	</ActorDefinition>
   <!-- BulletHit -->
   <ActorDefinition name="BulletHit" canBePossessed="false" corpseLifetime="0.4" visible="true" dieOnSpawn="true" >
     <Visuals size="0.2,0.2" pivot="0.5,0.5" billboardType="WorldUpOpposing" renderLit="true" renderRounded="false" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Projectile_PistolHit.png" cellCount="4,1">

@@ -32,7 +32,11 @@ void Controller::Depossess()
 }
 
 Actor* Controller::GetActor()
-{
+{	
+	if (m_actorHandle == nullptr)
+	{
+		return nullptr;
+	}
 	return m_map->GetActorByHandle(*m_actorHandle);
 }
 

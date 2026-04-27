@@ -20,16 +20,19 @@
 #include "Engine/Core/ErrorWarningAssert.hpp"
 #include "Engine/Renderer/ConstantBuffer.hpp"
 #include "Engine/Math/RandomNumberGenerator.hpp"
-#include "ENgine/BitmapFont.hpp"
+#include "Engine/BitmapFont.hpp"
+#include "Game/App.hpp"
 
 std::vector<MapDefinition*> MapDefinition::s_definitions;
 
-Map::Map(Game* game, const MapDefinition* definition, Player* player)
+Map::Map(Game* game, const MapDefinition* definition)
 	:m_game(game)
 	, m_definition(definition)
-	, m_player(player)
 {
-	m_player->m_map = this;
+	for (Player* player : m_game->m_players)
+	{
+		player->m_map = this;
+	}
 	Startup();
 }
 
@@ -80,6 +83,25 @@ void Map::Startup_InitializeActors()
 			SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
 		}
 	}
+
+	for (int playerIndex = 0; playerIndex < m_game->m_players.size(); ++ playerIndex)
+	{
+		Player* player = m_game->m_players[playerIndex];
+		Actor* playerActor = SpawnPlayer(player);
+
+		player->Possess(playerActor->m_handle);
+		int randomSpawnPointIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, (int)m_spawnPoints.size() - 1);
+		if (playerIndex == 0)
+		{
+			player->SetControllerState(ControlState::KEYBOARD);
+		}
+		else
+		{
+			player->SetControllerState(ControlState::CONTROLLER);
+		}
+	}
+
+	m_DOG = new DOG(this);
 }
 
 void Map::CreateTiles()
@@ -354,14 +376,6 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 		m_nextActorUID = 0;
 	}
 
-	if (newActor->m_definition->m_name == "Marine")
-	{
-		m_player->Possess(actorHandle);
-		int randomSpawnPointIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, (int)m_spawnPoints.size() - 1);
-		newActor->m_position = m_spawnPoints[randomSpawnPointIndex]->m_position + Vec3(0.f,0.f,0.01f);
-		newActor->m_orientation = m_spawnPoints[randomSpawnPointIndex]->m_orientation;
-		m_player->SetPlayerState(PlayerState::FIRSTPERSON);
-	}
 	if (newActor->m_definition->m_aiEnabled)
 	{
 		AI* aiController = new AI(this);
@@ -371,15 +385,20 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 	return newActor;
 }
 
-Actor* Map::SpawnPlayer()
+Actor* Map::SpawnActor(const char* actorName, Vec3 position, EulerAngles orientation)
 {
-	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
-	{
-		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "Marine")
-		{
-			return SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
-		}
-	}
+	SpawnInfo spawnInfo = SpawnInfo(actorName, position, orientation);
+	return SpawnActor(spawnInfo);
+}
+
+Actor* Map::SpawnPlayer(Player* player)
+{
+	int randomSpawnPointIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, (int)m_spawnPoints.size() - 1);
+	SpawnInfo spawnInfo = SpawnInfo("Marine", m_spawnPoints[randomSpawnPointIndex]->m_position + Vec3(0.f, 0.f, 0.01f), m_spawnPoints[randomSpawnPointIndex]->m_orientation);
+	Actor* actor = SpawnActor(spawnInfo);
+	player->Possess(actor->m_handle);
+	player->SetPlayerState(PlayerState::FIRSTPERSON);
+	return actor;
 	return nullptr;
 }
 
@@ -442,273 +461,11 @@ void Map::Update()
 	// Corrective Physics
 	CollideActors();
 	CollideActorsWithMap();
+	m_DOG->Update();
 
 	Update_Portals();
 
 	DestroyIfGarbage();
-}
-
-bool Map::Update_KeyboardInput()
-{
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_ESC))
-	{
-		m_game->ChangeGameState(GameState::GAME_STATE_ATTRACT);
-		return true;
-	}
-
-	if (g_engine->m_input->IsKeyDown('T'))
-	{
-		m_game->m_gameClock->SetTimeScale(0.1f);
-	}
-	else
-	{
-		m_game->m_gameClock->SetTimeScale(1.f);
-	}
-
-	float currentMoveSpeed = m_game->m_moveSpeed;
-	if (g_engine->m_input->IsKeyDown(KEYCODE_SHIFT))
-	{
-		currentMoveSpeed *= 15.f;
-	}
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Camera Orientation
-	EulerAngles newOrientation = m_player->m_orientation;
-	newOrientation.m_yawDegrees += g_engine->m_input->GetCursorClientDelta().x * m_game->m_mouseSensitivity;
-	newOrientation.m_pitchDegrees -= g_engine->m_input->GetCursorClientDelta().y * m_game->m_mouseSensitivity;
-	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
-	if (g_engine->m_input->IsKeyDown('Q'))
-	{
-		newOrientation.m_rollDegrees -= (float)s_systemClock->GetDeltaSeconds() * m_game->m_rollSensitivity;
-	}
-	if (g_engine->m_input->IsKeyDown('E'))
-	{
-		newOrientation.m_rollDegrees += (float)s_systemClock->GetDeltaSeconds() * m_game->m_rollSensitivity;
-	}
-	newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
-	m_player->m_orientation = newOrientation;
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Movement
-	Vec3 currentPosition = m_player->m_position;
-	Vec3 newAddedPosition;
-	if (g_engine->m_input->IsKeyDown('A'))
-	{
-		newAddedPosition.y += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('D'))
-	{
-		newAddedPosition.y -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('W'))
-	{
-		newAddedPosition.x += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('S'))
-	{
-		newAddedPosition.x -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	Mat44 orientationMatrix = newOrientation.GetAsMatrix_IFwd_JLeft_KUp();
-	orientationMatrix.AppendTranslation3D(newAddedPosition);
-	Vec3 newTranslation = orientationMatrix.GetTranslation3D();
-
-	if (g_engine->m_input->IsKeyDown('Z'))
-	{
-		newTranslation.z -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('C'))
-	{
-		newTranslation.z += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-
-	m_playerTranslationThisFrame->x = newTranslation.x;
-	m_playerTranslationThisFrame->y = newTranslation.y;
-	m_playerTranslationThisFrame->z = newTranslation.z;
-	m_player->m_position += newTranslation;
-
-	if (g_engine->m_input->IsKeyDown('H'))
-	{
-		m_player->m_position = Vec3();
-		m_player->m_orientation = EulerAngles();
-	}
-
-	if (g_engine->m_input->WasKeyJustPressed('P'))
-	{
-		m_game->m_gameClock->TogglePause();
-	}
-
-	if (g_engine->m_input->WasKeyJustPressed('O'))
-	{
-		m_game->m_gameClock->StepSingleFrame();
-	}
-
-	DebugAddMessage("[F1] Control Mode: Player", 0.f);
-
-	return false;
-}
-
-bool Map::Update_KeyboardInputBullet()
-{
-
-
-	if (g_engine->m_input->IsKeyDown('T'))
-	{
-		m_game->m_gameClock->SetTimeScale(0.1f);
-	}
-	else
-	{
-		m_game->m_gameClock->SetTimeScale(1.f);
-	}
-
-	float currentMoveSpeed = m_game->m_moveSpeed;
-	if (g_engine->m_input->IsKeyDown(KEYCODE_SHIFT))
-	{
-		currentMoveSpeed *= 15.f;
-	}
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Camera Orientation
-	EulerAngles newOrientation = m_player->m_orientation;
-	newOrientation.m_yawDegrees += g_engine->m_input->GetCursorClientDelta().x * m_game->m_mouseSensitivity;
-	newOrientation.m_pitchDegrees -= g_engine->m_input->GetCursorClientDelta().y * m_game->m_mouseSensitivity;
-	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
-	if (g_engine->m_input->IsKeyDown('Q'))
-	{
-		newOrientation.m_rollDegrees -= (float)s_systemClock->GetDeltaSeconds() * m_game->m_rollSensitivity;
-	}
-	if (g_engine->m_input->IsKeyDown('E'))
-	{
-		newOrientation.m_rollDegrees += (float)s_systemClock->GetDeltaSeconds() * m_game->m_rollSensitivity;
-	}
-	newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
-	m_player->m_orientation = newOrientation;
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Movement
-	Vec3 currentPosition = m_bulletActor->m_position;
-	Vec3 newAddedPosition;
-	if (g_engine->m_input->IsKeyDown('A'))
-	{
-		newAddedPosition.y += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('D'))
-	{
-		newAddedPosition.y -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('W'))
-	{
-		newAddedPosition.x += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('S'))
-	{
-		newAddedPosition.x -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	Vec3 orientationFwd = newOrientation.GetForwardDir_IFwd_JLeft_KUp();
-	Vec3 orientationFwdXY = Vec3(orientationFwd.x, orientationFwd.y, 0.f).GetNormalized();
-	Mat44 orientationMatrix = Mat44(orientationFwdXY, orientationFwdXY.GetRotatedAboutZDegrees(90.f), Vec3(0.f, 0.f, 1.f), Vec3());
-	orientationMatrix.AppendTranslation3D(newAddedPosition);
-	Vec3 newTranslation = orientationMatrix.GetTranslation3D();
-
-	if (g_engine->m_input->IsKeyDown('Z'))
-	{
-		newTranslation.z -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (g_engine->m_input->IsKeyDown('C'))
-	{
-		newTranslation.z += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-
-	m_bulletActor->m_position += newTranslation;
-
-	if (g_engine->m_input->IsKeyDown('H'))
-	{
-		m_bulletActor->m_position = Vec3();
-		m_bulletActor->m_orientation = EulerAngles();
-	}
-
-	if (g_engine->m_input->WasKeyJustPressed('P'))
-	{
-		m_game->m_gameClock->TogglePause();
-	}
-
-	if (g_engine->m_input->WasKeyJustPressed('O'))
-	{
-		m_game->m_gameClock->StepSingleFrame();
-	}
-
-	DebugAddMessage("[F1] Control Mode: Actor", 0.f, Rgba8::BLUE);
-
-	return false;
-}
-
-bool Map::Update_ControllerInput()
-{
-	XboxController* controller = &g_engine->m_input->m_controllers[0];
-	if (controller->WasButtonJustPressed(XboxButtonID::BACK))
-	{
-		m_game->ChangeGameState(GameState::GAME_STATE_ATTRACT);
-		return true;
-	}
-
-	float currentMoveSpeed = m_game->m_moveSpeed;
-	if (controller->IsButtonDown(XboxButtonID::GAMEPAD_A))
-	{
-		currentMoveSpeed *= 15.f;
-	}
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Camera Orientation
-	EulerAngles newOrientation = m_player->m_orientation;
-	newOrientation.m_yawDegrees -= controller->GetRightStick().GetPosition().x * m_game->m_controllerSensitivity;
-	newOrientation.m_pitchDegrees -= controller->GetRightStick().GetPosition().y * m_game->m_controllerSensitivity;
-	newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -85.f, 85.f);
-
-	newOrientation.m_rollDegrees += controller->GetRightTrigger() * (float)s_systemClock->GetDeltaSeconds() * m_game->m_rollSensitivity;
-	newOrientation.m_rollDegrees -= controller->GetLeftTrigger() * (float)s_systemClock->GetDeltaSeconds() * m_game->m_rollSensitivity;
-
-	newOrientation.m_rollDegrees = GetClamped(newOrientation.m_rollDegrees, -45.f, 45.f);
-	m_player->m_orientation = newOrientation;
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Movement
-	Vec3 currentPosition = m_player->m_position;
-	Vec3 newAddedPosition;
-	newAddedPosition.y -= controller->GetLeftStick().GetPosition().x * (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	newAddedPosition.x += controller->GetLeftStick().GetPosition().y * (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-
-	Mat44 orientationMatrix = newOrientation.GetAsMatrix_IFwd_JLeft_KUp();
-	orientationMatrix.AppendTranslation3D(newAddedPosition);
-	Vec3 newTranslation = orientationMatrix.GetTranslation3D();
-
-	if (controller->IsButtonDown(XboxButtonID::LEFT_SHOULDER))
-	{
-		newTranslation.z -= (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-	if (controller->IsButtonDown(XboxButtonID::RIGHT_SHOULDER))
-	{
-		newTranslation.z += (float)s_systemClock->GetDeltaSeconds() * currentMoveSpeed;
-	}
-
-	if (newTranslation.x != 0.f)
-	{
-		m_playerTranslationThisFrame->x = newTranslation.x;
-	}
-	if (newTranslation.y != 0.f)
-	{
-		m_playerTranslationThisFrame->y = newTranslation.y;
-	}
-	if (newTranslation.z != 0.f)
-	{
-		m_playerTranslationThisFrame->z = newTranslation.z;
-	}
-
-	if (controller->IsButtonDown(XboxButtonID::START))
-	{
-		m_player->m_position = Vec3();
-		m_player->m_orientation = EulerAngles();
-	}
-
-	return false;
 }
 
 void Map::Update_DebugInput()
@@ -770,10 +527,10 @@ void Map::Update_DebugInput()
 		DebugAddMessage(message, 2.f);
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed('N'))
+	if (g_engine->m_input->WasKeyJustPressed('N') && m_game->m_players.size() < 2)
 	{
 		Actor* newActorToPossess = nullptr;
-		int startingActorIndex = m_player->m_actorHandle->GetIndex();
+		int startingActorIndex = m_game->m_players[0]->m_actorHandle->GetIndex();
 		for (int actorIndex = startingActorIndex + 1; actorIndex < m_actors.size(); ++actorIndex)
 		{
 			Actor* actor = m_actors[actorIndex];
@@ -797,8 +554,8 @@ void Map::Update_DebugInput()
 		}
 		if (newActorToPossess != nullptr)
 		{
-			m_player->Depossess();
-			m_player->Possess(newActorToPossess->m_handle);
+			m_game->m_players[0]->Depossess();
+			m_game->m_players[0]->Possess(newActorToPossess->m_handle);
 		}
 	}
 
@@ -1252,45 +1009,66 @@ void Map::Render()
 {
 	g_engine->m_render->ClearScreen(m_game->m_backgroundClearColor);
 
-	m_currentlyRenderedPlayer = m_player;
-	g_engine->m_render->BeginCamera(m_player->m_worldCamera);
-
-	// Render Everything
-	PortalAABB3Constants portalAABB3Constants = PortalAABB3Constants();
-	int portalAmount = 0;
-	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+	// Player* player : m_game->m_players
+	for (int playerIndex = 0; playerIndex < m_game->m_players.size(); ++playerIndex)
 	{
-		Portal* portal = m_portals[portalIndex];
-		if (portal->GetOrientation().GetForwardDir_IFwd_JLeft_KUp().z == 0.f && portal->GetOtherPortal() != nullptr)
+		Player* player = m_game->m_players[playerIndex];
+		if (player->GetActor() == nullptr)
 		{
-			AABB3 portalAABB3 = portal->GetPortalAsAABB3();
-			portalAABB3Constants.aabb3Mins[portalAmount] = Vec4(portalAABB3.m_mins.x, portalAABB3.m_mins.y, portalAABB3.m_mins.z, 0.f);
-			portalAABB3Constants.aabb3Maxs[portalAmount] = Vec4(portalAABB3.m_maxs.x, portalAABB3.m_maxs.y, portalAABB3.m_maxs.z, 0.f);
-
-			++portalAmount;
+			continue;
 		}
-	}
-	portalAABB3Constants.isEnabled = 1;
-	portalAABB3Constants.amountOfPortals = GetNumPortals();
-	g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
+		m_currentlyRenderedPlayer = player;
+		g_engine->m_render->BeginCamera(player->m_worldCamera);
+
+		// Render Everything
+		PortalAABB3Constants portalAABB3Constants = PortalAABB3Constants();
+		int portalAmount = 0;
+		for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
+		{
+			Portal* portal = m_portals[portalIndex];
+			if (portal->GetOrientation().GetForwardDir_IFwd_JLeft_KUp().z == 0.f && portal->GetOtherPortal() != nullptr)
+			{
+				AABB3 portalAABB3 = portal->GetPortalAsAABB3();
+				portalAABB3Constants.aabb3Mins[portalAmount] = Vec4(portalAABB3.m_mins.x, portalAABB3.m_mins.y, portalAABB3.m_mins.z, 0.f);
+				portalAABB3Constants.aabb3Maxs[portalAmount] = Vec4(portalAABB3.m_maxs.x, portalAABB3.m_maxs.y, portalAABB3.m_maxs.z, 0.f);
+
+				++portalAmount;
+			}
+		}
+		portalAABB3Constants.isEnabled = 1;
+		portalAABB3Constants.amountOfPortals = GetNumPortals();
+		g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
 	
-	Render_World();
+		Render_World();
 
-	Render_Portals();
+		m_isRenderingPortal = true;
+		Render_Portals();
+		m_isRenderingPortal = false;
+	
+		g_engine->m_render->BindShader(m_currentlyRenderedPlayer->GetActor()->m_definition->m_shader);
 
-	m_player->GetActor()->m_equippedWeapon->Render_GLTF();
+		portalAABB3Constants.isEnabled = 0;
+		g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
 
-	g_engine->m_render->EndCamera(m_player->m_worldCamera);
-	g_engine->m_render->BeginCamera(m_game->m_screenCamera);
+		g_engine->m_render->ClearDepthBuffer();
+		player->GetActor()->m_equippedWeapon->Render_GLTF();
 
+		g_engine->m_render->EndCamera(player->m_worldCamera);
+		g_engine->m_render->BeginCamera(player->m_screenCamera);
 
-	m_player->Render();
+		player->Render();
 
-	// Debug
-	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
-	DebugRenderScreen(*m_game->m_screenCamera);
+		g_engine->m_render->EndCamera(player->m_screenCamera);
 
-	g_engine->m_render->EndCamera(m_game->m_screenCamera);
+		g_engine->m_render->BeginCamera(m_game->m_screenCamera);
+		// Debug
+		if (g_app->IsDebug())
+		{
+			g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
+			DebugRenderScreen(*player->m_screenCamera);
+		}
+		g_engine->m_render->EndCamera(m_game->m_screenCamera);
+	}
 }
 
 void Map::Render_World() const
@@ -1310,8 +1088,11 @@ void Map::Render_World() const
 		}
 	}
 
-	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
-	DebugRenderWorld(*m_player->m_worldCamera);
+	if (g_app->IsDebug())
+	{
+		g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
+		DebugRenderWorld(*m_currentlyRenderedPlayer->m_worldCamera);
+	}
 }
 
 void Map::Render_Tiles() const

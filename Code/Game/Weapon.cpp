@@ -85,12 +85,13 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 			newWeaponDef->m_reticleSize = ParseXmlAttribute(*HUDElement, "reticleSize", Vec2());
 			newWeaponDef->m_spriteSize = ParseXmlAttribute(*HUDElement, "spriteSize", IntVec2());
 			newWeaponDef->m_spritePivot = ParseXmlAttribute(*HUDElement, "spritePivot", Vec2());
+
 			std::string gltfName = ParseXmlAttribute(*HUDElement, "gltfName", "");
 			for (glTF_Asset* curGltfAsset : g_app->m_gltfModels)
 			{
 				if (gltfName == curGltfAsset->m_name)
 				{
-					newWeaponDef->m_gltfAsset = curGltfAsset;
+					newWeaponDef->m_gltfAssets.push_back(curGltfAsset);
 				}
 			}
 		}
@@ -203,9 +204,11 @@ void Weapon::Update()
 
 void Weapon::Render()
 {
+	float aspectRatio = (g_engine->m_window->GetClientDimensions().x / g_engine->m_window->GetClientDimensions().y) / (g_engine->m_render->GetCamera()->GetViewport().GetWidth() / g_engine->m_render->GetCamera()->GetViewport().GetHeight());
+
 	// Animation
 	std::vector<Vertex> animationVerts;
-	Vec2 spriteSize = Vec2((float)m_definition->m_spriteSize.x, (float)m_definition->m_spriteSize.y);
+	Vec2 spriteSize = Vec2((float)m_definition->m_spriteSize.x * aspectRatio, (float)m_definition->m_spriteSize.y);
 	Vec2 spritePivot = m_definition->m_spritePivot * spriteSize;
 	Vec2 spriteCenter = Vec2(SCREEN_SIZE_X * 0.5f, SCREEN_SIZE_Y * 0.15f);
 	AddVertsForAABB2D(animationVerts, AABB2(spriteCenter - spritePivot, spriteCenter + spriteSize - spritePivot), Rgba8::WHITE);
@@ -232,14 +235,36 @@ void Weapon::Render()
 	AddVertsForAABB2D(hudVerts, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y * 0.15f)), Rgba8::WHITE);
 	g_engine->m_render->BindTexture(m_definition->m_baseTexture);
 	g_engine->m_render->DrawVertexList(&hudVerts);
+
+	// Reticle
+	Vec2 reticleHalfSize = m_definition->m_reticleSize * 0.5f;
+	reticleHalfSize.x = reticleHalfSize.x * aspectRatio;
+	Vec2 screenCenter = Vec2(SCREEN_SIZE_X * 0.5f, SCREEN_SIZE_Y * 0.5f);
+	std::vector<Vertex> reticleVerts;
+	AddVertsForAABB2D(reticleVerts, AABB2(screenCenter - reticleHalfSize, screenCenter + reticleHalfSize), Rgba8::WHITE);
+	g_engine->m_render->BindTexture(m_definition->m_reticleTexture);
+	g_engine->m_render->DrawVertexList(&reticleVerts);
 }
 
 void Weapon::Render_GLTF()
 {
-	if (m_definition->m_gltfAsset != nullptr)
+	if (m_definition->m_gltfAssets.size() > 0)
 	{
-		g_engine->m_render->SetModelConstants(m_map->m_currentlyRenderedPlayer->GetActor()->GetModelMatrix(), Rgba8::WHITE);
-		m_definition->m_gltfAsset->Test_RenderModel();
+		Player* currentPlayer = m_map->m_currentlyRenderedPlayer;
+		Mat44 modelMatrix = Mat44();
+		modelMatrix.AppendTranslation3D(currentPlayer->m_position);
+
+		modelMatrix.Append(currentPlayer->m_orientation.GetAsMatrix_IFwd_JLeft_KUp());
+		modelMatrix.AppendTranslation3D(Vec3(0.5f, -0.15f, -0.15f));
+
+		modelMatrix.Append(Camera::GLTF_TO_GAME_CONVENTIONS);
+
+		g_engine->m_render->SetModelConstants(modelMatrix, Rgba8::WHITE);
+
+		for (glTF_Asset* asset : m_definition->m_gltfAssets)
+		{
+			asset->Test_RenderModel();
+		}
 	}
 }
 
@@ -519,6 +544,11 @@ void Weapon::Fire_Weapon(Actor* actor)
 				float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
 				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
+				m_map->SpawnActor("BloodSplatter", result.m_impactPos, EulerAngles());
+			}
+			else
+			{
+				m_map->SpawnActor("BulletHit", result.m_impactPos, EulerAngles());
 			}
 		}
 	}

@@ -60,7 +60,7 @@ struct WeaponDefinition
 	IntVec2				m_spriteSize;
 	Vec2				m_spritePivot;
 
-	glTF_Asset*			m_gltfAsset = nullptr;
+	std::vector<glTF_Asset*> m_gltfAssets;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Animation

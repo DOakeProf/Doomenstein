@@ -85,14 +85,35 @@ void Game::Startup()
 
 	m_screenCamera = new Camera();
 	m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	m_screenCamera->SetViewport(AABB2(0.f, 0.f, (float)g_engine->m_window->GetClientDimensions().x, (float)g_engine->m_window->GetClientDimensions().y));
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Initialize Player
-	m_player = new Player(nullptr, Vec3(2.5f, 8.5f, 0.5f));
-	m_player->m_worldCamera = new Camera();
+	// Initialize Player(s)
+	m_players.push_back(new Player(nullptr, Vec3(2.5f, 8.5f, 0.5f)));
+	m_players[0]->m_worldCamera = new Camera();
 
-	m_player->m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
-	m_player->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
+	float halfScreenHeight = (float)g_engine->m_window->GetClientDimensions().y * 0.5f;
+	AABB2 player1Viewport = AABB2(0.f, 0.f, (float)g_engine->m_window->GetClientDimensions().x, halfScreenHeight);
+	m_players[0]->m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
+	m_players[0]->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
+	m_players[0]->m_worldCamera->SetViewport(player1Viewport);
+	m_players[0]->m_screenCamera = new Camera();
+	m_players[0]->m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	m_players[0]->m_screenCamera->SetViewport(player1Viewport);
+	m_players[0]->m_viewport = player1Viewport;
+	m_players[0]->m_playerIndex = 0;
+	
+	m_players.push_back(new Player(nullptr, Vec3(2.5f, 8.5f, 0.5f)));
+	m_players[1]->m_worldCamera = new Camera();
+	AABB2 player2Viewport = AABB2(0.f, halfScreenHeight, (float)g_engine->m_window->GetClientDimensions().x, halfScreenHeight + halfScreenHeight);
+	m_players[1]->m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
+	m_players[1]->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
+	m_players[1]->m_worldCamera->SetViewport(player2Viewport);
+	m_players[1]->m_screenCamera = new Camera();
+	m_players[1]->m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+	m_players[1]->m_screenCamera->SetViewport(player2Viewport);
+	m_players[1]->m_viewport = player2Viewport;
+	m_players[1]->m_playerIndex = 1;
 
 	m_squirrelFont = g_engine->m_render->CreateOrGetBitmapFont("Data/Fonts/SquirrelFixedFont");
 
@@ -180,7 +201,10 @@ void Game::Render_LobbyMode() const
 void Game::Update_PlayingMode()
 {
 	// Entity updates
-	m_player->Update();
+	for (Player* player : m_players)
+	{
+		player->Update();
+	}
 	m_currentMap->Update();
 
 	// Camera updates
@@ -202,7 +226,7 @@ void Game::EnterState(GameState state)
 	{
 		case GameState::GAME_STATE_PLAYING:
 		{
-			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString), m_player);
+			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString));
 			m_currentMap->Startup_InitializeActors(); // Initialize actors here because the function calls things that only exist after the map is made.
 			break;
 		}

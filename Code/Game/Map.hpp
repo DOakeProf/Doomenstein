@@ -14,6 +14,7 @@
 #include "Game/ActorHandle.hpp"
 #include "Game/SpawnInfo.hpp"
 #include "Game/Portal.hpp"
+#include "Game/DOG.hpp"
 
 class Game;
 class Image;
@@ -79,7 +80,7 @@ static const int k_portalAABB3ConstantsSlot = 6;
 class Map
 {
 public:
-	Map(Game* game, const MapDefinition* definition, Player* player);
+	Map(Game* game, const MapDefinition* definition);
 	~Map();
 
 	void Startup();
@@ -114,16 +115,14 @@ public:
 	// Utility functions
 	int AddActorToMap(Actor* actor);
 	Actor* SpawnActor(const SpawnInfo& spawnInfo);
-	Actor* SpawnPlayer();
+	Actor* SpawnActor(const char* actorName, Vec3 position, EulerAngles orientation);
+	Actor* SpawnPlayer(Player* player);
 	void AddPortal(Portal* portal);
 	void RemovePortal(Portal* portal);
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Update
 	void Update();
-	bool Update_KeyboardInput();
-	bool Update_KeyboardInputBullet();
-	bool Update_ControllerInput();
 	void Update_DebugInput();
 	void Update_AddDebugScreenText();
 	void Update_Actors_BeforePreventative();
@@ -163,10 +162,10 @@ public:
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Player
-	Player* m_player;
 	Player* m_currentlyRenderedPlayer;
-	Vec3* m_playerTranslationThisFrame;
+	//Vec3* m_playerTranslationThisFrame;
 	bool m_isControllingBullet = false;
+	bool m_isRenderingPortal = false;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Debug
@@ -200,5 +199,6 @@ protected:
 	std::vector<Portal*> m_portals;
 	unsigned int m_nextActorUID = 0;
 	Actor* m_bulletActor;
+	DOG* m_DOG;
 
 };

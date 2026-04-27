@@ -36,7 +36,7 @@ struct glTF_Node
 
 	void UpdateNode(Mat44& parentMatrix); // Every frame updates global and local transform matrixes according to animation changes?
 
-	void AddVerts(std::vector<Vertex>& verts, std::vector<unsigned int>& indexes, Mat44& matrix);
+	void AddVerts(std::vector<Vertex_PCUTBN>& verts, std::vector<unsigned int>& indexes, Mat44& matrix);
 	void RenderNode();
 };
 
@@ -58,7 +58,7 @@ struct glTF_Primitive
 
 	IndexType m_indexType;
 
-	std::vector<Vertex> m_verts;
+	std::vector<Vertex_PCUTBN> m_verts;
 	std::vector<uint8_t> m_indexes;
 };
 

@@ -102,6 +102,11 @@ Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const
 		m_animTimer->m_period = m_animationGroup.m_secondsPerFrame;
 		m_animTimer->Start();
 	}
+
+	if (m_definition->m_dieOnSpawn)
+	{
+		Die();
+	}
 }
 
 Actor::~Actor()
@@ -144,9 +149,11 @@ void Actor::Update()
 void Actor::Render()
 {
 	Player* currentlyRenderedPlayer = m_map->GetCurrentRenderedPlayer();
+
 	if (
-	(m_controller != nullptr && m_controller->IsPlayer() && currentlyRenderedPlayer->m_desiredPlayerState == PlayerState::FIRSTPERSON) ||
-		!m_definition->m_visible
+	!m_map->m_isRenderingPortal &&
+	(m_controller != nullptr && m_controller->IsPlayer() && currentlyRenderedPlayer->m_desiredPlayerState == PlayerState::FIRSTPERSON && currentlyRenderedPlayer->m_playerIndex == ((Player*)m_controller)->m_playerIndex) ||
+	!m_definition->m_visible
 		)
 	{
 		return;
@@ -174,7 +181,7 @@ void Actor::Render()
 		{
 			AABB2 spriteUVs = spriteDef.m_UVs;
 			float halfWidth = spriteUVs.GetWidth() * 0.5f;
-			float halfHeight = spriteUVs.GetHeight() * 0.5f;
+			//float halfHeight = spriteUVs.GetHeight() * 0.5f;
 			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
 			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_mins.y);
 			m_verts[2].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_maxs.y);
@@ -184,7 +191,7 @@ void Actor::Render()
 		}
 		else
 		{
-			AABB2 spriteUVs = m_definition->m_spriteSheet->GetUVsForSprite(currentSpriteIndex);
+			AABB2 spriteUVs = spriteDef.m_UVs;
 			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
 			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
 			m_verts[2].m_uvTexCoords = spriteUVs.m_maxs;
@@ -523,6 +530,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 		newActorDef->m_canBePossessed = ParseXmlAttribute(*actorDefElement, "canBePossessed", false);
 		newActorDef->m_corpseLifetime = ParseXmlAttribute(*actorDefElement, "corpseLifetime", -1.f);
 		newActorDef->m_visible = ParseXmlAttribute(*actorDefElement, "visible", false);
+		newActorDef->m_dieOnSpawn = ParseXmlAttribute(*actorDefElement, "dieOnSpawn", false);
 
 		XmlElement* collisionElement = actorDefElement->FirstChildElement("Collision");
 		if (collisionElement != nullptr)

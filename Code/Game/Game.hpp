@@ -60,7 +60,7 @@ public:
 	float					m_screenShakeFraction = 0.f;
 
 	Map* m_currentMap = nullptr;
-	Player* m_player = nullptr;
+	std::vector<Player*> m_players;
 	BitmapFont* m_squirrelFont;
 
 	float m_hitStopTimer = 0.f;

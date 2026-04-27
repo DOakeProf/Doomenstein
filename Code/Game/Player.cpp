@@ -57,18 +57,21 @@ void Player::Update()
 
 	if (actor == nullptr)
 	{
-		m_map->SpawnPlayer();
+		m_map->SpawnPlayer(this);
 	}
-
-	actor->m_equippedWeapon->Update();
+	else
+	{
+		actor->m_equippedWeapon->Update();
+	}
 }
 
 void Player::Render()
 {
 	// HUD
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
-	Render_HUD_Health();
 	GetActor()->m_equippedWeapon->Render();
+	Render_HUD_Health();
+	Render_Death();
 }
 
 void Player::Render_HUD_Health()
@@ -94,11 +97,32 @@ void Player::Render_HUD_Health()
 	}
 }
 
+void Player::Render_Death()
+{
+	Actor* playerActor = GetActor();
+	if (playerActor != nullptr && playerActor->m_isDead)
+	{
+		std::vector<Vertex> deathVerts;
+		AABB2 SCREEN_AABB2 = AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+		AddVertsForAABB2D(deathVerts, SCREEN_AABB2, Rgba8(50,50,50,127));
+		g_engine->m_render->BindTexture(nullptr);
+		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+		g_engine->m_render->DrawVertexList(&deathVerts);
+	}
+}
+
 void Player::HandleInputs()
 {
 	if (m_desiredPlayerState != m_playerState)
 	{
 		m_playerState = m_desiredPlayerState;
+	}
+
+	Actor* actor = GetActor();
+
+	if (actor != nullptr && GetActor()->m_isDead)
+	{
+		return;
 	}
 
 	switch (m_playerState)
@@ -252,10 +276,16 @@ void Player::HandleInputs_FreeFly_Controller()
 		m_position = Vec3();
 		m_orientation = EulerAngles();
 	}
+
+	if (controller->WasButtonJustPressed(XboxButtonID::START))
+	{
+		m_map->m_game->m_gameClock->TogglePause();
+	}
 }
 
 void Player::HandleInputs_FirstPerson()
 {
+	//&& m_map->m_game->m_players.size() < 2
 	if (g_engine->m_input->WasKeyJustPressed('F') || m_actorHandle == nullptr || m_map->GetActorByHandle(*m_actorHandle) == nullptr)
 	{
 		SetPlayerState(PlayerState::FREEFLY);
@@ -266,15 +296,15 @@ void Player::HandleInputs_FirstPerson()
 		m_controlState = m_desiredControlState;
 	}
 
-	//switch (m_controlState)
-	//{
-	//	case ControlState::KEYBOARD: HandleInputs_FirstPerson_Keyboard(); break;
-	//	case ControlState::CONTROLLER: HandleInputs_FirstPerson_Controller(); break;
-	//}
+	switch (m_controlState)
+	{
+		case ControlState::KEYBOARD: HandleInputs_FirstPerson_Keyboard(); break;
+		case ControlState::CONTROLLER: HandleInputs_FirstPerson_Controller(); break;
+	}
 
 	// Just do both for now
-	HandleInputs_FirstPerson_Keyboard();
-	HandleInputs_FirstPerson_Controller();
+	//HandleInputs_FirstPerson_Keyboard();
+	//HandleInputs_FirstPerson_Controller();
 }
 
 void Player::HandleInputs_FirstPerson_Keyboard()
@@ -507,14 +537,9 @@ void Player::HandleInputs_FirstPerson_Controller()
 		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed('P'))
+	if (controller->WasButtonJustPressed(XboxButtonID::START))
 	{
 		m_map->m_game->m_gameClock->TogglePause();
-	}
-
-	if (g_engine->m_input->WasKeyJustPressed('O'))
-	{
-		m_map->m_game->m_gameClock->StepSingleFrame();
 	}
 }
 

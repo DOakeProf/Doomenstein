@@ -1,3 +1,4 @@
 <glTFModels>
-	<Model name="PortalGun" gltfModel="Data/glTFModels/PortalGun/PortalGun.gltf" gltfBin="Data/glTFModels/PortalGun/PortalGun.bin"/>
+	<Model name="PortalGun" gltfModel="Data/glTFModels/PortalGunShell/PortalGunShell.gltf" gltfBin="Data/glTFModels/PortalGunShell/PortalGunShell.bin"/>
+	<Model name="PortalGun" gltfModel="Data/glTFModels/PortalGunTransparent/PortalGunTransparent.gltf" gltfBin="Data/glTFModels/PortalGunTransparent/PortalGunTransparent.bin"/>
 </glTFModels>

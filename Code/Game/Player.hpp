@@ -3,6 +3,7 @@
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/EulerAngles.hpp"
 #include "Engine/Core/Rgba8.hpp"
+#include "Engine/Math/AABB2.hpp"
 
 #include "Game/Controller.hpp"
 
@@ -39,6 +40,7 @@ public:
 	void Render();
 
 	void Render_HUD_Health();
+	void Render_Death();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Inputs
@@ -58,7 +60,13 @@ public:
 
 	bool IsPlayer() const override;
 
+	int m_playerIndex = -1;
+	int m_controllerIndex = -1;
+	int m_playerKills;
+	int m_playerDeaths;
 	Camera* m_worldCamera = nullptr;
+	Camera* m_screenCamera = nullptr;
+	AABB2	m_viewport;
 
 	Vec3 m_position; // Not initialized like the others because by simply just defining a new object of these classes, they are already initialized in their constructors.
 	Vec3 m_velocity;

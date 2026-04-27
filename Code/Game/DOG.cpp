@@ -53,7 +53,7 @@ void DOG::Update()
 
 void DOG::Update_MoveAlongSpline()
 {
-	float deltaSeconds = m_map->m_game->m_gameClock->GetDeltaSeconds();
+	float deltaSeconds = (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 	m_parametricValueAcrossCurve += 1 / m_secondsUntilHit * deltaSeconds;
 
 	if (m_parametricValueAcrossCurve > 1.f)
@@ -102,9 +102,9 @@ void DOG::ChooseNextSpline()
 Vec3 DOG::FindRandomVec3()
 {
 	Vec3 randomVec3 = Vec3(
-		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-10.f, 50.f),
-		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-10.f, 50.f),
-		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-5.f, 10.f)
+		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-80.f, 100.f),
+		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-80.f, 100.f),
+		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-10.f, 20.f)
 	);
 	return randomVec3;
 }

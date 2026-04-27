@@ -39,7 +39,6 @@ Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const
 	// Add verts according to visual information.
 	Vec2 pivot = m_definition->m_pivot * m_definition->m_size;
 	Vec2 halfSize = m_definition->m_size * 0.5f;
-	float eyeHeight = m_definition->m_eyeHeight;
 	if (m_definition->m_renderRounded)
 	{
 		//AddVertsForQuad3D(
@@ -175,13 +174,11 @@ void Actor::Render()
 				animationInUse = currentAnimation;
 			}
 		}
-		int currentSpriteIndex = animationInUse.m_startFrame;
-		SpriteDef spriteDef = animationInUse.m_animDef->GetSpriteDefAtTime(m_animTimer->GetElapsedTime());
+		SpriteDef spriteDef = animationInUse.m_animDef->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
 		if (m_definition->m_renderRounded)
 		{
 			AABB2 spriteUVs = spriteDef.m_UVs;
 			float halfWidth = spriteUVs.GetWidth() * 0.5f;
-			//float halfHeight = spriteUVs.GetHeight() * 0.5f;
 			m_verts[0].m_uvTexCoords = spriteUVs.m_mins;
 			m_verts[1].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_mins.y);
 			m_verts[2].m_uvTexCoords = Vec2(spriteUVs.m_mins.x + halfWidth, spriteUVs.m_maxs.y);

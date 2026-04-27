@@ -572,6 +572,31 @@ void Player::SetControllerState(ControlState const& state)
 	m_desiredControlState = state;
 }
 
+void Player::SetViewport(bool isMultiplayer, int playerIndex)
+{
+	if (isMultiplayer)
+	{
+		float halfScreenHeight = (float)g_engine->m_window->GetClientDimensions().y * 0.5f; // TODO: Move the viewport logic elsewhere.
+		AABB2 playerViewport = AABB2(0.f, (halfScreenHeight * playerIndex), (float)g_engine->m_window->GetClientDimensions().x, halfScreenHeight + (halfScreenHeight * playerIndex));
+		m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
+		m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
+		m_worldCamera->SetViewport(playerViewport);
+		m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+		m_screenCamera->SetViewport(playerViewport);
+		m_viewport = playerViewport;
+	}
+	else
+	{
+		AABB2 playerViewport = AABB2(0.f, 0.f, (float)g_engine->m_window->GetClientDimensions().x, (float)g_engine->m_window->GetClientDimensions().y);
+		m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
+		m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
+		m_worldCamera->SetViewport(playerViewport);
+		m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+		m_screenCamera->SetViewport(playerViewport);
+		m_viewport = playerViewport;
+	}
+}
+
 bool Player::IsPlayer() const
 {
 	return true;

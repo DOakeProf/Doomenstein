@@ -214,8 +214,7 @@ void Weapon::Render()
 	AddVertsForAABB2D(animationVerts, AABB2(spriteCenter - spritePivot, spriteCenter + spriteSize - spritePivot), Rgba8::WHITE);
 	if (m_definition->m_animations.size() > 0)
 	{
-		int currentSpriteIndex = m_animation.m_startFrame;
-		SpriteDef spriteDef = m_animation.m_animDef->GetSpriteDefAtTime(m_animTimer->GetElapsedTime());
+		SpriteDef spriteDef = m_animation.m_animDef->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
 		AABB2 spriteUVs = spriteDef.m_UVs;
 
 		animationVerts[0].m_uvTexCoords = spriteUVs.m_mins;

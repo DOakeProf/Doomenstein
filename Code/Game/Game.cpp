@@ -87,34 +87,6 @@ void Game::Startup()
 	m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
 	m_screenCamera->SetViewport(AABB2(0.f, 0.f, (float)g_engine->m_window->GetClientDimensions().x, (float)g_engine->m_window->GetClientDimensions().y));
 
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Initialize Player(s)
-	m_players.push_back(new Player(nullptr, Vec3(2.5f, 8.5f, 0.5f)));
-	m_players[0]->m_worldCamera = new Camera();
-
-	float halfScreenHeight = (float)g_engine->m_window->GetClientDimensions().y * 0.5f;
-	AABB2 player1Viewport = AABB2(0.f, 0.f, (float)g_engine->m_window->GetClientDimensions().x, halfScreenHeight);
-	m_players[0]->m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
-	m_players[0]->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
-	m_players[0]->m_worldCamera->SetViewport(player1Viewport);
-	m_players[0]->m_screenCamera = new Camera();
-	m_players[0]->m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
-	m_players[0]->m_screenCamera->SetViewport(player1Viewport);
-	m_players[0]->m_viewport = player1Viewport;
-	m_players[0]->m_playerIndex = 0;
-	
-	m_players.push_back(new Player(nullptr, Vec3(2.5f, 8.5f, 0.5f)));
-	m_players[1]->m_worldCamera = new Camera();
-	AABB2 player2Viewport = AABB2(0.f, halfScreenHeight, (float)g_engine->m_window->GetClientDimensions().x, halfScreenHeight + halfScreenHeight);
-	m_players[1]->m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
-	m_players[1]->m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
-	m_players[1]->m_worldCamera->SetViewport(player2Viewport);
-	m_players[1]->m_screenCamera = new Camera();
-	m_players[1]->m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
-	m_players[1]->m_screenCamera->SetViewport(player2Viewport);
-	m_players[1]->m_viewport = player2Viewport;
-	m_players[1]->m_playerIndex = 1;
-
 	m_squirrelFont = g_engine->m_render->CreateOrGetBitmapFont("Data/Fonts/SquirrelFixedFont");
 
 	m_useTexture1Shader = g_engine->m_render->CreateShader("Data/Shaders/PortalShader", VertexType::VERTEX_PCU);
@@ -150,9 +122,10 @@ void Game::Startup_PopulateFromBlackboard()
 void Game::Update_AttractMode()
 {
 	// Keyboard Inputs
-	if (g_engine->m_input->WasKeyJustPressed(' ') or g_engine->m_input->WasKeyJustPressed('N'))
+	if (g_engine->m_input->WasKeyJustPressed(' '))
 	{
-		ChangeGameState(GameState::GAME_STATE_PLAYING);
+		ChangeGameState(GameState::GAME_STATE_LOBBY);
+		JoinPlayer(-1);
 	}
 
 	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_ESC))
@@ -161,9 +134,10 @@ void Game::Update_AttractMode()
 	}
 
 	// Xbox Controller Inputs
-	if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::GAMEPAD_B) or g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::GAMEPAD_A))
+	if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::START))
 	{
-		ChangeGameState(GameState::GAME_STATE_PLAYING);
+		ChangeGameState(GameState::GAME_STATE_LOBBY);
+		JoinPlayer(0);
 	}
 
 	if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::BACK))
@@ -174,7 +148,112 @@ void Game::Update_AttractMode()
 
 void Game::Update_LobbyMode()
 {
+	int playerSize = 0;
+	for (Player* player : m_players)
+	{
+		if (player != nullptr)
+		{
+			++playerSize;
+		}
+	}
 
+	if (playerSize == 0)
+	{
+		return;
+	}
+	else if (playerSize == 1)
+	{
+		int onlyPlayer = 0;
+		if (m_players[onlyPlayer] == nullptr)
+		{
+			onlyPlayer = 1;
+		}
+
+		// Keyboard Inputs
+		if (g_engine->m_input->WasKeyJustPressed(' '))
+		{
+			if (m_players[onlyPlayer]->m_controllerIndex == -1)
+			{
+				ChangeGameState(GameState::GAME_STATE_PLAYING);
+			}
+			else
+			{
+				JoinPlayer(-1);
+			}
+		}
+
+		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_ESC))
+		{
+			if (m_players[onlyPlayer]->m_controllerIndex == -1)
+			{
+				delete m_players[onlyPlayer];
+				m_players[onlyPlayer] = nullptr;
+			}
+			ChangeGameState(GameState::GAME_STATE_ATTRACT);
+		}
+
+		// Xbox Controller Inputs
+		if (g_engine->m_input->m_controllers[onlyPlayer].WasButtonJustPressed(XboxButtonID::START))
+		{
+			if (m_players[onlyPlayer]->m_controllerIndex == 0)
+			{
+				ChangeGameState(GameState::GAME_STATE_PLAYING);
+			}
+			else
+			{
+				JoinPlayer(0);
+			}
+		}
+
+		if (g_engine->m_input->m_controllers[onlyPlayer].WasButtonJustPressed(XboxButtonID::BACK))
+		{
+			if (m_players[onlyPlayer]->m_controllerIndex == 0)
+			{
+				delete m_players[onlyPlayer];
+				m_players[onlyPlayer] = nullptr;
+			}
+			ChangeGameState(GameState::GAME_STATE_ATTRACT);
+		}
+
+	}
+	else
+	{
+		// Keyboard Inputs
+		if (g_engine->m_input->WasKeyJustPressed(' '))
+		{
+			ChangeGameState(GameState::GAME_STATE_PLAYING);
+		}
+
+		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_ESC))
+		{
+			for (int playerIndex = 0; playerIndex < m_players.size(); ++playerIndex)
+			{
+				if (m_players[playerIndex]->m_controllerIndex == -1)
+				{
+					delete m_players[playerIndex];
+					m_players[playerIndex] = nullptr;
+				}
+			}
+		}
+
+		// Xbox Controller Inputs
+		if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::START))
+		{
+			ChangeGameState(GameState::GAME_STATE_PLAYING);
+		}
+
+		if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::BACK))
+		{
+			for (int playerIndex = 0; playerIndex < m_players.size(); ++playerIndex)
+			{
+				if (m_players[playerIndex]->m_controllerIndex == 0)
+				{
+					delete m_players[playerIndex];
+					m_players[playerIndex] = nullptr;
+				}
+			}
+		}
+	}
 }
 
 void Game::Render_AttractMode() const
@@ -185,7 +264,7 @@ void Game::Render_AttractMode() const
 
 	std::vector<Vertex> verts;
 
-	m_squirrelFont->AddVertsForTextInBox2D(verts, "Press SPACE to start", AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y)), SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.1f));
+	m_squirrelFont->AddVertsForTextInBox2D(verts, "Press SPACE to join with mouse and keyboard\nPress START to join with controller\nPress ESCAPE or BACK to exit", AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y)), SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.1f));
 
 	g_engine->m_render->BindTexture(&m_squirrelFont->GetTexture());
 	g_engine->m_render->DrawVertexList(&verts);
@@ -195,7 +274,122 @@ void Game::Render_AttractMode() const
 
 void Game::Render_LobbyMode() const
 {
+	g_engine->m_render->ClearScreen(Rgba8(0, 0, 0, 255));
 
+	g_engine->m_render->BeginCamera(m_screenCamera);
+
+	std::vector<Vertex> verts;
+
+	AABB2 screenAABB = AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
+
+	int playerSize = 0;
+	for (Player* player : m_players)
+	{
+		if (player != nullptr)
+		{
+			++playerSize;
+		}
+	}
+
+	if (playerSize == 0)
+	{
+		return;
+	}
+	else if (playerSize < 2)
+	{
+		int onlyPlayer = 0;
+		if (m_players[0] == nullptr)
+		{
+			onlyPlayer = 1;
+		}
+
+		std::string player1Control;
+		std::string player1Commands;
+
+		if (m_players[onlyPlayer]->m_controllerIndex == -1)
+		{
+			player1Control = "Mouse and Keyboard";
+		}
+		else
+		{
+			player1Control = "Controller";
+		}
+
+		if (m_players[onlyPlayer]->m_controllerIndex == -1)
+		{
+			player1Commands = "Press SPACE to start game\nPress ESCAPE to leave game\nPress START to join player";
+		}
+		else
+		{
+			player1Commands = "Press START to start game\nPress BACK to leave game\nPress SPACE to join player";
+		}
+
+		m_squirrelFont->AddVertsForTextInBox2D(verts, "Player 1", screenAABB, SCREEN_SIZE_Y * 0.05f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.5f));
+		m_squirrelFont->AddVertsForTextInBox2D(verts, player1Control, screenAABB, SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.45f));
+		m_squirrelFont->AddVertsForTextInBox2D(verts, player1Commands, screenAABB, SCREEN_SIZE_Y * 0.02f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.35f));
+	}
+	else
+	{
+		AABB2 player1AABB = screenAABB;
+		player1AABB.DivideHorizontal(0.5f, false);
+		AABB2 player2AABB = screenAABB;
+		player2AABB.DivideHorizontal(0.5f, true);
+
+		std::string player1Control;
+		std::string player1Commands;
+
+		if (m_players[0]->m_controllerIndex == -1)
+		{
+			player1Control = "Mouse and Keyboard";
+		}
+		else
+		{
+			player1Control = "Controller";
+		}
+
+		if (m_players[0]->m_controllerIndex == -1)
+		{
+			player1Commands = "Press SPACE to start game\nPress ESCAPE to leave game";
+		}
+		else
+		{
+			player1Commands = "Press START to start game\nPress BACK to leave game";
+		}
+
+		std::string player2Control;
+		std::string player2Commands;
+
+		if (m_players[1]->m_controllerIndex == -1)
+		{
+			player2Control = "Mouse and Keyboard";
+		}
+		else
+		{
+			player2Control = "Controller";
+		}
+
+		if (m_players[1]->m_controllerIndex == -1)
+		{
+			player2Commands = "Press SPACE to start game\nPress ESCAPE to leave game";
+		}
+		else
+		{
+			player2Commands = "Press START to start game\nPress BACK to leave game";
+		}
+
+		m_squirrelFont->AddVertsForTextInBox2D(verts, "Player 1", player1AABB, SCREEN_SIZE_Y * 0.05f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.5f));
+		m_squirrelFont->AddVertsForTextInBox2D(verts, player1Control, player1AABB, SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+		m_squirrelFont->AddVertsForTextInBox2D(verts, player1Commands, player1AABB, SCREEN_SIZE_Y * 0.02f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.25f));
+
+		m_squirrelFont->AddVertsForTextInBox2D(verts, "Player 2", player2AABB, SCREEN_SIZE_Y * 0.05f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.5f));
+		m_squirrelFont->AddVertsForTextInBox2D(verts, player2Control, player2AABB, SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+		m_squirrelFont->AddVertsForTextInBox2D(verts, player2Commands, player2AABB, SCREEN_SIZE_Y * 0.02f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.25f));
+	}
+
+	g_engine->m_render->BindTexture(&m_squirrelFont->GetTexture());
+	g_engine->m_render->DrawVertexList(&verts);
+
+	g_engine->m_render->EndCamera(m_screenCamera);
 }
 
 void Game::Update_PlayingMode()
@@ -203,6 +397,10 @@ void Game::Update_PlayingMode()
 	// Entity updates
 	for (Player* player : m_players)
 	{
+		if (player == nullptr)
+		{
+			continue;
+		}
 		player->Update();
 	}
 	m_currentMap->Update();
@@ -220,6 +418,36 @@ void Game::ChangeGameState(GameState newGameState)
 	m_nextGameState = newGameState;
 }
 
+Player* Game::JoinPlayer(int controllerIndex)
+{
+	Player* newPlayer = new Player(nullptr, Vec3(2.5f, 8.5f, 0.5f));
+	int currentIndex = 0;
+	bool wasPlayerAdded = false;
+
+	for (int playerIndex = 0; playerIndex < m_players.size(); ++playerIndex)
+	{
+		if (m_players[playerIndex] == nullptr)
+		{
+			m_players[playerIndex] = newPlayer;
+			currentIndex = playerIndex;
+			wasPlayerAdded = true;
+			break;
+		}
+	}
+	if (!wasPlayerAdded)
+	{
+		m_players.push_back(newPlayer);
+		currentIndex = m_players.size() - 1;
+	}
+
+	m_players[currentIndex]->m_worldCamera = new Camera();
+	m_players[currentIndex]->m_screenCamera = new Camera();
+	m_players[currentIndex]->m_playerIndex = currentIndex;
+	m_players[currentIndex]->m_controllerIndex = controllerIndex;
+
+	return m_players[currentIndex];
+}
+
 void Game::EnterState(GameState state)
 {
 	switch (state)
@@ -228,6 +456,36 @@ void Game::EnterState(GameState state)
 		{
 			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString));
 			m_currentMap->Startup_InitializeActors(); // Initialize actors here because the function calls things that only exist after the map is made.
+			bool isMultiplayer = false;
+			int playerSize = 0;
+			for (Player* player : m_players)
+			{
+				if (player != nullptr)
+				{
+					++playerSize;
+				}
+			}
+			if (playerSize > 1)
+			{
+				isMultiplayer = true;
+			}
+			for (int playerIndex = 0; playerIndex < m_players.size(); ++playerIndex)
+			{
+				Player* player = m_players[playerIndex];
+				if (player == nullptr)
+				{
+					continue;
+				}
+				player->SetViewport(isMultiplayer, playerIndex);
+				if (player->m_controllerIndex == -1)
+				{
+					player->SetControllerState(ControlState::KEYBOARD);
+				}
+				else if (player->m_controllerIndex == 0)
+				{
+					player->SetControllerState(ControlState::CONTROLLER);
+				}
+			}
 			break;
 		}
 		case GameState::GAME_STATE_ATTRACT:

@@ -57,6 +57,7 @@ public:
 
 	void SetPlayerState(PlayerState const& state);
 	void SetControllerState(ControlState const& state);
+	void SetViewport(bool isMultiplayer, int playerIndex);
 
 	bool IsPlayer() const override;
 

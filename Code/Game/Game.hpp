@@ -39,6 +39,8 @@ public:
 	void AddHitStop(float hitStop);
 	void ChangeGameState(GameState newGameState);
 
+	Player* JoinPlayer(int controllerIndex);
+
 private:
 	void Startup_PopulateFromBlackboard();
 

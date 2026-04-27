@@ -31,7 +31,10 @@ Map::Map(Game* game, const MapDefinition* definition)
 {
 	for (Player* player : m_game->m_players)
 	{
-		player->m_map = this;
+		if (player != nullptr)
+		{
+			player->m_map = this;
+		}
 	}
 	Startup();
 }
@@ -87,10 +90,14 @@ void Map::Startup_InitializeActors()
 	for (int playerIndex = 0; playerIndex < m_game->m_players.size(); ++ playerIndex)
 	{
 		Player* player = m_game->m_players[playerIndex];
+
+		if (player == nullptr)
+		{
+			continue;
+		}
 		Actor* playerActor = SpawnPlayer(player);
 
 		player->Possess(playerActor->m_handle);
-		int randomSpawnPointIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, (int)m_spawnPoints.size() - 1);
 		if (playerIndex == 0)
 		{
 			player->SetControllerState(ControlState::KEYBOARD);
@@ -1013,6 +1020,10 @@ void Map::Render()
 	for (int playerIndex = 0; playerIndex < m_game->m_players.size(); ++playerIndex)
 	{
 		Player* player = m_game->m_players[playerIndex];
+		if (player == nullptr)
+		{
+			continue;
+		}
 		if (player->GetActor() == nullptr)
 		{
 			continue;

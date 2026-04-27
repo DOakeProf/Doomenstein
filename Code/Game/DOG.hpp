@@ -33,5 +33,5 @@ private:
 	CubicHermiteSpline3D m_spline;
 	float m_parametricValueAcrossCurve;
 	float m_secondsUntilHit = 1.f;
-	float m_averageVelocity = 20.f;
+	float m_averageVelocity = 30.f;
 };

@@ -101,10 +101,16 @@ void DOG::ChooseNextSpline()
 
 Vec3 DOG::FindRandomVec3()
 {
+	float maxVertical = 8.f;
+	float maxHorizontal = 40.f;
+
+	float horizontalDisplacement = 30.f;
+	float verticalDisplacement = 7.f;
+
 	Vec3 randomVec3 = Vec3(
-		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-80.f, 100.f),
-		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-80.f, 100.f),
-		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-10.f, 20.f)
+		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(GetClamped(m_head->m_position.x - horizontalDisplacement, -maxHorizontal, maxHorizontal), GetClamped(m_head->m_position.x + horizontalDisplacement, -maxHorizontal, maxHorizontal)),
+		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(GetClamped(m_head->m_position.y - horizontalDisplacement, -maxHorizontal, maxHorizontal), GetClamped(m_head->m_position.y + horizontalDisplacement, -maxHorizontal, maxHorizontal)),
+		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(GetClamped(m_head->m_position.z - verticalDisplacement, -maxVertical, maxVertical), GetClamped(m_head->m_position.z + verticalDisplacement, -maxVertical, maxVertical))
 	);
 	return randomVec3;
 }

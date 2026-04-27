@@ -637,7 +637,8 @@ void Map::CollideActors()
 				if (actorB != nullptr && 
 					!actorB->m_isDead && 
 					actorB->m_definition->m_collidesWithActors &&
-					actorB->m_owner != actorA
+					actorB->m_owner != actorA &&
+					actorA->m_owner != actorB
 					)
 				{
 					CollideActors(actorA, actorB);

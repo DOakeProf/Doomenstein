@@ -226,8 +226,11 @@ void glTF_Asset::Initialize_LoadAllMaterials(JsonData  const& jsonData)
 				pbrMR->m_baseColorFactor = Vec4(1.f, 1.f, 1.f, 1.f);
 			}
 
-			JsonData baseColorTexture = GetValueFromJsonData(pbrMetallicRoughness, "baseColorTexture");
-			pbrMR->m_baseColorTextureIndex = GetValueFromJsonData(baseColorTexture, "index", -1);
+			if (DoesValueExist(pbrMetallicRoughness, "baseColorTexture"))
+			{
+				JsonData baseColorTexture = GetValueFromJsonData(pbrMetallicRoughness, "baseColorTexture");
+				pbrMR->m_baseColorTextureIndex = GetValueFromJsonData(baseColorTexture, "index", -1);
+			}
 
 			if (DoesValueExist(pbrMetallicRoughness, "metallicRoughnessTexture"))
 			{
@@ -542,22 +545,6 @@ void glTF_Asset::Initialize_LoadAllBuffers(JsonData const& jsonData)
 	}
 }
 
-void glTF_Asset::Test_AddVertsForModel(std::vector<Vertex>& verts, std::vector<unsigned int>& indexes)
-{
-	// Loop through all meshes at startup, then through all primitives of meshes. Store vertex and index buffer data per primitive.
-
-	//for (int sceneIndex = 0; sceneIndex < m_scenes.size(); ++sceneIndex)
-	//{
-	//	glTF_Scene* scene = m_scenes[sceneIndex];
-	//	for (int sceneNodeIndex = 0; sceneNodeIndex < scene->m_nodeIndexes.size(); ++sceneNodeIndex)
-	//	{
-	//		int nodeIndex = scene->m_nodeIndexes[sceneNodeIndex];
-	//		Mat44 sceneTransform = Mat44();
-	//		m_nodes[nodeIndex]->AddVerts(verts, indexes, sceneTransform);
-	//	}
-	//}
-}
-
 void glTF_Asset::Test_RenderModel()
 {
 	//g_engine->m_render->BindShader(m_glTFAnimatedShader);
@@ -576,95 +563,6 @@ void glTF_Asset::Test_RenderModel()
 void glTF_Node::UpdateNode([[maybe_unused]] Mat44& parentMatrix)
 {
 
-}
-
-void glTF_Node::AddVerts(std::vector<Vertex_PCUTBN>& verts, std::vector<unsigned int>& indexes, Mat44& matrix)
-{
-	//if (m_meshIndex != -1)
-	//{
-	//	// Handle reading mesh and placing verts
-	//	glTF_Mesh* mesh = m_owner->m_meshes[m_meshIndex];
-	//	// Loop through all primitives in the mesh
-	//	for (int primitiveIndex = 0; primitiveIndex < mesh->m_primitives.size(); ++primitiveIndex)
-	//	{
-	//		glTF_Primitive* currentPrimitive = mesh->m_primitives[primitiveIndex];
-
-	//		// Indices
-	//		std::vector<uint8_t> indicesBuffer;
-	//		glTF_Accessor* indicesAccessor = m_owner->m_accessors[currentPrimitive->m_indicesIndex];
-	//		glTF_BufferView* indicesBufferView = m_owner->m_bufferViews[indicesAccessor->m_bufferViewIndex];
-	//		glTF_Buffer* currentBuffer = m_owner->m_buffers[indicesBufferView->m_bufferIndex];
-
-	//		int indicesNumBytesPerElement = GLTF_GetNumBytesFromComponentType(indicesAccessor->m_componentType);
-	//		int indicesNumComponentsPerElement = GLTF_GetNumComponentsFromType(indicesAccessor->m_type);
-	//		int start = indicesAccessor->m_byteOffset + indicesBufferView->m_byteOffset;
-	//		int end = start + (indicesAccessor->m_count * indicesNumBytesPerElement * indicesNumComponentsPerElement);
-
-	//		indicesBuffer.assign(currentBuffer->m_data.begin() + start, currentBuffer->m_data.begin() + end);
-
-	//		// Positions
-	//		std::vector<uint8_t> positionsBuffer;
-	//		glTF_Accessor* positionsAccessor = m_owner->m_accessors[currentPrimitive->m_attributes["POSITION"]];
-	//		glTF_BufferView* positionsBufferView = m_owner->m_bufferViews[positionsAccessor->m_bufferViewIndex];
-
-	//		int positionsNumBytesPerElement = GLTF_GetNumBytesFromComponentType(positionsAccessor->m_componentType);
-	//		int positionsNumComponentsPerElement = GLTF_GetNumComponentsFromType(positionsAccessor->m_type);
-	//		start = positionsAccessor->m_byteOffset + positionsBufferView->m_byteOffset;
-	//		end = start + (positionsAccessor->m_count * positionsNumBytesPerElement * positionsNumComponentsPerElement);
-
-	//		positionsBuffer.assign(currentBuffer->m_data.begin() + start, currentBuffer->m_data.begin() + end);
-
-	//		// Parse the buffers to get the vertex positions
-	//		float* positionsBufferAsFloat = reinterpret_cast<float*>(positionsBuffer.data());
-	//		std::vector<Vec3> positionsAsVectors;
-	//		for (int vectorIndex = 0; vectorIndex < positionsAccessor->m_count; ++vectorIndex)
-	//		{
-	//			Vec3 vector;
-	//			vector.x = positionsBufferAsFloat[vectorIndex * 3 + 0];
-	//			vector.y = positionsBufferAsFloat[vectorIndex * 3 + 1];
-	//			vector.z = positionsBufferAsFloat[vectorIndex * 3 + 2];
-	//			positionsAsVectors.push_back(vector);
-	//		}
-
-	//		if (indicesNumBytesPerElement == 2)
-	//		{
-	//			uint8_t* indicesBufferUsingProperSize = reinterpret_cast<uint8_t*>(indicesBuffer.data());
-	//			for (int indicesIndex = 0; indicesIndex < indicesAccessor->m_count; ++indicesIndex)
-	//			{
-	//				Vertex_PCUTBN newVertex = Vertex_PCUTBN(positionsAsVectors[indicesBufferUsingProperSize[indicesIndex]], Rgba8::WHITE, Vec2(0.f, 0.f));
-	//				verts.push_back(newVertex);
-	//			}
-	//		}
-	//		else if (indicesNumBytesPerElement == 4)
-	//		{
-	//			uint16_t* indicesBufferUsingProperSize = reinterpret_cast<uint16_t*>(indicesBuffer.data());
-	//			for (int indicesIndex = 0; indicesIndex < indicesAccessor->m_count; ++indicesIndex)
-	//			{
-	//				Vertex_PCUTBN newVertex = Vertex_PCUTBN(positionsAsVectors[indicesBufferUsingProperSize[indicesIndex]], Rgba8::WHITE, Vec2(0.f, 0.f));
-	//				verts.push_back(newVertex);
-	//			}
-	//		}
-	//		else if (indicesNumBytesPerElement == 8)
-	//		{
-	//			uint32_t* indicesBufferUsingProperSize = reinterpret_cast<uint32_t*>(indicesBuffer.data());
-	//			for (int indicesIndex = 0; indicesIndex < indicesAccessor->m_count; ++indicesIndex)
-	//			{
-	//				Vertex_PCUTBN newVertex = Vertex_PCUTBN(positionsAsVectors[indicesBufferUsingProperSize[indicesIndex]], Rgba8::WHITE, Vec2(0.f, 0.f));
-	//				verts.push_back(newVertex);
-	//			}
-	//		}
-	//	}
-	//}
-
-	//// TODO: Get the new matrix from the transform information
-	//Mat44 newTransformMatrix = matrix;
-
-	//// Loop through all the child nodes, supplying the new transform.
-	//for (int childIndexIndex = 0; childIndexIndex < m_childIndexes.size(); ++childIndexIndex)
-	//{
-	//	int currentChildIndex = m_childIndexes[childIndexIndex];
-	//	m_owner->m_nodes[currentChildIndex]->AddVerts(verts, indexes, matrix);
-	//}
 }
 
 void glTF_Node::RenderNode()

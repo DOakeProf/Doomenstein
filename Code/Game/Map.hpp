@@ -15,6 +15,7 @@
 #include "Game/SpawnInfo.hpp"
 #include "Game/Portal.hpp"
 #include "Game/DOG.hpp"
+#include "Game/Rift.hpp"
 
 class Game;
 class Image;
@@ -84,6 +85,7 @@ public:
 	~Map();
 
 	void Startup();
+	void Startup_InitializePlayers();
 	void Startup_InitializeActors();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -117,6 +119,7 @@ public:
 	Actor* SpawnActor(const SpawnInfo& spawnInfo);
 	Actor* SpawnActor(const char* actorName, Vec3 position, EulerAngles orientation);
 	Actor* SpawnPlayer(Player* player);
+	Actor* SpawnPlayerInitial(Player* player, Vec3& position);
 	void AddPortal(Portal* portal);
 	void RemovePortal(Portal* portal);
 
@@ -160,6 +163,8 @@ public:
 	ConstantBuffer* m_clipPlaneCBO = nullptr;
 	ConstantBuffer* m_portalAABB3CBO = nullptr;
 
+	Map* m_riftMap;
+
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Player
 	Player* m_currentlyRenderedPlayer;
@@ -200,5 +205,5 @@ protected:
 	unsigned int m_nextActorUID = 0;
 	Actor* m_bulletActor;
 	DOG* m_DOG;
-
+	std::vector<Player*> m_players; 
 };

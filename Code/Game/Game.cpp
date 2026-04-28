@@ -6,6 +6,7 @@
 #include "Game/Tile.hpp"
 #include "Game/Weapon.hpp"
 #include "Game/Actor.hpp"
+#include "Game/Rift.hpp"
 
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
@@ -24,10 +25,8 @@
 #include "Engine/Core/Timer.hpp"
 #include "Engine/Renderer/Texture.hpp"
 #include "Engine/BitmapFont.hpp"
-// TODO: Make gamestate set by an enum value. DO current state and next state, 
-// when these are different know we're switching states, run current state frame 
-// and then next frame switch. switch at top of update. enum has invalidstate as -1. 
-// Default is invalid state.
+
+static std::vector<Rift*> s_rifts;
 
 Game::Game()
 {
@@ -60,6 +59,7 @@ void Game::Update()
 
 void Game::Render() const
 {
+	g_engine->m_render->ClearScreen(m_backgroundClearColor);
 	switch (m_currentGameState)
 	{
 		case GameState::GAME_STATE_ATTRACT:		Render_AttractMode(); break;
@@ -112,11 +112,12 @@ void Game::Startup_PopulateFromBlackboard()
 	m_moveSpeed = g_gameConfigBlackboard.GetValue("moveSpeed", 0.f);
 
 	m_musicVolume = g_gameConfigBlackboard.GetValue("musicVolume", 0.1f);
-	m_mainMenuMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("mainMenuMusic", ""));
-	m_gameMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("gameMusic", ""));
-	m_buttonClickSound = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("buttonClickSound", ""));
+	m_mainMenuMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("mainMenuMusic", ""), true);
+	m_gameMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("gameMusic", ""), true);
+	m_buttonClickSound = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("buttonClickSound", ""), true);
 
 	m_mapDefinitionString = g_gameConfigBlackboard.GetValue("defaultMap", "");
+	m_riftMapDefinitionString = g_gameConfigBlackboard.GetValue("defaultRiftMap", "");
 }
 
 void Game::Update_AttractMode()
@@ -126,6 +127,7 @@ void Game::Update_AttractMode()
 	{
 		ChangeGameState(GameState::GAME_STATE_LOBBY);
 		JoinPlayer(-1);
+		g_engine->m_audio->StartSound(m_buttonClickSound);
 	}
 
 	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_ESC))
@@ -138,6 +140,7 @@ void Game::Update_AttractMode()
 	{
 		ChangeGameState(GameState::GAME_STATE_LOBBY);
 		JoinPlayer(0);
+		g_engine->m_audio->StartSound(m_buttonClickSound);
 	}
 
 	if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::BACK))
@@ -175,10 +178,12 @@ void Game::Update_LobbyMode()
 			if (m_players[onlyPlayer]->m_controllerIndex == -1)
 			{
 				ChangeGameState(GameState::GAME_STATE_PLAYING);
+				g_engine->m_audio->StartSound(m_buttonClickSound);
 			}
 			else
 			{
 				JoinPlayer(-1);
+				g_engine->m_audio->StartSound(m_buttonClickSound);
 			}
 		}
 
@@ -190,6 +195,7 @@ void Game::Update_LobbyMode()
 				m_players[onlyPlayer] = nullptr;
 			}
 			ChangeGameState(GameState::GAME_STATE_ATTRACT);
+			g_engine->m_audio->StartSound(m_buttonClickSound);
 		}
 
 		// Xbox Controller Inputs
@@ -198,10 +204,12 @@ void Game::Update_LobbyMode()
 			if (m_players[onlyPlayer]->m_controllerIndex == 0)
 			{
 				ChangeGameState(GameState::GAME_STATE_PLAYING);
+				g_engine->m_audio->StartSound(m_buttonClickSound);
 			}
 			else
 			{
 				JoinPlayer(0);
+				g_engine->m_audio->StartSound(m_buttonClickSound);
 			}
 		}
 
@@ -213,6 +221,7 @@ void Game::Update_LobbyMode()
 				m_players[onlyPlayer] = nullptr;
 			}
 			ChangeGameState(GameState::GAME_STATE_ATTRACT);
+			g_engine->m_audio->StartSound(m_buttonClickSound);
 		}
 
 	}
@@ -222,6 +231,7 @@ void Game::Update_LobbyMode()
 		if (g_engine->m_input->WasKeyJustPressed(' '))
 		{
 			ChangeGameState(GameState::GAME_STATE_PLAYING);
+			g_engine->m_audio->StartSound(m_buttonClickSound);
 		}
 
 		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_ESC))
@@ -234,12 +244,14 @@ void Game::Update_LobbyMode()
 					m_players[playerIndex] = nullptr;
 				}
 			}
+			g_engine->m_audio->StartSound(m_buttonClickSound);
 		}
 
 		// Xbox Controller Inputs
 		if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::START))
 		{
 			ChangeGameState(GameState::GAME_STATE_PLAYING);
+			g_engine->m_audio->StartSound(m_buttonClickSound);
 		}
 
 		if (g_engine->m_input->m_controllers[0].WasButtonJustPressed(XboxButtonID::BACK))
@@ -252,6 +264,7 @@ void Game::Update_LobbyMode()
 					m_players[playerIndex] = nullptr;
 				}
 			}
+			g_engine->m_audio->StartSound(m_buttonClickSound);
 		}
 	}
 }
@@ -404,6 +417,7 @@ void Game::Update_PlayingMode()
 		player->Update();
 	}
 	m_currentMap->Update();
+	m_currentRiftMap->Update();
 
 	// Camera updates
 }
@@ -411,6 +425,7 @@ void Game::Update_PlayingMode()
 void Game::Render_PlayingMode() const
 {
 	m_currentMap->Render();
+	m_currentRiftMap->Render();
 }
 
 void Game::ChangeGameState(GameState newGameState)
@@ -437,7 +452,7 @@ Player* Game::JoinPlayer(int controllerIndex)
 	if (!wasPlayerAdded)
 	{
 		m_players.push_back(newPlayer);
-		currentIndex = m_players.size() - 1;
+		currentIndex = (int)m_players.size() - 1;
 	}
 
 	m_players[currentIndex]->m_worldCamera = new Camera();
@@ -448,6 +463,37 @@ Player* Game::JoinPlayer(int controllerIndex)
 	return m_players[currentIndex];
 }
 
+void Game::SpawnRift(Vec3 position, EulerAngles orientation)
+{
+	Rift* newRift = new Rift(m_currentMap, m_currentRiftMap, position, orientation, 2.f, 2.f);
+	AddRift(newRift);
+}
+
+void Game::AddRift(Rift* rift)
+{
+	for (int riftIndex = 0; riftIndex < s_rifts.size(); ++riftIndex)
+	{
+		if (s_rifts[riftIndex] == nullptr)
+		{
+			s_rifts[riftIndex] = rift;
+			return;
+		}
+	}
+	s_rifts.push_back(rift);
+}
+
+void Game::RemoveRift(Rift* rift)
+{
+	for (int riftIndex = 0; riftIndex < s_rifts.size(); ++riftIndex)
+	{
+		if (s_rifts[riftIndex] == rift)
+		{
+			delete rift;
+			s_rifts[riftIndex] = nullptr;
+		}
+	}
+}
+
 void Game::EnterState(GameState state)
 {
 	switch (state)
@@ -455,7 +501,17 @@ void Game::EnterState(GameState state)
 		case GameState::GAME_STATE_PLAYING:
 		{
 			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString));
+			m_currentMap->Startup_InitializePlayers();
 			m_currentMap->Startup_InitializeActors(); // Initialize actors here because the function calls things that only exist after the map is made.
+
+			m_currentRiftMap = new Map(this, MapDefinition::GetByName(m_riftMapDefinitionString));
+			m_currentRiftMap->Startup_InitializeActors();
+
+			SpawnRift(Vec3(16.5f, 15.5f, 2.5f), EulerAngles());
+
+			m_currentMap->m_riftMap = m_currentRiftMap;
+			m_currentRiftMap->m_riftMap = m_currentMap;
+
 			bool isMultiplayer = false;
 			int playerSize = 0;
 			for (Player* player : m_players)
@@ -486,12 +542,16 @@ void Game::EnterState(GameState state)
 					player->SetControllerState(ControlState::CONTROLLER);
 				}
 			}
+			g_engine->m_audio->SetNumListeners(playerSize);
+			m_gameMusicPlayback = g_engine->m_audio->StartSound(m_gameMusic, true, m_musicVolume);
+			g_engine->m_audio->StopSound(m_mainMenuMusicPlayback);
 			break;
 		}
 		case GameState::GAME_STATE_ATTRACT:
 		{
 			g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 			g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+			m_mainMenuMusicPlayback = g_engine->m_audio->StartSound(m_mainMenuMusic, true, m_musicVolume);
 			break;
 		}
 	}
@@ -503,8 +563,20 @@ void Game::ExitState(GameState state)
 	{
 		case GameState::GAME_STATE_PLAYING:
 		{
+			for (int riftIndex = 0; riftIndex < s_rifts.size(); ++riftIndex)
+			{
+				delete s_rifts[riftIndex];
+				s_rifts[riftIndex] = nullptr;
+			}
+
 			delete m_currentMap;
 			m_currentMap = nullptr;
+
+			delete m_currentRiftMap;
+			m_currentRiftMap = nullptr;
+
+
+			g_engine->m_audio->StopSound(m_gameMusicPlayback);
 			break;
 		}
 	}

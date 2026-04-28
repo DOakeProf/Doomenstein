@@ -29,13 +29,6 @@ Map::Map(Game* game, const MapDefinition* definition)
 	:m_game(game)
 	, m_definition(definition)
 {
-	for (Player* player : m_game->m_players)
-	{
-		if (player != nullptr)
-		{
-			player->m_map = this;
-		}
-	}
 	Startup();
 }
 
@@ -69,6 +62,40 @@ void Map::Startup()
 	m_portalAABB3CBO = new ConstantBuffer(g_engine->m_render->GetDevice(), sizeof(PortalAABB3Constants));
 }
 
+void Map::Startup_InitializePlayers()
+{
+	for (Player* player : m_game->m_players)
+	{
+		if (player != nullptr)
+		{
+			player->m_map = this;
+		}
+		m_players.push_back(player);
+	}
+
+	for (int playerIndex = 0; playerIndex < m_game->m_players.size(); ++playerIndex)
+	{
+		Player* player = m_game->m_players[playerIndex];
+
+		if (player == nullptr)
+		{
+			continue;
+		}
+		Vec3 playerSpawnLocation = Vec3(5.f, 20.f, 0.f);
+		Actor* playerActor = SpawnPlayerInitial(player, playerSpawnLocation);
+
+		player->Possess(playerActor->m_handle);
+		if (playerIndex == 0)
+		{
+			player->SetControllerState(ControlState::KEYBOARD);
+		}
+		else
+		{
+			player->SetControllerState(ControlState::CONTROLLER);
+		}
+	}
+}
+
 void Map::Startup_InitializeActors()
 {
 	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
@@ -84,27 +111,6 @@ void Map::Startup_InitializeActors()
 		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name != "SpawnPoint")
 		{
 			SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
-		}
-	}
-
-	for (int playerIndex = 0; playerIndex < m_game->m_players.size(); ++ playerIndex)
-	{
-		Player* player = m_game->m_players[playerIndex];
-
-		if (player == nullptr)
-		{
-			continue;
-		}
-		Actor* playerActor = SpawnPlayer(player);
-
-		player->Possess(playerActor->m_handle);
-		if (playerIndex == 0)
-		{
-			player->SetControllerState(ControlState::KEYBOARD);
-		}
-		else
-		{
-			player->SetControllerState(ControlState::CONTROLLER);
 		}
 	}
 
@@ -409,6 +415,16 @@ Actor* Map::SpawnPlayer(Player* player)
 	return nullptr;
 }
 
+Actor* Map::SpawnPlayerInitial(Player* player, Vec3& position)
+{
+	SpawnInfo spawnInfo = SpawnInfo("Marine", position + Vec3(0.f, 0.f, 0.01f), EulerAngles());
+	Actor* actor = SpawnActor(spawnInfo);
+	player->Possess(actor->m_handle);
+	player->SetPlayerState(PlayerState::FIRSTPERSON);
+	return actor;
+	return nullptr;
+}
+
 void Map::AddPortal(Portal* portal)
 {
 	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
@@ -583,6 +599,9 @@ void Map::Update_AddDebugScreenText()
 
 	std::string lightingText = Stringf("Sun Direction X: %.2f [F2 / F3 to change]\nSun Direction Y: %.2f [F4 / F5 to change]\nSun Intensity: %.2f [F6 / F7 to change]\nAmbient Intensity: %.2f [F8 / F9 to change]", m_sunDirection.x, m_sunDirection.y, m_sunIntensity, m_ambientIntensity);
 	DebugAddScreenText(lightingText, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y)), SCREEN_SIZE_Y * 0.02f, Vec2(0.98f, 0.94f), 0.f);
+
+	std::string positionText = Stringf("Player1 X: %.2f\nPlayer1 Y: %.2f\nPlayer1 Z %.2f", m_game->m_players[0]->m_position.x, m_game->m_players[0]->m_position.y, m_game->m_players[0]->m_position.z);
+	DebugAddScreenText(positionText, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y)), SCREEN_SIZE_Y * 0.02f, Vec2(0.98f, 0.85f), 0.f);
 }
 
 void Map::Update_Actors_BeforePreventative()
@@ -1015,12 +1034,10 @@ void Map::CollideActorsWithMap()
 
 void Map::Render()
 {
-	g_engine->m_render->ClearScreen(m_game->m_backgroundClearColor);
-
 	// Player* player : m_game->m_players
-	for (int playerIndex = 0; playerIndex < m_game->m_players.size(); ++playerIndex)
+	for (int playerIndex = 0; playerIndex < m_players.size(); ++playerIndex)
 	{
-		Player* player = m_game->m_players[playerIndex];
+		Player* player = m_players[playerIndex];
 		if (player == nullptr)
 		{
 			continue;

@@ -16,9 +16,10 @@ const Vec3 offsetOutsidePortalAABB3 = Vec3(0.00003f, 0.f, 0.f);
 const Vec3 offsetZValuePortalAABB3 = Vec3(0.f, 0.f, 0.0001f);
 const Vec3 offsetYValuePortalAABB3 = Vec3(0.f, 0.0001f, 0.f);
 
-Portal::Portal(Map* map, Vec3 const& startingPosition, float height, float width)
+Portal::Portal(Map* map, Vec3 const& startingPosition, EulerAngles const& orientation, float height, float width)
 	: m_map(map)
 	, m_position(startingPosition)
+	, m_orientation(orientation)
 {
 	m_portalCamera = new Camera();
 	m_portalCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);

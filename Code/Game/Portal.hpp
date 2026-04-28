@@ -13,12 +13,12 @@ class Map;
 class Portal
 {
 public:
-	Portal(Map* map, Vec3 const& startingPosition, float height, float width);
+	Portal(Map* map, Vec3 const& startingPosition, EulerAngles const& orientation, float height, float width);
 	~Portal();
 
-	void Update();
+	virtual void Update();
 	void RenderOutline() const;
-	void RenderPortal();
+	virtual void RenderPortal();
 
 	void MoveCamera();
 

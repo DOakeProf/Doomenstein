@@ -1,5 +1,6 @@
 <GameConfig
 	defaultMap="TestMap"
+	defaultRiftMap="MPMap"
 	musicVolume="0.1"
 	mainMenuMusic="Data/Audio/Music/MainMenu_InTheDark.mp2"
 	gameMusic="Data/Audio/Music/E1M1_AtDoomsGate.mp2"

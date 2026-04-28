@@ -63,6 +63,8 @@ void Player::Update()
 	{
 		actor->m_equippedWeapon->Update();
 	}
+
+	g_engine->m_audio->UpdateListener(m_playerIndex, m_position, m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_orientation.GetUpDir_IFwd_JLeft_KUp());
 }
 
 void Player::Render()

@@ -141,7 +141,7 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 			XmlElement* SoundElement = SoundsElement->FirstChildElement("Sound");
 			newWeaponDef->m_soundName = ParseXmlAttribute(*SoundElement, "sound", "");
 			std::string soundPath = ParseXmlAttribute(*SoundElement, "name", "");
-			newWeaponDef->m_sound = g_engine->m_audio->CreateOrGetSound(soundPath.c_str());
+			newWeaponDef->m_sound = g_engine->m_audio->CreateOrGetSound(soundPath.c_str(), true);
 		}
 
 		s_definitions.push_back(newWeaponDef);
@@ -278,6 +278,8 @@ void Weapon::Fire(Actor* actor)
 		m_fireTimer->Start();
 		actor->SetAnimGroup("Attack");
 		SetAnimation("Attack");
+		SoundPlaybackID playbackID = g_engine->m_audio->StartSoundAt(m_definition->m_sound, actor->m_position, false);
+		actor->AddSoundPlaybackID(playbackID);
 	}
 	switch (m_definition->m_type)
 	{
@@ -296,6 +298,9 @@ void Weapon::AlternateFire(Actor* actor)
 	{
 		m_alternateFireTimer->Start();
 		actor->SetAnimGroup("Attack");
+		SetAnimation("Attack");
+		SoundPlaybackID playbackID = g_engine->m_audio->StartSoundAt(m_definition->m_sound, actor->m_position, false);
+		actor->AddSoundPlaybackID(playbackID);
 	}
 	switch (m_definition->m_type)
 	{
@@ -337,7 +342,7 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 				PushImpactPointToFitSurface(result);
 
 				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001f;
-				m_rightPortal = new Portal(m_map, portalPosition, m_definition->m_portalHeight, m_definition->m_portalWidth);
+				m_rightPortal = new Portal(m_map, portalPosition, EulerAngles(), m_definition->m_portalHeight, m_definition->m_portalWidth);
 				m_rightPortal->m_isFlipped = true;
 
 				Vec3 inverseImpactNormal = result.m_impactNormal * -1.f; // Flip the right portal so that it is directing towards the surface its on. This will make the link between both portals shoot things that are entering away from the walls instead of towards them.
@@ -613,7 +618,7 @@ void Weapon::Fire_PortalGun(Actor* actor)
 				PushImpactPointToFitSurface(result);
 
 				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001f;
-				m_leftPortal = new Portal(m_map, portalPosition, m_definition->m_portalHeight, m_definition->m_portalWidth);
+				m_leftPortal = new Portal(m_map, portalPosition, EulerAngles(), m_definition->m_portalHeight, m_definition->m_portalWidth);
 				
 				if (result.m_impactNormal.z == 0.f) // If the impact normal is horizontal
 				{

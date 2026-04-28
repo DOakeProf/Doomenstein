@@ -142,6 +142,12 @@ void Actor::Update()
 		m_animClock->SetTimeScale(1.f);
 	}
 
+	for (SoundPlaybackID playbackID : m_soundPlaybackIDs)
+	{
+		g_engine->m_audio->SetSoundPosition(playbackID, m_position);
+	}
+	ClearStoppedPlaybackID();
+
 	m_isGrounded = false;
 }
 
@@ -401,6 +407,44 @@ void Actor::SetAnimGroup(ActorDefinition::AnimationGroup animGroup)
 	m_animTimer->Start();
 }
 
+void Actor::PlaySoundOnActor(std::string soundName)
+{
+	for (ActorDefinition::Sound sound : m_definition->m_sounds)
+	{
+		if (sound.m_name == soundName)
+		{
+			SoundPlaybackID playbackID = g_engine->m_audio->StartSoundAt(sound.m_sound, m_position, false);
+			AddSoundPlaybackID(playbackID);
+		}
+	}
+}
+
+void Actor::AddSoundPlaybackID(SoundPlaybackID playbackID)
+{
+	for (int playbackIndex = 0; playbackIndex < m_soundPlaybackIDs.size(); ++playbackIndex)
+	{
+		SoundPlaybackID curPlaybackID = m_soundPlaybackIDs[playbackIndex];
+		if (curPlaybackID == -1)
+		{
+			m_soundPlaybackIDs[playbackIndex] = playbackID;
+			return;
+		}
+	}
+	m_soundPlaybackIDs.push_back(playbackID);
+}
+
+void Actor::ClearStoppedPlaybackID()
+{
+	for (int playbackIndex = 0; playbackIndex < m_soundPlaybackIDs.size(); ++playbackIndex)
+	{
+		SoundPlaybackID playbackID = m_soundPlaybackIDs[playbackIndex];
+		if (!g_engine->m_audio->IsPlaying(playbackID))
+		{
+			m_soundPlaybackIDs[playbackIndex] = (SoundPlaybackID)( - 1);
+		}
+	}
+}
+
 void Actor::MoveInDirection(Vec3 const& direction, float speed)
 {
 	if (!m_isDead)
@@ -464,6 +508,7 @@ void Actor::Damage(int damage, ActorHandle* otherActor)
 {
 	m_health -= damage;
 	SetAnimGroup("Hurt");
+	PlaySoundOnActor("Hurt");
 	if (m_AIController != nullptr)
 	{
 		m_AIController->DamagedBy(otherActor);
@@ -477,6 +522,7 @@ void Actor::Die()
 		m_isDead = true;
 		m_deathTimer->Start();
 		SetAnimGroup("Death");
+		PlaySoundOnActor("Death");
 	}
 }
 
@@ -664,7 +710,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 
 				newSound.m_name = ParseXmlAttribute(*SoundElement, "sound", "");
 				std::string soundPath = ParseXmlAttribute(*SoundElement, "name", "");
-				newSound.m_sound = g_engine->m_audio->CreateOrGetSound(soundPath);
+				newSound.m_sound = g_engine->m_audio->CreateOrGetSound(soundPath, true);
 
 				newActorDef->m_sounds.push_back(newSound);
 				SoundElement = SoundElement->NextSiblingElement();

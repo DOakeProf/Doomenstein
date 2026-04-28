@@ -15,6 +15,7 @@ class Map;
 class Timer;
 class Shader;
 class BitmapFont;
+class Rift;
 typedef size_t SoundID;
 
 enum class GameState {
@@ -41,6 +42,12 @@ public:
 
 	Player* JoinPlayer(int controllerIndex);
 
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Rifts
+	void SpawnRift(Vec3 position, EulerAngles orientation);
+	void AddRift(Rift* rift);
+	void RemoveRift(Rift* rift);
+
 private:
 	void Startup_PopulateFromBlackboard();
 
@@ -58,10 +65,11 @@ private:
 public:
 	RandomNumberGenerator*	m_randomNumberGenerator = nullptr;
 	GameState				m_nextGameState = GameState::GAME_STATE_ATTRACT;
-	GameState				m_currentGameState = GameState::GAME_STATE_ATTRACT;
+	GameState				m_currentGameState = GameState::GAME_STATE_NONE;
 	float					m_screenShakeFraction = 0.f;
 
 	Map* m_currentMap = nullptr;
+	Map* m_currentRiftMap = nullptr;
 	std::vector<Player*> m_players;
 	BitmapFont* m_squirrelFont;
 
@@ -81,9 +89,12 @@ public:
 	float		m_moveSpeed = 0.f;
 	float		m_musicVolume = 0.f;
 	SoundID		m_mainMenuMusic;
+	SoundPlaybackID m_mainMenuMusicPlayback;
 	SoundID		m_gameMusic;
+	SoundPlaybackID m_gameMusicPlayback;
 	SoundID		m_buttonClickSound;
 	std::string m_mapDefinitionString;
+	std::string m_riftMapDefinitionString;
 
 	Camera* m_screenCamera = nullptr;
 

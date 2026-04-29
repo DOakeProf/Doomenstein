@@ -49,7 +49,7 @@ public:
 	bool m_isFlipped = false; // For checking which side of the portal should be clipped in the portal's view.
 	Camera* m_portalCamera = nullptr;
 
-private:
+protected:
 	Portal* m_otherPortal = nullptr;
 
 	Map* m_map = nullptr;

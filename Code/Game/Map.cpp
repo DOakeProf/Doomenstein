@@ -363,26 +363,66 @@ IndexBuffer* Map::GetIndexBuffer()
 
 int Map::AddActorToMap(Actor* actor)
 {
+	// Add actor and store index
+	int finalActorIndex = -1;
+	bool wasActorAdded = false;
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
 	{
 		Actor* currentActor = m_actors[actorIndex];
 		if (currentActor == nullptr)
 		{
 			m_actors[actorIndex] = actor;
-			return actorIndex;
+			wasActorAdded = true;
+			finalActorIndex = actorIndex;
+			break;
 		}
 	}
-	m_actors.push_back(actor);
+	if (!wasActorAdded)
+	{
+		m_actors.push_back(actor);
+		finalActorIndex = (int)m_actors.size() - 1;
+	}
 
-	return (int)m_actors.size() - 1;
+	actor->m_handle = new ActorHandle(m_nextActorUID, finalActorIndex);
+	actor->m_map = this;
+
+	if (actor->m_controller != nullptr && actor->m_controller->IsPlayer())
+	{
+		// Add player
+		bool wasPlayerAdded = false;
+		for (int playerIndex = 0; playerIndex < m_players.size(); ++playerIndex)
+		{
+			if (m_players[playerIndex] == nullptr)
+			{
+				m_players[playerIndex] = (Player*)actor->m_controller;
+				wasPlayerAdded = true;
+				break;
+			}
+		}
+		if (!wasPlayerAdded)
+		{
+			m_players.push_back((Player*)actor->m_controller);
+		}
+	}
+
+	if (actor->m_controller != nullptr)
+	{
+		actor->m_controller->m_map = this;
+		actor->m_controller->m_actorHandle = actor->m_handle;
+	}
+	if (actor->m_AIController != nullptr)
+	{
+		actor->m_AIController->m_map = this;
+		actor->m_AIController->m_actorHandle = actor->m_handle;
+	}
+
+	return finalActorIndex;
 }
 
 Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 {
 	Actor* newActor = new Actor(this, spawnInfo.m_name, spawnInfo.m_position + Vec3(0.f, 0.f, 0.01f), spawnInfo.m_orientation);
-	int actorIndex = AddActorToMap(newActor);
-	ActorHandle* actorHandle = new ActorHandle(m_nextActorUID, actorIndex);
-	newActor->m_handle = actorHandle;
+	AddActorToMap(newActor);
 	++m_nextActorUID;
 	if (m_nextActorUID > ActorHandle::MAX_ACTOR_UID)
 	{
@@ -392,7 +432,7 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 	if (newActor->m_definition->m_aiEnabled)
 	{
 		AI* aiController = new AI(this);
-		aiController->Possess(actorHandle);
+		aiController->Possess(newActor->m_handle);
 	}
 
 	return newActor;
@@ -423,6 +463,37 @@ Actor* Map::SpawnPlayerInitial(Player* player, Vec3& position)
 	player->SetPlayerState(PlayerState::FIRSTPERSON);
 	return actor;
 	return nullptr;
+}
+
+void Map::RemoveActorFromMap(Actor* actor)
+{
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		Actor* currentActor = m_actors[actorIndex];
+		if (currentActor == actor)
+		{
+			m_actors[actorIndex] = nullptr;
+			break;
+		}
+	}
+	if (actor->m_controller != nullptr && actor->m_controller->IsPlayer())
+	{
+		for (int playerIndex = 0; playerIndex < m_players.size(); ++playerIndex)
+		{
+			if (m_players[playerIndex] == actor->m_controller)
+			{
+				m_players[playerIndex] = nullptr;
+			}
+		}
+		actor->m_controller->m_map = nullptr;
+		actor->m_controller->m_actorHandle = nullptr;
+	}
+
+	if (actor->m_AIController != nullptr)
+	{
+		actor->m_AIController->m_map = nullptr;
+		actor->m_AIController->m_actorHandle = nullptr;
+	}
 }
 
 void Map::AddPortal(Portal* portal)
@@ -477,6 +548,7 @@ void Map::Update()
 	// Preventative physics
 	// Modifies desired position based on preventative checks.
 	CollideActorsWithPortals();
+	CollideActorsWithRifts();
 
 	Update_Actors_AfterPreventative(); // Updates the actual position of each actor to be the desired position.
 
@@ -979,6 +1051,68 @@ bool Map::CollideActorWithPortal(Actor* actor, Portal* portal)
 	return false;
 }
 
+void Map::CollideActorsWithRifts()
+{
+	// Maybe do a sphere vs sphere check first to see if an actor is close enough with a rift, and if so do a ray cast?
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		Actor* actor = m_actors[actorIndex];
+		if (actor != nullptr && actor->m_hasEnteredRift == false)
+		{
+			for (Rift* rift : s_rifts)
+			{
+				if (rift != nullptr)
+				{
+					bool didCollideWithRift = CollideActorWithRift(actor, rift);
+					if (didCollideWithRift)
+					{
+						break; // Makes it so that the actor can only collide with ONE portal per frame.
+					}
+				}
+			}
+		}
+	}
+}
+
+bool Map::CollideActorWithRift(Actor* actor, Rift* rift)
+{
+	Vec3 actorEyePos = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
+	Vec3 actorDesiredEyePos = actor->m_desiredPosition + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
+
+	Vec3 rayStart = actorEyePos;
+	Vec3 actorTranslationThisFrame = actorDesiredEyePos - actorEyePos;
+	Vec3 rayFwdNormal = actorTranslationThisFrame.GetNormalized();
+	float rayLength = actorTranslationThisFrame.GetLength();
+
+	Vec3 portalToActor = actorEyePos - rift->GetPosition();
+	Vec3 portalFwdVector = rift->GetOrientation().GetForwardDir_IFwd_JLeft_KUp();
+	float PtPdotPFwd = DotProduct3D(portalToActor, portalFwdVector);
+	if (actor->m_controller != nullptr && actor->m_controller->IsPlayer()) // TODO: Make this work with multiple players. I think it already does? If theres a bug check this first
+	{
+		if (PtPdotPFwd > 0.f)
+		{
+			rift->m_isPlayerOnFrontSide = true;
+		}
+		else
+		{
+			rift->m_isPlayerOnFrontSide = false;
+		}
+	}
+	Mat44 portalTransform = rift->GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+
+	RaycastResult3D raycastResult = rift->RaycastAgainst(rayStart, rayFwdNormal, rayLength);
+	if (raycastResult.m_didImpact)
+	{
+		// Place the actor into the other map.
+		actor->m_hasEnteredRift = true;
+
+		DebugAddMessage("ENTERED RIFT", 2.f, Rgba8::RED, Rgba8::RED);
+		return true;
+	}
+
+	return false;
+}
+
 bool Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
 {
 	Vec2 savedPosition = Vec2(actor->m_position.x, actor->m_position.y);
@@ -1011,6 +1145,17 @@ void Map::DestroyIfGarbage()
 		{
 			delete actor;
 			m_actors[actorIndex] = nullptr;
+		}
+	}
+}
+
+void Map::SetActorStates()
+{
+	for (Actor* actor : m_actors)
+	{
+		if (actor != nullptr)
+		{
+			actor->m_hasEnteredRift = false;
 		}
 	}
 }
@@ -1072,6 +1217,7 @@ void Map::Render()
 
 		m_isRenderingPortal = true;
 		Render_Portals();
+		Render_Rifts();
 		m_isRenderingPortal = false;
 	
 		g_engine->m_render->BindShader(m_currentlyRenderedPlayer->GetActor()->m_definition->m_shader);
@@ -1102,7 +1248,6 @@ void Map::Render()
 
 void Map::Render_World() const
 {
-
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
 	Render_Tiles();
@@ -1120,7 +1265,7 @@ void Map::Render_World() const
 	if (g_app->IsDebug())
 	{
 		g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
-		DebugRenderWorld(*m_currentlyRenderedPlayer->m_worldCamera);
+		DebugRenderWorld(*g_engine->m_render->GetCamera());
 	}
 }
 
@@ -1155,6 +1300,17 @@ void Map::Render_Portals() const
 		if (portal != nullptr)
 		{
 			portal->RenderPortal();
+		}
+	}
+}
+
+void Map::Render_Rifts() const
+{
+	for (Rift* rift : s_rifts)
+	{
+		if (rift != nullptr)
+		{
+			rift->RenderRift(this);
 		}
 	}
 }

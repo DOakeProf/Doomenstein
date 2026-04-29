@@ -61,9 +61,10 @@ struct MapDefinition
 
 struct ClipPlaneConstants
 {
-	Vec4 gClipPlane;
+	Vec4 gClipPlane[5];
 	int isEnabled;
-	Vec3 padding;
+	int amountOfClipPlanes;
+	Vec2 padding;
 };
 static const int k_clipPlaneConstantsSlot = 5;
 
@@ -120,6 +121,7 @@ public:
 	Actor* SpawnActor(const char* actorName, Vec3 position, EulerAngles orientation);
 	Actor* SpawnPlayer(Player* player);
 	Actor* SpawnPlayerInitial(Player* player, Vec3& position);
+	void RemoveActorFromMap(Actor* actor);
 	void AddPortal(Portal* portal);
 	void RemovePortal(Portal* portal);
 
@@ -140,8 +142,11 @@ public:
 	bool IsActorOverlappingVerticalPortal(Actor* actor);
 	void CollideActorsWithPortals();
 	bool CollideActorWithPortal(Actor* actor, Portal* portal);
+	void CollideActorsWithRifts();
+	bool CollideActorWithRift(Actor* actor, Rift* rift);
 	bool PushActorOutOfTileXY(Actor* actor, Tile const& tile);
 	void DestroyIfGarbage();
+	void SetActorStates();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Render
@@ -152,6 +157,7 @@ public:
 	void Render_Actors() const;
 
 	void Render_Portals() const;
+	void Render_Rifts() const;
 
 	RaycastResultDoomenstein	RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
 	RaycastResult3D				RaycastWorldXY(const Vec3& start, const Vec3& direction, float distance) const;
@@ -164,6 +170,7 @@ public:
 	ConstantBuffer* m_portalAABB3CBO = nullptr;
 
 	Map* m_riftMap;
+	Shader* m_shader = nullptr;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Player
@@ -176,11 +183,11 @@ public:
 	// Debug
 	void Debug_KillAllActors();
 
+	const MapDefinition* m_definition = nullptr;
 protected:
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Properties
-	const MapDefinition* m_definition = nullptr;
 	IntVec3 m_dimensions;
 	SpriteSheet m_tileSpriteSheet;
 	
@@ -189,7 +196,6 @@ protected:
 	std::vector<Vertex_PCUTBN> m_vertexes;
 	std::vector<unsigned int> m_indexes;
 	const Texture* m_texture = nullptr;
-	Shader* m_shader = nullptr;
 	VertexBuffer* m_vertexBuffer = nullptr;
 	IndexBuffer* m_indexBuffer = nullptr;
 	Vec3 m_sunDirection;

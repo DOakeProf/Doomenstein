@@ -8,8 +8,10 @@ class Map;
 class Rift : public Portal 
 {
 public:
-	Rift(Map* map, Map* riftMap, Vec3 const& startingPosition, EulerAngles orientation, float height, float width); // Spawn a SINGLE rift which exists in both maps?
+	Rift(Vec3 const& startingPosition, EulerAngles orientation, float height, float width); // Spawn a SINGLE rift which exists in both maps?
 	~Rift();
 	
+	void RenderRift(const Map* map);
+
 	Map* m_riftMap;
 };

@@ -26,7 +26,7 @@
 #include "Engine/Renderer/Texture.hpp"
 #include "Engine/BitmapFont.hpp"
 
-static std::vector<Rift*> s_rifts;
+std::vector<Rift*> s_rifts;
 
 Game::Game()
 {
@@ -407,6 +407,25 @@ void Game::Render_LobbyMode() const
 
 void Game::Update_PlayingMode()
 {
+	for (Actor* actor : m_currentMap->GetActors())
+	{
+		if (actor != nullptr && actor->m_hasEnteredRift)
+		{
+			m_currentMap->RemoveActorFromMap(actor);
+			m_currentRiftMap->AddActorToMap(actor);
+			actor->m_hasEnteredRift = false;
+		}
+	}
+	for (Actor* actor : m_currentRiftMap->GetActors())
+	{
+		if (actor != nullptr && actor->m_hasEnteredRift)
+		{
+			m_currentRiftMap->RemoveActorFromMap(actor);
+			m_currentMap->AddActorToMap(actor);
+			actor->m_hasEnteredRift = false;
+		}
+	}
+
 	// Entity updates
 	for (Player* player : m_players)
 	{
@@ -416,6 +435,20 @@ void Game::Update_PlayingMode()
 		}
 		player->Update();
 	}
+
+	//m_currentMap->SetActorStates(); // Sets state information of actors so that they don't collide with multiple rifts.
+	//m_currentRiftMap->SetActorStates();
+
+	Vec3 bl = Vec3(-1.f, 0.2f, 10.5f);
+	Vec3 br = Vec3(1.f, 0.2f, 10.5f);
+	Vec3 tr = Vec3(-0.8f, 0.f, 11.5f);
+	Vec3 tl = Vec3(1.2f, 0.f, 11.5f);
+
+	CutPlaneAgainstPlane(
+		Vec3(0.f, -1.f, 10.f), Vec3(0.f, 1.f, 10.f), Vec3(0.f, -1.f, 12.f), Vec3(0.f, 1.f, 12.f),
+		bl, br, tr, tl
+	);
+
 	m_currentMap->Update();
 	m_currentRiftMap->Update();
 
@@ -465,7 +498,7 @@ Player* Game::JoinPlayer(int controllerIndex)
 
 void Game::SpawnRift(Vec3 position, EulerAngles orientation)
 {
-	Rift* newRift = new Rift(m_currentMap, m_currentRiftMap, position, orientation, 2.f, 2.f);
+	Rift* newRift = new Rift(position, orientation, 2.f, 2.f);
 	AddRift(newRift);
 }
 
@@ -507,7 +540,7 @@ void Game::EnterState(GameState state)
 			m_currentRiftMap = new Map(this, MapDefinition::GetByName(m_riftMapDefinitionString));
 			m_currentRiftMap->Startup_InitializeActors();
 
-			SpawnRift(Vec3(16.5f, 15.5f, 2.5f), EulerAngles());
+			SpawnRift(Vec3(16.5f, 15.5f, 2.f), EulerAngles());
 
 			m_currentMap->m_riftMap = m_currentRiftMap;
 			m_currentRiftMap->m_riftMap = m_currentMap;

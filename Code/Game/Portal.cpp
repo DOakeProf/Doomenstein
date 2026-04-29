@@ -119,7 +119,8 @@ void Portal::RenderPortal()
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Render world
 	ClipPlaneConstants clipPlaneConstants = ClipPlaneConstants();
-	clipPlaneConstants.gClipPlane = portalPlane;
+	clipPlaneConstants.gClipPlane[0] = portalPlane;
+	clipPlaneConstants.amountOfClipPlanes = 1;
 	clipPlaneConstants.isEnabled = 1;
 	g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_map->m_clipPlaneCBO);
 

@@ -18,6 +18,8 @@ class BitmapFont;
 class Rift;
 typedef size_t SoundID;
 
+extern std::vector<Rift*> s_rifts;
+
 enum class GameState {
 	GAME_STATE_NONE,
 	GAME_STATE_ATTRACT,

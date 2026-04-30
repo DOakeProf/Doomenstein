@@ -127,6 +127,8 @@ void Player::HandleInputs()
 		return;
 	}
 
+	HandleInputs_Debug();
+
 	switch (m_playerState)
 	{
 		case PlayerState::FIRSTPERSON:	HandleInputs_FirstPerson(); break;
@@ -543,6 +545,103 @@ void Player::HandleInputs_FirstPerson_Controller()
 	{
 		m_map->m_game->m_gameClock->TogglePause();
 	}
+}
+
+void Player::HandleInputs_Debug()
+{
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F2))
+	{
+		m_map->m_sunDirection.x -= 1;
+		std::string message = Stringf("Sun Direction: %.2f, %.2f, %.2f", m_map->m_sunDirection.x, m_map->m_sunDirection.y, m_map->m_sunDirection.z);
+		DebugAddMessage(message, 2.f);
+	}
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F3))
+	{
+		m_map->m_sunDirection.x += 1;
+		std::string message = Stringf("Sun Direction: %.2f, %.2f, %.2f", m_map->m_sunDirection.x, m_map->m_sunDirection.y, m_map->m_sunDirection.z);
+		DebugAddMessage(message, 2.f);
+	}
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F4))
+	{
+		m_map->m_sunDirection.y -= 1;
+		std::string message = Stringf("Sun Direction: %.2f, %.2f, %.2f", m_map->m_sunDirection.x, m_map->m_sunDirection.y, m_map->m_sunDirection.z);
+		DebugAddMessage(message, 2.f);
+	}
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F5))
+	{
+		m_map->m_sunDirection.y += 1;
+		std::string message = Stringf("Sun Direction: %.2f, %.2f, %.2f", m_map->m_sunDirection.x, m_map->m_sunDirection.y, m_map->m_sunDirection.z);
+		DebugAddMessage(message, 2.f);
+	}
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F6))
+	{
+		m_map->m_sunIntensity -= 0.05f;
+		m_map->m_sunIntensity = GetClamped(m_map->m_sunIntensity, 0.f, 1.f);
+		std::string message = Stringf("Sun Intensity: %.2f", m_map->m_sunIntensity);
+		DebugAddMessage(message, 2.f);
+	}
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F7))
+	{
+		m_map->m_sunIntensity += 0.05f;
+		m_map->m_sunIntensity = GetClamped(m_map->m_sunIntensity, 0.f, 1.f);
+		std::string message = Stringf("Sun Intensity: %.2f", m_map->m_sunIntensity);
+		DebugAddMessage(message, 2.f);
+	}
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F8))
+	{
+		m_map->m_ambientIntensity -= 0.05f;
+		m_map->m_ambientIntensity = GetClamped(m_map->m_ambientIntensity, 0.f, 1.f);
+		std::string message = Stringf("Ambient Intensity: %.2f", m_map->m_ambientIntensity);
+		DebugAddMessage(message, 2.f);
+	}
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F9))
+	{
+		m_map->m_ambientIntensity += 0.05f;
+		m_map->m_ambientIntensity = GetClamped(m_map->m_ambientIntensity, 0.f, 1.f);
+		std::string message = Stringf("Ambient Intensity: %.2f", m_map->m_ambientIntensity);
+		DebugAddMessage(message, 2.f);
+	}
+
+	if (g_engine->m_input->WasKeyJustPressed('N') && m_map->m_game->m_players.size() < 2)
+	{
+		Actor* newActorToPossess = nullptr;
+		int startingActorIndex = m_map->m_game->m_players[0]->m_actorHandle->GetIndex();
+		for (int actorIndex = startingActorIndex + 1; actorIndex < m_map->m_actors.size(); ++actorIndex)
+		{
+			Actor* actor = m_map->m_actors[actorIndex];
+			if (actor != nullptr && actor->m_definition->m_canBePossessed)
+			{
+				newActorToPossess = actor;
+				break;
+			}
+		}
+		if (newActorToPossess == nullptr) // If we reached the end of the list of actors, cycle back to the beginning.
+		{
+			for (int actorIndex = 0; actorIndex < m_map->m_actors.size(); ++actorIndex)
+			{
+				Actor* actor = m_map->m_actors[actorIndex];
+				if (actor != nullptr && actor->m_definition->m_canBePossessed)
+				{
+					newActorToPossess = actor;
+					break;
+				}
+			}
+		}
+		if (newActorToPossess != nullptr)
+		{
+			m_map->m_game->m_players[0]->Depossess();
+			m_map->m_game->m_players[0]->Possess(newActorToPossess->m_handle);
+		}
+	}
+
+	//if (g_engine->m_input->WasKeyJustPressed(KEYCODE_LEFT_MOUSE))
+	//{
+	//	RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 10.f, nullptr);
+	//}
+	//if (g_engine->m_input->WasKeyJustPressed(KEYCODE_RIGHT_MOUSE))
+	//{
+	//	RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 0.25f, nullptr);
+	//}
 }
 
 Mat44 Player::GetModelToWorldTransform() const

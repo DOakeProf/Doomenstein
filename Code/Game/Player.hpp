@@ -51,6 +51,7 @@ public:
 	void HandleInputs_FirstPerson();
 	void HandleInputs_FirstPerson_Keyboard();
 	void HandleInputs_FirstPerson_Controller();
+	void HandleInputs_Debug();
 
 	virtual Mat44 GetModelToWorldTransform() const;
 	virtual Mat44 GetWorldToModelTransform() const;

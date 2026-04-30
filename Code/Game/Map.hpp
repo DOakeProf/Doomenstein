@@ -82,6 +82,8 @@ static const int k_portalAABB3ConstantsSlot = 6;
 class Map
 {
 public:
+	friend class Player;
+
 	Map(Game* game, const MapDefinition* definition);
 	~Map();
 
@@ -128,7 +130,6 @@ public:
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Update
 	void Update();
-	void Update_DebugInput();
 	void Update_AddDebugScreenText();
 	void Update_Actors_BeforePreventative();
 	void Update_Actors_AfterPreventative();

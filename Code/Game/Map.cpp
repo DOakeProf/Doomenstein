@@ -541,8 +541,6 @@ void Map::Update()
 
 	Update_AddDebugScreenText();
 
-	Update_DebugInput();
-
 	Update_Actors_BeforePreventative(); // Assigns each actors a desired position
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Preventative physics
@@ -556,112 +554,14 @@ void Map::Update()
 	// Corrective Physics
 	CollideActors();
 	CollideActorsWithMap();
-	m_DOG->Update();
+	if (m_DOG != nullptr)
+	{
+		m_DOG->Update();
+	}
 
 	Update_Portals();
 
 	DestroyIfGarbage();
-}
-
-void Map::Update_DebugInput()
-{
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F1))
-	{
-		m_isControllingBullet = !m_isControllingBullet;
-	}
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F2))
-	{
-		m_sunDirection.x -= 1;
-		std::string message = Stringf("Sun Direction: %.2f, %.2f, %.2f", m_sunDirection.x, m_sunDirection.y, m_sunDirection.z);
-		DebugAddMessage(message, 2.f);
-	}
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F3))
-	{
-		m_sunDirection.x += 1;
-		std::string message = Stringf("Sun Direction: %.2f, %.2f, %.2f", m_sunDirection.x, m_sunDirection.y, m_sunDirection.z);
-		DebugAddMessage(message, 2.f);
-	}
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F4))
-	{
-		m_sunDirection.y -= 1;
-		std::string message = Stringf("Sun Direction: %.2f, %.2f, %.2f", m_sunDirection.x, m_sunDirection.y, m_sunDirection.z);
-		DebugAddMessage(message, 2.f);
-	}
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F5))
-	{
-		m_sunDirection.y += 1;
-		std::string message = Stringf("Sun Direction: %.2f, %.2f, %.2f", m_sunDirection.x, m_sunDirection.y, m_sunDirection.z);
-		DebugAddMessage(message, 2.f);
-	}
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F6))
-	{
-		m_sunIntensity -= 0.05f;
-		m_sunIntensity = GetClamped(m_sunIntensity, 0.f, 1.f);
-		std::string message = Stringf("Sun Intensity: %.2f", m_sunIntensity);
-		DebugAddMessage(message, 2.f);
-	}
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F7))
-	{
-		m_sunIntensity += 0.05f;
-		m_sunIntensity = GetClamped(m_sunIntensity, 0.f, 1.f);
-		std::string message = Stringf("Sun Intensity: %.2f", m_sunIntensity);
-		DebugAddMessage(message, 2.f);
-	}
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F8))
-	{
-		m_ambientIntensity -= 0.05f;
-		m_ambientIntensity = GetClamped(m_ambientIntensity, 0.f, 1.f);
-		std::string message = Stringf("Ambient Intensity: %.2f", m_ambientIntensity);
-		DebugAddMessage(message, 2.f);
-	}
-	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_F9))
-	{
-		m_ambientIntensity += 0.05f;
-		m_ambientIntensity = GetClamped(m_ambientIntensity, 0.f, 1.f);
-		std::string message = Stringf("Ambient Intensity: %.2f", m_ambientIntensity);
-		DebugAddMessage(message, 2.f);
-	}
-
-	if (g_engine->m_input->WasKeyJustPressed('N') && m_game->m_players.size() < 2)
-	{
-		Actor* newActorToPossess = nullptr;
-		int startingActorIndex = m_game->m_players[0]->m_actorHandle->GetIndex();
-		for (int actorIndex = startingActorIndex + 1; actorIndex < m_actors.size(); ++actorIndex)
-		{
-			Actor* actor = m_actors[actorIndex];
-			if (actor != nullptr && actor->m_definition->m_canBePossessed)
-			{
-				newActorToPossess = actor;
-				break;
-			}
-		}
-		if (newActorToPossess == nullptr) // If we reached the end of the list of actors, cycle back to the beginning.
-		{
-			for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
-			{
-				Actor* actor = m_actors[actorIndex];
-				if (actor != nullptr && actor->m_definition->m_canBePossessed)
-				{
-					newActorToPossess = actor;
-					break;
-				}
-			}
-		}
-		if (newActorToPossess != nullptr)
-		{
-			m_game->m_players[0]->Depossess();
-			m_game->m_players[0]->Possess(newActorToPossess->m_handle);
-		}
-	}
-
-	//if (g_engine->m_input->WasKeyJustPressed(KEYCODE_LEFT_MOUSE))
-	//{
-	//	RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 10.f, nullptr);
-	//}
-	//if (g_engine->m_input->WasKeyJustPressed(KEYCODE_RIGHT_MOUSE))
-	//{
-	//	RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 0.25f, nullptr);
-	//}
 }
 
 void Map::Update_AddDebugScreenText()
@@ -1076,6 +976,11 @@ void Map::CollideActorsWithRifts()
 
 bool Map::CollideActorWithRift(Actor* actor, Rift* rift)
 {
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Plane check for if its touching rift. TODO
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Raycast check for if it entered rift
 	Vec3 actorEyePos = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 	Vec3 actorDesiredEyePos = actor->m_desiredPosition + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 
@@ -1226,7 +1131,10 @@ void Map::Render()
 		g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
 
 		g_engine->m_render->ClearDepthBuffer();
-		player->GetActor()->m_equippedWeapon->Render_GLTF();
+		if (player->GetActor()->m_equippedWeapon != nullptr)
+		{
+			player->GetActor()->m_equippedWeapon->Render_GLTF();
+		}
 
 		g_engine->m_render->EndCamera(player->m_worldCamera);
 		g_engine->m_render->BeginCamera(player->m_screenCamera);

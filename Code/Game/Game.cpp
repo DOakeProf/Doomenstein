@@ -436,19 +436,6 @@ void Game::Update_PlayingMode()
 		player->Update();
 	}
 
-	//m_currentMap->SetActorStates(); // Sets state information of actors so that they don't collide with multiple rifts.
-	//m_currentRiftMap->SetActorStates();
-
-	Vec3 bl = Vec3(-1.f, 0.2f, 10.5f);
-	Vec3 br = Vec3(1.f, 0.2f, 10.5f);
-	Vec3 tr = Vec3(-0.8f, 0.f, 11.5f);
-	Vec3 tl = Vec3(1.2f, 0.f, 11.5f);
-
-	CutPlaneAgainstPlane(
-		Vec3(0.f, -1.f, 10.f), Vec3(0.f, 1.f, 10.f), Vec3(0.f, -1.f, 12.f), Vec3(0.f, 1.f, 12.f),
-		bl, br, tr, tl
-	);
-
 	m_currentMap->Update();
 	m_currentRiftMap->Update();
 
@@ -576,7 +563,7 @@ void Game::EnterState(GameState state)
 				}
 			}
 			g_engine->m_audio->SetNumListeners(playerSize);
-			m_gameMusicPlayback = g_engine->m_audio->StartSound(m_gameMusic, true, m_musicVolume);
+			//m_gameMusicPlayback = g_engine->m_audio->StartSound(m_gameMusic, true, m_musicVolume);
 			g_engine->m_audio->StopSound(m_mainMenuMusicPlayback);
 			break;
 		}
@@ -608,6 +595,14 @@ void Game::ExitState(GameState state)
 			delete m_currentRiftMap;
 			m_currentRiftMap = nullptr;
 
+			for (Player* player : m_players)
+			{
+				if (player != nullptr)
+				{
+					delete player;
+				}
+			}
+			m_players.clear();
 
 			g_engine->m_audio->StopSound(m_gameMusicPlayback);
 			break;

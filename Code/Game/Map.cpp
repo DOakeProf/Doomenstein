@@ -43,6 +43,14 @@ Map::~Map()
 	m_indexBuffer = nullptr;
 	m_clipPlaneCBO = nullptr;
 	m_portalAABB3CBO = nullptr;
+
+	for (Actor* actor : m_actors)
+	{
+		if (actor != nullptr)
+		{
+			delete actor;
+		}
+	}
 }
 
 void Map::Startup()
@@ -108,7 +116,7 @@ void Map::Startup_InitializeActors()
 	}
 	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
 	{
-		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name != "SpawnPoint")
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name != "SpawnPoint" && m_definition->m_spawnInfos[spawnInfoIndex].m_name != "Marine")
 		{
 			SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
 		}

@@ -144,7 +144,7 @@ void Actor::Update()
 
 	for (SoundPlaybackID playbackID : m_soundPlaybackIDs)
 	{
-		g_engine->m_audio->SetSoundPosition(playbackID, m_position);
+		//g_engine->m_audio->SetSoundPosition(playbackID, m_position);
 	}
 	ClearStoppedPlaybackID();
 

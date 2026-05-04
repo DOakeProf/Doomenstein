@@ -41,17 +41,17 @@
 	
 	<MapDefinition name="Overworld" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8" skyboxTexture="Data/Images/Clouds4.png" isSkyboxCylinder="true">
 		<SpawnInfos>
-			<SpawnInfo actor="Marine" position="4.5,18.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="26.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="27.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="28.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="29.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint"  position="30.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="1.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="4.0,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="6.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="26.5,10.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="29.5,10.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Marine" position="4.5,18.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="26.5,15.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="27.5,15.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="28.5,15.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="29.5,15.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint"  position="30.5,15.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="1.5,15.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="4.0,15.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="6.5,15.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="26.5,10.5,1.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="29.5,10.5,1.0" orientation="270.0,0.0,0.0" />
 		</SpawnInfos>
 		<MapImages>
 			<MapImage image="Data/Maps/Overworld0.png"/>
@@ -60,6 +60,11 @@
 			<MapImage image="Data/Maps/Overworld3.png"/>
 			<MapImage image="Data/Maps/Overworld4.png"/>
 			<MapImage image="Data/Maps/Overworld5.png"/>
+			<MapImage image="Data/Maps/Overworld6.png"/>
+			<MapImage image="Data/Maps/Overworld7.png"/>
+			<MapImage image="Data/Maps/Overworld8.png"/>
+			<MapImage image="Data/Maps/Overworld9.png"/>
+			<MapImage image="Data/Maps/Overworld10.png"/>
 		</MapImages>
 	</MapDefinition>
 	

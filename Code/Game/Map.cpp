@@ -89,7 +89,7 @@ void Map::Startup_InitializePlayers()
 		{
 			continue;
 		}
-		Vec3 playerSpawnLocation = Vec3(5.f, 20.f, 0.f);
+		Vec3 playerSpawnLocation = Vec3(5.f, 20.f, 1.f);
 		Actor* playerActor = SpawnPlayerInitial(player, playerSpawnLocation);
 
 		player->Possess(playerActor->m_handle);
@@ -864,6 +864,11 @@ void Map::CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition)
 		AABB2(Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y), Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_maxs.y))))
 	{
 		didCollide = PushActorOutOfRamp(actor, tile);
+		if (didCollide)
+		{
+			actor->m_isGrounded = true;
+			actor->m_isJumping = false;
+		}
 	}
 
 	if (didCollide)

@@ -52,6 +52,8 @@ struct MapDefinition
 	Shader* m_shader;
 	Texture* m_spriteSheetTexture;
 	IntVec2 m_spriteSheetCellCount;
+	Texture* m_skyboxTexture = nullptr;
+	bool m_isSkyboxCylinder = false;
 
 	static void InitializeDefinitions(const char* path);
 	static void ClearDefinitions();
@@ -98,6 +100,7 @@ public:
 	void AddGeometryForWall(const AABB3& bounds, const AABB2& UVs);
 	void AddGeometryForFloor(const AABB3& bounds, const AABB2& UVs);
 	void AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs);
+	void AddGeometryForRamp(const AABB3& bounds, const AABB2& UVs, IntVec2 const& direction);
 	void CreateBuffers();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -146,6 +149,7 @@ public:
 	void CollideActorsWithRifts();
 	bool CollideActorWithRift(Actor* actor, Rift* rift);
 	bool PushActorOutOfTileXY(Actor* actor, Tile const& tile);
+	bool PushActorOutOfRamp(Actor* actor, Tile const& tile);
 	void DestroyIfGarbage();
 	void SetActorStates();
 
@@ -195,6 +199,7 @@ protected:
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Graphics rendering
 	std::vector<Vertex_PCUTBN> m_vertexes;
+	std::vector<Vertex> m_skyboxVertexes;
 	std::vector<unsigned int> m_indexes;
 	const Texture* m_texture = nullptr;
 	VertexBuffer* m_vertexBuffer = nullptr;

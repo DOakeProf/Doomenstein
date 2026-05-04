@@ -144,7 +144,7 @@ void Actor::Update()
 
 	for (SoundPlaybackID playbackID : m_soundPlaybackIDs)
 	{
-		//g_engine->m_audio->SetSoundPosition(playbackID, m_position);
+		g_engine->m_audio->SetSoundPosition(playbackID, m_position);
 	}
 	ClearStoppedPlaybackID();
 
@@ -512,6 +512,15 @@ void Actor::Damage(int damage, ActorHandle* otherActor)
 	if (m_AIController != nullptr)
 	{
 		m_AIController->DamagedBy(otherActor);
+	}
+
+	Actor* otherActorRef = m_map->GetActorByHandle(*otherActor);
+	if (m_health <= 0 && 
+	otherActorRef->m_controller != nullptr && otherActorRef->m_controller->IsPlayer() && 
+	m_controller != nullptr && m_controller->IsPlayer())
+	{
+		++((Player*)otherActorRef->m_controller)->m_playerKills;
+		++((Player*)m_controller)->m_playerDeaths;
 	}
 }
 

@@ -72,30 +72,36 @@ void Player::Render()
 	// HUD
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	GetActor()->m_equippedWeapon->Render();
-	Render_HUD_Health();
+	if (!GetActor()->m_isDead)
+	{
+		GetActor()->m_equippedWeapon->Render_Weapon();
+	}
+	Render_HUD();
 	Render_Death();
 }
 
-void Player::Render_HUD_Health()
+void Player::Render_HUD()
 {
 	Actor* playerActor = GetActor();
 	if (playerActor != nullptr)
 	{
-		std::vector<Vertex> uiHealthVerts;
+		std::vector<Vertex> uiVerts;
 		std::string uiHealthText;
 		if ((float)playerActor->m_health > 0.f)
 		{
-			uiHealthText = Stringf("HEALTH: %.2f", (float)playerActor->m_health);
+			uiHealthText = Stringf("%i", playerActor->m_health);
 		}
 		else
 		{
-			uiHealthText = Stringf("DEAD :(");
+			uiHealthText = Stringf("0");
 		}
 		AABB2 SCREEN_AABB2 = AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
-		m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiHealthVerts, uiHealthText, SCREEN_AABB2, SCREEN_SIZE_Y * 0.03f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.2f));
+		m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, uiHealthText, SCREEN_AABB2, SCREEN_SIZE_Y * 0.06f, Rgba8::WHITE, 1.f, Vec2(0.285f, 0.06f));
+		m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, Stringf("%i", m_playerKills), SCREEN_AABB2, SCREEN_SIZE_Y * 0.06f, Rgba8::WHITE, 1.f, Vec2(0.05f, 0.06f));
+		m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, Stringf("%i", m_playerDeaths), SCREEN_AABB2, SCREEN_SIZE_Y * 0.06f, Rgba8::WHITE, 1.f, Vec2(0.95f, 0.06f));
 		g_engine->m_render->BindTexture(&m_map->m_game->m_squirrelFont->GetTexture());
 		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
-		g_engine->m_render->DrawVertexList(&uiHealthVerts);
+		g_engine->m_render->DrawVertexList(&uiVerts);
 	}
 }
 
@@ -679,7 +685,7 @@ void Player::SetViewport(bool isMultiplayer, int playerIndex)
 	{
 		float halfScreenHeight = (float)g_engine->m_window->GetClientDimensions().y * 0.5f; // TODO: Move the viewport logic elsewhere.
 		AABB2 playerViewport = AABB2(0.f, (halfScreenHeight * playerIndex), (float)g_engine->m_window->GetClientDimensions().x, halfScreenHeight + (halfScreenHeight * playerIndex));
-		m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
+		m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 450.f);
 		m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
 		m_worldCamera->SetViewport(playerViewport);
 		m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));
@@ -689,7 +695,7 @@ void Player::SetViewport(bool isMultiplayer, int playerIndex)
 	else
 	{
 		AABB2 playerViewport = AABB2(0.f, 0.f, (float)g_engine->m_window->GetClientDimensions().x, (float)g_engine->m_window->GetClientDimensions().y);
-		m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
+		m_worldCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 450.f);
 		m_worldCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
 		m_worldCamera->SetViewport(playerViewport);
 		m_screenCamera->SetOrthoView(Vec2(0, 0), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y));

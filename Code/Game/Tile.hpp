@@ -14,6 +14,8 @@ struct TileDefinition
 	IntVec2 m_floorSpriteCoords;
 	IntVec2 m_ceilingSpriteCoords; 
 	IntVec2 m_wallSpriteCoords;
+	IntVec2 m_rampSpriteCoords;
+	IntVec2 m_rampDirection;
 
 	static void InitializeDefinitions(const char* path);
 	static void ClearDefinitions();

@@ -5,6 +5,8 @@
 #include "Engine/Core/Rgba8.hpp"
 #include "Engine/Core/Timer.hpp"
 #include "Engine/Math/FloatRange.hpp"
+#include "Engine/Renderer/SpriteAnimDefinition.hpp"
+#include "Engine/Audio/AudioSystem.hpp"
 
 #include "Game/Weapon.hpp"
 
@@ -19,37 +21,90 @@ class AI;
 
 struct ActorDefinition
 {
-	std::string m_name;
-	std::string m_faction;
-	int m_health;
-	bool m_canBePossessed;
-	float m_corpseLifetime;
-	bool m_visible;
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Base
+	std::string					m_name;
+	std::string					m_faction;
+	int							m_health;
+	bool						m_canBePossessed;
+	float						m_corpseLifetime;
+	bool						m_visible;
+	bool						m_dieOnSpawn;
 
-	float m_radius;
-	float m_height;
-	bool m_collidesWithWorld;
-	bool m_collidesWithActors;
-	FloatRange m_damageOnCollide;
-	float m_impulseOnCollide;
-	bool m_dieOnCollide;
-	bool m_collidesWithSameActor;
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Logic
+	float						m_radius;
+	float						m_height;
+	bool						m_collidesWithWorld;
+	bool						m_collidesWithActors;
+	FloatRange					m_damageOnCollide;
+	float						m_impulseOnCollide;
+	bool						m_dieOnCollide;
+	bool						m_collidesWithSameActor;
 
-	bool m_physicsIsSimulated;
-	float m_walkSpeed;
-	float m_runSpeed;
-	float m_turnSpeed;
-	float m_drag;
-	bool m_isFlying;
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Physics
+	bool						m_physicsIsSimulated;
+	float						m_walkSpeed;
+	float						m_runSpeed;
+	float						m_turnSpeed;
+	float						m_drag;
+	bool						m_isFlying;
 
-	float m_eyeHeight;
-	float m_cameraFOV;
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Player
+	float						m_eyeHeight;
+	float						m_cameraFOV;
 
-	bool m_aiEnabled;
-	float m_sightRadius;
-	float m_sightAngle;
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// AI
+	bool						m_aiEnabled;
+	float						m_sightRadius;
+	float						m_sightAngle;
 
-	std::vector<std::string> m_inventory;
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Visuals
+	Vec2						m_size;
+	Vec2						m_pivot;
+	BillboardType				m_billboardType;
+	bool						m_renderLit;
+	bool						m_renderRounded;
+	Shader*						m_shader;
+	SpriteSheet*				m_spriteSheet;
+	IntVec2						m_cellCount;
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// AnimationGroup
+	struct AnimationGroup
+	{
+		std::string				m_name;
+		float					m_secondsPerFrame;
+		bool					m_scaleBySpeed;
+		SpriteAnimPlaybackType	m_playbackMode;
+		struct Animation
+		{
+			Animation() = default;
+			~Animation();
+
+			Vec3				m_direction;
+			int					m_startFrame;
+			int					m_endFrame;
+			SpriteAnimDefinition* m_animDef;
+		};
+		std::vector<Animation> m_animations;
+	};
+	std::vector<ActorDefinition::AnimationGroup> m_animationGroups;
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Sound
+	struct Sound
+	{
+		std::string				m_name;
+		SoundID					m_sound;
+	};
+	std::vector<Sound>			m_sounds;
+
+	std::vector<std::string>	m_inventory;
 
 	static void InitializeDefinitions(const char* path);
 	static void ClearDefinitions();
@@ -73,6 +128,7 @@ public:
 	AI* m_AIController = nullptr;
 	bool m_isDead = false;
 	bool m_isGarbage = false;
+	bool m_hasEnteredRift = false;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Movement/Abilities
@@ -91,7 +147,10 @@ public:
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Rendering
 	Rgba8 m_color;
-	std::vector<Vertex*> m_verts;
+	std::vector<Vertex_PCUTBN> m_verts;
+	std::vector<unsigned int> m_vertexIndexes;
+	ActorDefinition::AnimationGroup m_animationGroup;
+	ActorDefinition::AnimationGroup m_defaultAnimationGroup;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Gameplay
@@ -102,12 +161,20 @@ public:
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Timers
+	Clock* m_animClock;
 	Timer* m_deathTimer;
+	Timer* m_animTimer;
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Sound
+	std::vector<SoundPlaybackID> m_soundPlaybackIDs;
 
 	void Update();
-	void Render() const;
+	void Render();
+	void Render_Debug() const;
 	Mat44 GetModelMatrix() const;
 	Mat44 GetModelMatrixOnlyYaw() const;
+	Mat44 GetModelMatrixBillboarded() const;
 
 	Vec3 GetEyePos();
 	int GetEquippedWeaponIndex();
@@ -119,6 +186,11 @@ public:
 	void Update_Position();
 
 	void SetActorHandle(ActorHandle* handle);
+	void SetAnimGroup(std::string animGroupName);
+	void SetAnimGroup(ActorDefinition::AnimationGroup animGroup);
+	void PlaySoundOnActor(std::string soundName);
+	void AddSoundPlaybackID(SoundPlaybackID playbackID);
+	void ClearStoppedPlaybackID();
 
 	void MoveInDirection(Vec3 const& direction, float speed);
 	void TurnInDirection(float angleToTurnTowards, float maximumTurn);

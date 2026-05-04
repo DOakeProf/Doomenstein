@@ -67,6 +67,12 @@
     <ClCompile Include="glTFReader.cpp">
       <Filter>Gameplay</Filter>
     </ClCompile>
+    <ClCompile Include="DOG.cpp">
+      <Filter>Gameplay</Filter>
+    </ClCompile>
+    <ClCompile Include="Rift.cpp">
+      <Filter>Gameplay</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameCommon.hpp">
@@ -114,6 +120,12 @@
     <ClInclude Include="glTFReader.hpp">
       <Filter>Gameplay</Filter>
     </ClInclude>
+    <ClInclude Include="DOG.hpp">
+      <Filter>Gameplay</Filter>
+    </ClInclude>
+    <ClInclude Include="Rift.hpp">
+      <Filter>Gameplay</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\ReadMe.txt" />
@@ -140,12 +152,18 @@
     <Xml Include="..\..\Run\Data\Definitions\WeaponDefinitions.xml">
       <Filter>Data\Definitions</Filter>
     </Xml>
+    <Xml Include="..\..\Run\Data\glTFModels\gltfModels.xml">
+      <Filter>Data\Definitions</Filter>
+    </Xml>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\..\Run\Data\Shaders\Diffuse.hlsl">
       <Filter>Data\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="..\..\Run\Data\Shaders\PortalShader.hlsl">
+      <Filter>Data\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="..\..\Run\Data\Shaders\PortalEase.hlsl">
       <Filter>Data\Shaders</Filter>
     </FxCompile>
   </ItemGroup>

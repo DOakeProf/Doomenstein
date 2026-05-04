@@ -563,7 +563,7 @@ void Game::EnterState(GameState state)
 				}
 			}
 			g_engine->m_audio->SetNumListeners(playerSize);
-			//m_gameMusicPlayback = g_engine->m_audio->StartSound(m_gameMusic, true, m_musicVolume);
+			m_gameMusicPlayback = g_engine->m_audio->StartSound(m_gameMusic, true, m_musicVolume);
 			g_engine->m_audio->StopSound(m_mainMenuMusicPlayback);
 			break;
 		}

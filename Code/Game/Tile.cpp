@@ -20,6 +20,8 @@ void TileDefinition::InitializeDefinitions(const char* path)
 		newTileDef->m_wallSpriteCoords = ParseXmlAttribute(*tileDefElement, "wallSpriteCoords", IntVec2(-1, -1));
 		newTileDef->m_floorSpriteCoords = ParseXmlAttribute(*tileDefElement, "floorSpriteCoords", IntVec2(-1, -1));
 		newTileDef->m_ceilingSpriteCoords = ParseXmlAttribute(*tileDefElement, "ceilingSpriteCoords", IntVec2(-1, -1));
+		newTileDef->m_rampSpriteCoords = ParseXmlAttribute(*tileDefElement, "rampSpriteCoords", IntVec2(-1, -1));
+		newTileDef->m_rampDirection = ParseXmlAttribute(*tileDefElement, "rampDirection", IntVec2(-1, -1));
 		s_definitions.push_back(newTileDef);
 		tileDefElement = tileDefElement->NextSiblingElement();
 	}

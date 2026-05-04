@@ -22,7 +22,7 @@ Portal::Portal(Map* map, Vec3 const& startingPosition, EulerAngles const& orient
 	, m_orientation(orientation)
 {
 	m_portalCamera = new Camera();
-	m_portalCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 100.f);
+	m_portalCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.1f, 420.f);
 	m_portalCamera->SetCameraToRenderTransform(Camera::GAME_TO_DIRECTX_CONVENTIONS);
 	
 	float halfWidth = width * 0.5f;

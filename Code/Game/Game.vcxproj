@@ -190,6 +190,7 @@
     <ClCompile Include="AI.cpp" />
     <ClCompile Include="App.cpp" />
     <ClCompile Include="Controller.cpp" />
+    <ClCompile Include="DOG.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameCommon.cpp" />
     <ClCompile Include="glTFReader.cpp" />
@@ -197,6 +198,7 @@
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Portal.cpp" />
+    <ClCompile Include="Rift.cpp" />
     <ClCompile Include="SpawnInfo.cpp" />
     <ClCompile Include="Tile.cpp" />
     <ClCompile Include="Weapon.cpp" />
@@ -207,6 +209,7 @@
     <ClInclude Include="AI.hpp" />
     <ClInclude Include="App.hpp" />
     <ClInclude Include="Controller.hpp" />
+    <ClInclude Include="DOG.hpp" />
     <ClInclude Include="EngineBuildPreferences.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="GameCommon.hpp" />
@@ -214,6 +217,7 @@
     <ClInclude Include="Map.hpp" />
     <ClInclude Include="Player.hpp" />
     <ClInclude Include="Portal.hpp" />
+    <ClInclude Include="Rift.hpp" />
     <ClInclude Include="SpawnInfo.hpp" />
     <ClInclude Include="Tile.hpp" />
     <ClInclude Include="Weapon.hpp" />
@@ -229,9 +233,16 @@
     <Xml Include="..\..\Run\Data\Definitions\WeaponDefinitions.xml" />
     <Xml Include="..\..\Run\Data\EngineConfig.xml" />
     <Xml Include="..\..\Run\Data\GameConfig.xml" />
+    <Xml Include="..\..\Run\Data\glTFModels\gltfModels.xml" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\..\Run\Data\Shaders\Diffuse.hlsl">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="..\..\Run\Data\Shaders\PortalEase.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

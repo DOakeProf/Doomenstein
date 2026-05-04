@@ -78,7 +78,7 @@ public:
 	float m_hitStopTimer = 0.f;
 	bool m_isHitStop = false;
 
-	Rgba8 m_backgroundClearColor = Rgba8(50, 50, 50, 255);
+	Rgba8 m_backgroundClearColor = Rgba8(163, 190, 219, 255);
 
 	Clock* m_gameClock;
 

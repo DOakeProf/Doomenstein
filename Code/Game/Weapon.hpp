@@ -112,6 +112,7 @@ public:
 	void Update();
 	void Render();
 
+	void Render_Weapon();
 	void Render_GLTF();
 
 	void Fire(Actor* actor);

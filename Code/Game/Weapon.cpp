@@ -204,6 +204,15 @@ void Weapon::Update()
 
 void Weapon::Render()
 {
+	// HUD
+	std::vector<Vertex> hudVerts;
+	AddVertsForAABB2D(hudVerts, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y * 0.15f)), Rgba8::WHITE);
+	g_engine->m_render->BindTexture(m_definition->m_baseTexture);
+	g_engine->m_render->DrawVertexList(&hudVerts);
+}
+
+void Weapon::Render_Weapon()
+{
 	float aspectRatio = (g_engine->m_window->GetClientDimensions().x / g_engine->m_window->GetClientDimensions().y) / (g_engine->m_render->GetCamera()->GetViewport().GetWidth() / g_engine->m_render->GetCamera()->GetViewport().GetHeight());
 
 	// Animation
@@ -228,12 +237,6 @@ void Weapon::Render()
 		g_engine->m_render->BindTexture(m_animation.m_spriteSheet->GetTexture());
 		g_engine->m_render->DrawVertexList(&animationVerts);
 	}
-
-	// HUD
-	std::vector<Vertex> hudVerts;
-	AddVertsForAABB2D(hudVerts, AABB2(Vec2(0.f, 0.f), Vec2(SCREEN_SIZE_X, SCREEN_SIZE_Y * 0.15f)), Rgba8::WHITE);
-	g_engine->m_render->BindTexture(m_definition->m_baseTexture);
-	g_engine->m_render->DrawVertexList(&hudVerts);
 
 	// Reticle
 	Vec2 reticleHalfSize = m_definition->m_reticleSize * 0.5f;

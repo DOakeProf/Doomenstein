@@ -165,6 +165,32 @@ void Map::CreateGeometry()
 			AABB2 currentUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_ceilingSpriteCoords);
 			AddGeometryForCeiling(currentBounds, currentUVs);
 		}
+		if (currentTileDefinition->m_rampSpriteCoords != IntVec2(-1, -1))
+		{
+			AABB2 currentUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_rampSpriteCoords);
+			AddGeometryForRamp(currentBounds, currentUVs, currentTileDefinition->m_rampDirection);
+		}
+	}
+
+	// Skybox
+	if (m_definition->m_skyboxTexture != nullptr)
+	{
+		if (m_definition->m_isSkyboxCylinder)
+		{
+			AddVertsForCylinder3D_ExtendUVs(
+				m_skyboxVertexes,
+				Vec3((float)m_dimensions.x / 2.f, (float)m_dimensions.y / 2.f, -70.f),
+				Vec3((float)m_dimensions.x / 2.f, (float)m_dimensions.y / 2.f, 250.f),
+				300.f,
+				Rgba8::WHITE,
+				AABB2::ZERO_TO_ONE,
+				32
+			);
+		}
+		else
+		{
+			AddVertsForSphere3D(m_skyboxVertexes, Vec3((float)m_dimensions.x / 2.f, (float)m_dimensions.y / 2.f, 0.f), 300.f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 32, 32);
+		}
 	}
 }
 
@@ -224,6 +250,87 @@ void Map::AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs)
 		Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
 		Rgba8::WHITE,
 		UVs);
+}
+
+void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& UVs, IntVec2 const & direction)
+{
+	if (direction == IntVec2(1,0))
+	{
+		AddVertsForQuad3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
+			bounds.m_mins,
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
+			bounds.m_maxs,
+			Rgba8::WHITE, UVs);
+		AddVertsForTriangle3D(m_vertexes, m_indexes,
+			bounds.m_mins,
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
+			Rgba8::WHITE, UVs);
+		AddVertsForTriangle3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Rgba8::WHITE, UVs);
+	}
+	else if (direction == IntVec2(-1, 0))
+	{
+		AddVertsForQuad3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
+			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Rgba8::WHITE, UVs);
+		AddVertsForTriangle3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
+			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
+			Rgba8::WHITE, UVs);
+		AddVertsForTriangle3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
+			Rgba8::WHITE, UVs);
+	}
+	else if (direction == IntVec2(0, 1))
+	{
+		AddVertsForQuad3D(m_vertexes, m_indexes,
+			bounds.m_mins,
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
+			bounds.m_maxs,
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
+			Rgba8::WHITE, UVs);
+		AddVertsForTriangle3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
+			bounds.m_mins,
+			Rgba8::WHITE, UVs);
+		AddVertsForTriangle3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
+			Rgba8::WHITE, UVs);
+	}
+	else if (direction == IntVec2(0, -1))
+	{
+		AddVertsForQuad3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
+			Rgba8::WHITE, UVs);
+		AddVertsForTriangle3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
+			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
+			Rgba8::WHITE, UVs);
+		AddVertsForTriangle3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Rgba8::WHITE, UVs);
+	}
+
 }
 
 void Map::CreateBuffers()
@@ -317,6 +424,10 @@ int Map::GetTileIndexFromCoordinates(IntVec3 coordinates) const
 Actor* Map::GetActorByHandle(const ActorHandle handle) const
 {
 	int actorIndex = handle.GetIndex();
+	if (actorIndex < 0 || actorIndex > m_actors.size() - 1)
+	{
+		return nullptr;
+	}
 	Actor* actor = m_actors[actorIndex];
 	if (actor != nullptr && handle.GetData() == actor->m_handle->GetData())
 	{
@@ -735,12 +846,24 @@ void Map::CollideActorWithSingleTileXYZ(Actor* actor, Vec3 tilePosition)
 		}
 	}
 
+	// Collide with wall
 	bool doesActorOverlapVerticalPortal = IsActorOverlappingVerticalPortal(actor);
 	if (tile.m_tileDefinition->m_isSolid && 
 		actorZRange.IsOverlappingWith(tilezRange) &&
 		!doesActorOverlapVerticalPortal)
 	{
 		didCollide = PushActorOutOfTileXY(actor, tile);
+	}
+
+	// Collide with ramp
+	if (actorZRange.IsOverlappingWith(tilezRange) &&
+		tile.m_tileDefinition->m_rampSpriteCoords != IntVec2(-1, -1) &&
+		DoesDiscOverlapAABB2D(
+		Vec2(actor->m_position.x, actor->m_position.y), 
+		actor->m_definition->m_radius, 
+		AABB2(Vec2(tile.m_bounds.m_mins.x, tile.m_bounds.m_mins.y), Vec2(tile.m_bounds.m_maxs.x, tile.m_bounds.m_maxs.y))))
+	{
+		didCollide = PushActorOutOfRamp(actor, tile);
 	}
 
 	if (didCollide)
@@ -1049,6 +1172,36 @@ bool Map::PushActorOutOfTileXY(Actor* actor, Tile const& tile)
 	return false;
 }
 
+bool Map::PushActorOutOfRamp(Actor* actor, Tile const& tile)
+{
+	float distAlongTile = 0.f;
+	IntVec2 rampDirection = tile.m_tileDefinition->m_rampDirection;
+	if (rampDirection == IntVec2(1, 0))
+	{
+		distAlongTile = actor->m_position.x + actor->m_definition->m_radius - tile.m_bounds.m_mins.x;
+	}
+	else if (rampDirection == IntVec2(-1, 0))
+	{
+		distAlongTile = tile.m_bounds.m_maxs.x - actor->m_position.x + actor->m_definition->m_radius;
+	}
+	else if (rampDirection == IntVec2(0, 1))
+	{
+		distAlongTile = actor->m_position.y + actor->m_definition->m_radius - tile.m_bounds.m_mins.y;
+	}
+	else if (rampDirection == IntVec2(0, -1))
+	{
+		distAlongTile = tile.m_bounds.m_maxs.y - actor->m_position.y + actor->m_definition->m_radius;
+	}
+
+	if (actor->m_position.z < distAlongTile + tile.m_bounds.m_mins.z)
+	{
+		actor->m_position.z = GetClamped(distAlongTile, 0.f, 0.91f) + tile.m_bounds.m_mins.z;
+		DebugAddMessage(Stringf("Dist Along Tile: %.2f", distAlongTile), 0.f);
+		return true;
+	}
+	return false;
+}
+
 void Map::DestroyIfGarbage()
 {
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
@@ -1139,7 +1292,7 @@ void Map::Render()
 		g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
 
 		g_engine->m_render->ClearDepthBuffer();
-		if (player->GetActor()->m_equippedWeapon != nullptr)
+		if (player->GetActor()->m_equippedWeapon != nullptr && !player->GetActor()->m_isDead)
 		{
 			player->GetActor()->m_equippedWeapon->Render_GLTF();
 		}
@@ -1177,6 +1330,16 @@ void Map::Render_World() const
 			//portal->RenderOutline();
 		}
 	}
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Skybox
+	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	g_engine->m_render->SetModelConstants(Mat44());
+	g_engine->m_render->BindTexture(m_definition->m_skyboxTexture);
+	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
+	g_engine->m_render->DrawVertexList(&m_skyboxVertexes);
+	g_engine->m_render->BindShader(m_shader);
+	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 
 	if (g_app->IsDebug())
 	{
@@ -1610,6 +1773,12 @@ void MapDefinition::InitializeDefinitions(const char* path)
 		std::string texturePath = ParseXmlAttribute(*mapDefElement, "spriteSheetTexture", "");
 		newMapDef->m_spriteSheetTexture = g_engine->m_render->CreateOrGetTextureFromFile(texturePath.data());
 		newMapDef->m_spriteSheetCellCount = ParseXmlAttribute(*mapDefElement, "spriteSheetCellCount", IntVec2(-1, -1));
+		std::string skyboxTexturePath = ParseXmlAttribute(*mapDefElement, "skyboxTexture", "");
+		if (skyboxTexturePath != "")
+		{
+			newMapDef->m_skyboxTexture = g_engine->m_render->CreateOrGetTextureFromFile(skyboxTexturePath.data());
+		}
+		newMapDef->m_isSkyboxCylinder = ParseXmlAttribute(*mapDefElement, "isSkyboxCylinder", false);
 		s_definitions.push_back(newMapDef);
 		mapDefElement = mapDefElement->NextSiblingElement();
 	}

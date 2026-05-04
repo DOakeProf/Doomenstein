@@ -38,5 +38,49 @@
 		<MapImage image="Data/Maps/MPMap2.png"/>
 	</MapImages>
   </MapDefinition>
+	
+	<MapDefinition name="Overworld" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8" skyboxTexture="Data/Images/Clouds4.png" isSkyboxCylinder="true">
+		<SpawnInfos>
+			<SpawnInfo actor="Marine" position="4.5,18.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="26.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="27.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="28.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="29.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint"  position="30.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="1.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="4.0,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="6.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="26.5,10.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="29.5,10.5,0.0" orientation="270.0,0.0,0.0" />
+		</SpawnInfos>
+		<MapImages>
+			<MapImage image="Data/Maps/Overworld0.png"/>
+			<MapImage image="Data/Maps/Overworld1.png"/>
+			<MapImage image="Data/Maps/Overworld2.png"/>
+			<MapImage image="Data/Maps/Overworld3.png"/>
+			<MapImage image="Data/Maps/Overworld4.png"/>
+			<MapImage image="Data/Maps/Overworld5.png"/>
+		</MapImages>
+	</MapDefinition>
+	
+	<MapDefinition name="DOGDimension" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8" skyboxTexture="Data/Images/DOGBackground.png" isSkyboxCylinder="false">
+		<SpawnInfos>
+			<SpawnInfo actor="Marine" position="4.5,18.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="26.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="27.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="28.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint" position="29.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPoint"  position="30.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="1.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="4.0,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="6.5,15.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="26.5,10.5,0.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="Demon" position="29.5,10.5,0.0" orientation="270.0,0.0,0.0" />
+		</SpawnInfos>
+		<MapImages>
+			<MapImage image="Data/Maps/DOG0.png"/>
+			<MapImage image="Data/Maps/DOG1.png"/>
+		</MapImages>
+	</MapDefinition>
 </Definitions>
 

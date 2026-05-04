@@ -167,8 +167,9 @@ void Map::CreateGeometry()
 		}
 		if (currentTileDefinition->m_rampSpriteCoords != IntVec2(-1, -1))
 		{
-			AABB2 currentUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_rampSpriteCoords);
-			AddGeometryForRamp(currentBounds, currentUVs, currentTileDefinition->m_rampDirection);
+			AABB2 currentRampUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_rampSpriteCoords);
+			AABB2 currentWallUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_rampWallSpriteCoords);
+			AddGeometryForRamp(currentBounds, currentRampUVs, currentWallUVs, currentTileDefinition->m_rampDirection);
 		}
 	}
 
@@ -252,7 +253,7 @@ void Map::AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs)
 		UVs);
 }
 
-void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& UVs, IntVec2 const & direction)
+void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& RampUVs, const AABB2& WallUvs, IntVec2 const & direction)
 {
 	if (direction == IntVec2(1,0))
 	{
@@ -261,17 +262,18 @@ void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& UVs, IntVec2 cons
 			bounds.m_mins,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
 			bounds.m_maxs,
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, RampUVs);
+		AABB2 newWallUVs = AABB2(WallUvs.m_maxs, WallUvs.m_mins);
 		AddVertsForTriangle3D(m_vertexes, m_indexes,
 			bounds.m_mins,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, WallUvs);
 		AddVertsForTriangle3D(m_vertexes, m_indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, newWallUVs);
 	}
 	else if (direction == IntVec2(-1, 0))
 	{
@@ -280,17 +282,18 @@ void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& UVs, IntVec2 cons
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, RampUVs);
+		AABB2 newWallUVs = AABB2(WallUvs.m_maxs, WallUvs.m_mins);
 		AddVertsForTriangle3D(m_vertexes, m_indexes,
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, newWallUVs);
 		AddVertsForTriangle3D(m_vertexes, m_indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, WallUvs);
 	}
 	else if (direction == IntVec2(0, 1))
 	{
@@ -299,17 +302,18 @@ void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& UVs, IntVec2 cons
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			bounds.m_maxs,
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, RampUVs);
+		AABB2 newWallUVs = AABB2(WallUvs.m_maxs, WallUvs.m_mins);
 		AddVertsForTriangle3D(m_vertexes, m_indexes,
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			bounds.m_mins,
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, newWallUVs);
 		AddVertsForTriangle3D(m_vertexes, m_indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, WallUvs);
 	}
 	else if (direction == IntVec2(0, -1))
 	{
@@ -318,17 +322,18 @@ void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& UVs, IntVec2 cons
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, RampUVs);
+		AABB2 newWallUVs = AABB2(WallUvs.m_maxs, WallUvs.m_mins);
 		AddVertsForTriangle3D(m_vertexes, m_indexes,
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, WallUvs);
 		AddVertsForTriangle3D(m_vertexes, m_indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
-			Rgba8::WHITE, UVs);
+			Rgba8::WHITE, newWallUVs);
 	}
 
 }

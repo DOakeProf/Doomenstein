@@ -100,7 +100,7 @@ public:
 	void AddGeometryForWall(const AABB3& bounds, const AABB2& UVs);
 	void AddGeometryForFloor(const AABB3& bounds, const AABB2& UVs);
 	void AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs);
-	void AddGeometryForRamp(const AABB3& bounds, const AABB2& UVs, IntVec2 const& direction);
+	void AddGeometryForRamp(const AABB3& bounds, const AABB2& RampUVs, const AABB2& WallUVs, IntVec2 const& direction);
 	void CreateBuffers();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -9,17 +9,25 @@
   <TileDefinition name="OpenDirt" isSolid="false" mapImagePixelColor="127,51,0" floorSpriteCoords="5,2"/>
 
   <TileDefinition name="SnowFloor" isSolid="false" mapImagePixelColor="127,255,255" floorSpriteCoords="0,0"/>
-  <TileDefinition name="SnowRampXPos" isSolid="false" mapImagePixelColor="127,200,255" rampSpriteCoords="0,0" rampDirection="1,0"/>
-  <TileDefinition name="SnowRampXNeg" isSolid="false" mapImagePixelColor="127,195,255" rampSpriteCoords="0,0" rampDirection="-1,0"/>
-  <TileDefinition name="SnowRampYPos" isSolid="false" mapImagePixelColor="127,190,255" rampSpriteCoords="0,0" rampDirection="0,1"/>
-  <TileDefinition name="SnowRampXNeg" isSolid="false" mapImagePixelColor="127,185,255" rampSpriteCoords="0,0" rampDirection="0,-1"/>
+  <TileDefinition name="SnowRampXPos" isSolid="false" mapImagePixelColor="127,200,255" rampSpriteCoords="0,0" rampDirection="1,0" rampWallSpriteCoords ="0,3"/>
+  <TileDefinition name="SnowRampXNeg" isSolid="false" mapImagePixelColor="127,195,255" rampSpriteCoords="0,0" rampDirection="-1,0" rampWallSpriteCoords ="0,3"/>
+  <TileDefinition name="SnowRampYPos" isSolid="false" mapImagePixelColor="127,190,255" rampSpriteCoords="0,0" rampDirection="0,1" rampWallSpriteCoords ="0,3"/>
+  <TileDefinition name="SnowRampXNeg" isSolid="false" mapImagePixelColor="127,185,255" rampSpriteCoords="0,0" rampDirection="0,-1" rampWallSpriteCoords ="0,3"/>
   <TileDefinition name="SnowDirtWall" isSolid="true" mapImagePixelColor="127,200,200" wallSpriteCoords="0,1"/>
   <TileDefinition name="DirtWall" isSolid="true" mapImagePixelColor="127,100,100" wallSpriteCoords="0,2"/>
   <TileDefinition name="DirtCeiling" isSolid="false" mapImagePixelColor="127,50,100" ceilingSpriteCoords="0,2"/>
   <TileDefinition name="DirtCeilingSnowFloor" isSolid="false" mapImagePixelColor="127,10,60" ceilingSpriteCoords="0,2" floorSpriteCoords="0,0"/>
 	
   <TileDefinition name="SnowStoneWall" isSolid="true" mapImagePixelColor="127,200,150" wallSpriteCoords="1,1"/>
+  <TileDefinition name="StoneFloor" isSolid="false" mapImagePixelColor="127,100,150" floorSpriteCoords="1,2"/>
+  <TileDefinition name="StoneRampXPos" isSolid="false" mapImagePixelColor="90,100,150" rampSpriteCoords="1,2" rampDirection="1,0" rampWallSpriteCoords ="1,2"/>
+  <TileDefinition name="StoneRampXNeg" isSolid="false" mapImagePixelColor="90,100,145" rampSpriteCoords="1,2" rampDirection="-1,0" rampWallSpriteCoords ="1,2"/>
+  <TileDefinition name="StoneRampYPos" isSolid="false" mapImagePixelColor="90,100,140" rampSpriteCoords="1,2" rampDirection="0,1" rampWallSpriteCoords ="1,2"/>
+  <TileDefinition name="StoneRampXNeg" isSolid="false" mapImagePixelColor="90,100,135" rampSpriteCoords="1,2" rampDirection="0,-1" rampWallSpriteCoords ="1,2"/>
+  <TileDefinition name="StoneFloorCeiling" isSolid="false" mapImagePixelColor="127,100,120" floorSpriteCoords="1,2" ceilingSpriteCoords="1,2"/>
   <TileDefinition name="StoneWall" isSolid="true" mapImagePixelColor="127,150,100" wallSpriteCoords="1,2"/>
+  <TileDefinition name="StoneWallLine" isSolid="true" mapImagePixelColor="127,130,100" wallSpriteCoords="2,2"/>
+  <TileDefinition name="StoneWallLines" isSolid="true" mapImagePixelColor="127,110,100" wallSpriteCoords="3,2"/>
   <TileDefinition name="StoneCeiling" isSolid="false" mapImagePixelColor="127,100,50" ceilingSpriteCoords="1,2"/>
 	
   <TileDefinition name="PurpleFloor" isSolid="false" mapImagePixelColor="127,100,255" floorSpriteCoords="7,0"/>

@@ -314,7 +314,7 @@ void Actor::Update_Physics()
 		if (!m_definition->m_isFlying)
 		{
 			Vec3 gravityForce = Vec3(0.f, 0.f, -9.81f * 1.1f);
-			float gravityMultiplier = 1.f + abs(GetClamped(m_velocity.z, -7.f, 0.f));
+			float gravityMultiplier = 1.f + abs(GetClamped(m_velocity.z, -10.f, 0.f));
 			if (!m_isGrounded)
 			{
 				gravityForce *= gravityMultiplier;
@@ -516,7 +516,7 @@ void Actor::Damage(int damage, ActorHandle* otherActor)
 
 	Actor* otherActorRef = m_map->GetActorByHandle(*otherActor);
 	if (m_health <= 0 && 
-	otherActorRef->m_controller != nullptr && otherActorRef->m_controller->IsPlayer() && 
+	otherActorRef != nullptr && otherActorRef->m_controller != nullptr && otherActorRef->m_controller->IsPlayer() &&
 	m_controller != nullptr && m_controller->IsPlayer())
 	{
 		++((Player*)otherActorRef->m_controller)->m_playerKills;

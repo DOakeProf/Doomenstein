@@ -22,6 +22,7 @@ void TileDefinition::InitializeDefinitions(const char* path)
 		newTileDef->m_ceilingSpriteCoords = ParseXmlAttribute(*tileDefElement, "ceilingSpriteCoords", IntVec2(-1, -1));
 		newTileDef->m_rampSpriteCoords = ParseXmlAttribute(*tileDefElement, "rampSpriteCoords", IntVec2(-1, -1));
 		newTileDef->m_rampDirection = ParseXmlAttribute(*tileDefElement, "rampDirection", IntVec2(-1, -1));
+		newTileDef->m_rampWallSpriteCoords = ParseXmlAttribute(*tileDefElement, "rampWallSpriteCoords", IntVec2(-1, -1));
 		s_definitions.push_back(newTileDef);
 		tileDefElement = tileDefElement->NextSiblingElement();
 	}

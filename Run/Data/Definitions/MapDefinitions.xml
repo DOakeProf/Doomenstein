@@ -65,6 +65,19 @@
 			<MapImage image="Data/Maps/Overworld8.png"/>
 			<MapImage image="Data/Maps/Overworld9.png"/>
 			<MapImage image="Data/Maps/Overworld10.png"/>
+			<MapImage image="Data/Maps/Overworld11.png"/>
+			<MapImage image="Data/Maps/Overworld12.png"/>
+			<MapImage image="Data/Maps/Overworld13.png"/>
+			<MapImage image="Data/Maps/Overworld14.png"/>
+			<MapImage image="Data/Maps/Overworld15.png"/>
+			<MapImage image="Data/Maps/Overworld16.png"/>
+			<MapImage image="Data/Maps/Overworld17.png"/>
+			<MapImage image="Data/Maps/Overworld18.png"/>
+			<MapImage image="Data/Maps/Overworld19.png"/>
+			<MapImage image="Data/Maps/Overworld20.png"/>
+			<MapImage image="Data/Maps/Overworld21.png"/>
+			<MapImage image="Data/Maps/Overworld22.png"/>
+			<MapImage image="Data/Maps/Overworld23.png"/>
 		</MapImages>
 	</MapDefinition>
 	

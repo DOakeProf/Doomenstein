@@ -495,7 +495,14 @@ void Actor::SecondaryAttack()
 {
 	if (!m_isDead && m_equippedWeapon != nullptr)
 	{
-		m_equippedWeapon->AlternateFire(this);
+		if (m_equippedWeapon->m_definition->m_canScope)
+		{
+			m_equippedWeapon->startScope();
+		}
+		else
+		{
+			m_equippedWeapon->AlternateFire(this);
+		}
 	}
 }
 

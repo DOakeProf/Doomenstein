@@ -7,6 +7,7 @@
 #include "Engine/Core/Engine.hpp"
 #include "Engine/Renderer/Renderer.hpp"
 #include "Engine/VertexUtils.hpp"
+#include "Engine/Math/Splines.hpp"
 
 #include "Game/Actor.hpp"
 #include "Game/Map.hpp"
@@ -38,8 +39,13 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 		{
 			newWeaponDef->m_type = WeaponType::WEAPON;
 		}
+		newWeaponDef->m_perk =						ParseXmlAttribute(*weaponDefElement, "perk", "");
 
 		newWeaponDef->m_refireTime =				ParseXmlAttribute(*weaponDefElement, "refireTime", -1.f);
+		newWeaponDef->m_maxAmmo =					ParseXmlAttribute(*weaponDefElement, "maxAmmo", -1);
+		newWeaponDef->m_reloadTime =				ParseXmlAttribute(*weaponDefElement, "reloadTime", -1.f);
+		newWeaponDef->m_recoil =					ParseXmlAttribute(*weaponDefElement, "recoil", -1.f);
+		newWeaponDef->m_canScope =					ParseXmlAttribute(*weaponDefElement, "canScope", false);
 
 		newWeaponDef->m_rayCount =					ParseXmlAttribute(*weaponDefElement, "rayCount", -1);
 		newWeaponDef->m_rayCone =					ParseXmlAttribute(*weaponDefElement, "rayCone", -1.f);
@@ -176,6 +182,9 @@ Weapon::Weapon(Map* map, std::string definition)
 	m_fireTimer->Start();
 	m_alternateFireTimer = new Timer(m_definition->m_refireTime, m_map->m_game->m_gameClock);
 	m_alternateFireTimer->Start();
+	m_reloadTimer = new Timer(m_definition->m_reloadTime, m_map->m_game->m_gameClock);
+
+	m_rideTheBullTimer = new Timer(m_rideTheBullTime, m_map->m_game->m_gameClock);
 
 	m_animTimer = new Timer(0.0, m_map->m_game->m_gameClock);
 	if (m_definition->m_animations.size() > 0)
@@ -186,6 +195,10 @@ Weapon::Weapon(Map* map, std::string definition)
 		m_animTimer->m_period = m_animation.m_secondsPerFrame;
 		m_animTimer->Start();
 	}
+
+	m_bullets = m_definition->m_maxAmmo;
+
+	m_scopedTranslation.AppendTranslation3D(Vec3( -0.52f, 0.15f, 0.025f));
 }
 
 Weapon::~Weapon()
@@ -200,6 +213,50 @@ void Weapon::Update()
 	{
 		SetAnimation(m_defaultAnimation);
 	}
+
+	if (m_reloadTimer->HasPeriodElapsed())
+	{
+		StopReload();
+		m_bullets = m_definition->m_maxAmmo;
+	}
+
+	if (m_isScoped)
+	{
+		m_scopeFraction += (float)m_map->m_game->m_gameClock->GetDeltaSeconds() * 6.f;
+		m_scopeFraction = GetClampedZeroToOne(m_scopeFraction);
+	}
+	else
+	{
+		m_scopeFraction -= (float)m_map->m_game->m_gameClock->GetDeltaSeconds() * 6.f;
+		m_scopeFraction = GetClampedZeroToOne(m_scopeFraction);
+	}
+
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_DOWNARROW))
+	{
+		m_scopedTranslation.AppendTranslation3D(Vec3(0.f, 0.f, -0.05f));
+	}
+	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_UPARROW))
+	{
+		m_scopedTranslation.AppendTranslation3D(Vec3(0.f, 0.f, 0.05f));
+	}
+	if (g_engine->m_input->WasKeyJustPressed('U'))
+	{
+		m_scopedTranslation.AppendTranslation3D(Vec3(0.f, 0.05f, 0.f));
+	}
+	if (g_engine->m_input->WasKeyJustPressed('I'))
+	{
+		m_scopedTranslation.AppendTranslation3D(Vec3(0.f, -0.05f, 0.f));
+	}
+	if (g_engine->m_input->WasKeyJustPressed('V'))
+	{
+		m_scopedTranslation.AppendTranslation3D(Vec3(0.05f, 0.f, 0.f));
+	}
+	if (g_engine->m_input->WasKeyJustPressed('B'))
+	{
+		m_scopedTranslation.AppendTranslation3D(Vec3(-0.05f, 0.f, 0.f));
+	}
+	Vec3 translation = m_scopedTranslation.GetTranslation3D();
+	DebugAddMessage(Stringf("ScopedTranslation, %.2f %.2f %.2f", translation.x, translation.y, translation.z), 0.f, Rgba8::BLUE);
 }
 
 void Weapon::Render()
@@ -259,7 +316,14 @@ void Weapon::Render_GLTF()
 		modelMatrix.Append(currentPlayer->m_orientation.GetAsMatrix_IFwd_JLeft_KUp());
 		modelMatrix.AppendTranslation3D(Vec3(0.5f, -0.15f, -0.15f));
 
+		if (m_scopeFraction > 0.f)
+		{
+			Mat44 interpolatedScopeMatrix = Interpolate(Mat44(), m_scopedTranslation, SmoothStep3(m_scopeFraction));
+			modelMatrix.Append(interpolatedScopeMatrix);
+		}
+
 		modelMatrix.Append(Camera::GLTF_TO_GAME_CONVENTIONS);
+
 
 		g_engine->m_render->SetModelConstants(modelMatrix, Rgba8::WHITE);
 
@@ -272,17 +336,53 @@ void Weapon::Render_GLTF()
 
 void Weapon::Fire(Actor* actor)
 {
+	// Ride The Bull perk
+	if (m_definition->m_perk == "RideTheBull" && !m_isReloading && m_bullets > 0)
+	{
+		if (m_rideTheBullTimer->IsStopped())
+		{
+			m_rideTheBullTimer->Start();
+		}
+		else if (m_rideTheBull < m_maxRideTheBull && m_rideTheBullTimer->DecrementPeriodIfElapsed())
+		{
+			++m_rideTheBull;
+			m_fireTimer->m_period = m_definition->m_refireTime / (1.f + (0.1f * m_rideTheBull));
+		}
+	}
+	else
+	{
+		m_rideTheBull = 0;
+		m_rideTheBullTimer->Stop();
+		m_fireTimer->m_period = m_definition->m_refireTime;
+	}
+
 	if (!m_fireTimer->DecrementPeriodIfElapsed())
 	{
 		return;
 	}
+	else if (m_definition->m_maxAmmo != -1 && m_bullets <= 0)
+	{
+		StartReload();
+		return;
+	}
 	else
 	{
+		--m_bullets;
 		m_fireTimer->Start();
 		actor->SetAnimGroup("Attack");
 		SetAnimation("Attack");
 		SoundPlaybackID playbackID = g_engine->m_audio->StartSoundAt(m_definition->m_sound, actor->m_position, false);
 		actor->AddSoundPlaybackID(playbackID);
+
+		if (m_definition->m_recoil != -1.f && actor->m_controller != nullptr && actor->m_controller->IsPlayer())
+		{
+			float recoil = m_definition->m_recoil;
+			if (m_scopeFraction > 0.5f)
+			{
+				recoil /= 1.3f;
+			}
+			((Player*)actor->m_controller)->m_recoil.m_pitchDegrees -= recoil * (1.f + (0.1f * m_rideTheBull));
+		}
 	}
 	switch (m_definition->m_type)
 	{
@@ -422,6 +522,31 @@ void Weapon::SetAnimation(WeaponDefinition::Animation animation)
 	m_animTimer->Start();
 }
 
+void Weapon::StartReload()
+{
+	if (!m_isReloading)
+	{
+		m_reloadTimer->Start();
+		m_isReloading = true;
+	}
+}
+
+void Weapon::StopReload()
+{
+	m_isReloading = false;
+	m_reloadTimer->Stop();
+}
+
+void Weapon::startScope()
+{
+	m_isScoped = true;
+}
+
+void Weapon::StopScope()
+{
+	m_isScoped = false;
+}
+
 void Weapon::PushImpactPointToFitSurface(RaycastResultDoomenstein& result)
 {
 	// Push the portal to fit onto whatever surface its on.
@@ -540,16 +665,30 @@ void Weapon::Fire_Weapon(Actor* actor)
 {
 	if (m_definition->m_rayCount != -1)
 	{
+		float rayRange = m_definition->m_rayRange;
+		float rayCone = m_definition->m_rayCone;
+		if (m_scopeFraction > 0.5f)
+		{
+			rayRange *= 1.3f;
+			rayCone /= 1.8f;
+		}
 		for (int rayIndex = 0; rayIndex < m_definition->m_rayCount; ++rayIndex)
 		{
-			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_rayCone);
+			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), rayCone);
 			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 
-			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, m_definition->m_rayRange, actor);
+			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, rayRange, actor);
 			if (result.m_didImpact && result.m_actor != nullptr)
 			{
-				float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
+				float damageFalloffMultiplier = SmoothStop6(1.f - (result.m_impactDist / rayRange));
+				float RandomDamage = damageFalloffMultiplier * actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
 				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
+
+				if (m_definition->m_perk == "RideTheBull" && result.m_actor->m_health <= 0)
+				{
+					m_bullets = m_definition->m_maxAmmo;
+				}
+
 				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
 				m_map->SpawnActor("BloodSplatter", result.m_impactPos, EulerAngles());
 			}

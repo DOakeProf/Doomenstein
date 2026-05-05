@@ -74,6 +74,7 @@ public:
 	Vec3 m_velocity;
 	EulerAngles m_orientation;
 	EulerAngles m_angularVelocity;
+	EulerAngles m_recoil;
 	Rgba8 m_color = Rgba8::WHITE;
 	PlayerState m_playerState = PlayerState::FREEFLY;
 	PlayerState m_desiredPlayerState = PlayerState::FREEFLY;

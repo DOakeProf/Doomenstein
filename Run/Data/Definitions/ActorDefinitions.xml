@@ -52,7 +52,7 @@
     </Inventory>
   </ActorDefinition>
   <!-- Demon -->
-  <ActorDefinition name="Demon" faction="Demon" health="160" canBePossessed="true" corpseLifetime="1.0" visible="true">
+  <ActorDefinition name="Demon" faction="Demon" health="100" canBePossessed="true" corpseLifetime="1.0" visible="true">
     <Collision radius="0.35" height="0.85" collidesWithWorld="true" collidesWithActors="true"/>
     <Physics simulated="true" walkSpeed="2.0f" runSpeed="5.0f" turnSpeed="180.0f" drag="9.0f"/>
     <Camera eyeHeight="0.75f" cameraFOV="120.0f"/>

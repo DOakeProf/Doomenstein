@@ -46,7 +46,7 @@
       <Sound sound="Death" name="Data/Audio/PlayerDeath1.wav"/>
     </Sounds>
     <Inventory>
-      <Weapon name="Pistol" />
+      <Weapon name="Huckleberry" />
       <Weapon name="PlasmaRifle" />
 	  <Weapon name="PortalGun" />
     </Inventory>

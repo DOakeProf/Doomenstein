@@ -9,6 +9,14 @@
       <Sound sound="Fire" name="Data/Audio/PistolFire.mp3"/>
     </Sounds>
   </WeaponDefinition>
+	<!-- Huckleberry -->
+	<WeaponDefinition name="Huckleberry" refireTime="0.08" rayCount="1" rayCone="5.0" rayRange="40.0" rayDamage="4.0~8.0" rayImpulse="2.0">
+		<HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" gltfName="Huckleberry" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">
+		</HUD>
+		<Sounds>
+			<Sound sound="Fire" name="Data/Audio/PistolFire.mp3"/>
+		</Sounds>
+	</WeaponDefinition>
   <!-- Plasma Rifle -->
   <WeaponDefinition name="PlasmaRifle" refireTime="0.1" projectileCount="1" projectileActor="PlasmaProjectile" projectileCone="4.0" projectileSpeed="4.0">
     <HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">

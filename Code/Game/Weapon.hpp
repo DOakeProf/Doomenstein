@@ -29,6 +29,12 @@ struct WeaponDefinition
 	std::string			m_name;
 	WeaponType			m_type;
 	float				m_refireTime;
+	std::string			m_perk;
+	bool				m_canScope;
+	
+	int					m_maxAmmo;
+	float				m_reloadTime;
+	float				m_recoil;
 
 	int					m_rayCount;
 	float				m_rayCone;
@@ -99,15 +105,28 @@ public:
 	WeaponDefinition const* m_definition;
 	Timer* m_fireTimer;
 	Timer* m_alternateFireTimer;
+	Timer* m_reloadTimer;
 
 	Timer* m_animTimer;
 	WeaponDefinition::Animation m_animation;
 	WeaponDefinition::Animation m_defaultAnimation;
 
+	int m_bullets = -1;
+	bool m_isScoped = false;
+	float m_scopeFraction = 0.f;
+	bool m_isReloading = false;
+
+	// HuckleBerry
+	Timer* m_rideTheBullTimer;
+	float m_rideTheBullTime = 0.833f;
+	int m_maxRideTheBull = 2;
+	int m_rideTheBull = 0;
 
 	// Only for portal gun
 	Portal* m_leftPortal;
 	Portal* m_rightPortal;
+
+	Mat44 m_scopedTranslation;
 
 	void Update();
 	void Render();
@@ -125,6 +144,12 @@ public:
 
 	void SetAnimation(std::string animationName);
 	void SetAnimation(WeaponDefinition::Animation animation);
+
+	void StartReload();
+	void StopReload();
+
+	void startScope();
+	void StopScope();
 
 	void PushImpactPointToFitSurface(RaycastResultDoomenstein& result);
 };

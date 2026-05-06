@@ -314,7 +314,7 @@ void Actor::Update_Physics()
 		if (!m_definition->m_isFlying)
 		{
 			Vec3 gravityForce = Vec3(0.f, 0.f, -9.81f * 1.1f);
-			float gravityMultiplier = 1.f + abs(GetClamped(m_velocity.z, -10.f, 0.f));
+			float gravityMultiplier = 1.f + abs(GetClamped(m_velocity.z, -20.f, 0.f));
 			if (!m_isGrounded)
 			{
 				gravityForce *= gravityMultiplier;

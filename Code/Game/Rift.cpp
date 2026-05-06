@@ -8,11 +8,15 @@
 #include "Game/Player.hpp"
 #include "Game/Actor.hpp"
 
-Rift::Rift(Vec3 const& startingPosition, EulerAngles orientation, float height, float width)
-	: Portal(nullptr, startingPosition, orientation, height, width) // Map is nullptr because the rifts are a static variable separate from the maps. The maps should pass in themselves to the proper functions so that the rift knows which map is using it.
+Rift::Rift(Vec3 const& startingPosition, EulerAngles orientation, float height, float width, float sizeScale)
+	: Portal(nullptr, startingPosition, orientation, height, width, sizeScale) // Map is nullptr because the rifts are a static variable separate from the maps. The maps should pass in themselves to the proper functions so that the rift knows which map is using it.
 {
 	m_vertexes.clear();
-	AddVertsForQuad3D(m_vertexes, bl, br, tr, tl);
+	AddVertsForQuad3D(m_vertexes, 
+						bl + Vec3(0.f, 0.5f, -0.5f), 
+						br + Vec3(0.f, -0.5f, -0.5f),
+						tr + Vec3(0.f, -0.5f, 0.5f),
+						tl + Vec3(0.f, 0.5f, 0.5f));
 }
 
 Rift::~Rift()
@@ -52,10 +56,10 @@ void Rift::RenderRift(const Map* map)
 	// Render world
 	ClipPlaneConstants clipPlaneConstants = ClipPlaneConstants();
 	clipPlaneConstants.gClipPlane[0] = portalPlane;
-	clipPlaneConstants.gClipPlane[1] = Vec4(-portalLeft.x, -portalLeft.y, -portalLeft.z, DotProduct3D(portalLeft, m_position + portalOrientationMatrix.TransformPosition3D(bl))); // Left clip
-	clipPlaneConstants.gClipPlane[2] = Vec4(portalLeft.x, portalLeft.y, portalLeft.z, DotProduct3D(-portalLeft, m_position + portalOrientationMatrix.TransformPosition3D(br))); // Right clip
-	clipPlaneConstants.gClipPlane[3] = Vec4(-portalUp.x, -portalUp.y, -portalUp.z, DotProduct3D(portalUp, m_position + portalOrientationMatrix.TransformPosition3D(tl))); // Up clip
-	clipPlaneConstants.gClipPlane[4] = Vec4(portalUp.x, portalUp.y, portalUp.z, DotProduct3D(-portalUp, m_position + portalOrientationMatrix.TransformPosition3D(bl))); // Bottom clip
+	clipPlaneConstants.gClipPlane[1] = Vec4(-portalLeft.x, -portalLeft.y, -portalLeft.z, DotProduct3D(portalLeft, m_position + portalOrientationMatrix.TransformPosition3D(m_sizeScale * bl))); // Left clip
+	clipPlaneConstants.gClipPlane[2] = Vec4(portalLeft.x, portalLeft.y, portalLeft.z, DotProduct3D(-portalLeft, m_position + portalOrientationMatrix.TransformPosition3D(m_sizeScale * br))); // Right clip
+	clipPlaneConstants.gClipPlane[3] = Vec4(-portalUp.x, -portalUp.y, -portalUp.z, DotProduct3D(portalUp, m_position + portalOrientationMatrix.TransformPosition3D(m_sizeScale * tl))); // Up clip
+	clipPlaneConstants.gClipPlane[4] = Vec4(portalUp.x, portalUp.y, portalUp.z, DotProduct3D(-portalUp, m_position + portalOrientationMatrix.TransformPosition3D(m_sizeScale * bl))); // Bottom clip
 	clipPlaneConstants.amountOfClipPlanes = 1;
 	clipPlaneConstants.isEnabled = 1;
 	g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, map->m_riftMap->m_clipPlaneCBO);
@@ -113,6 +117,15 @@ void Rift::RenderRift(const Map* map)
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 
 	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
+	SpriteDef spriteDef = map->m_game->m_riftStencilAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+	AABB2 spriteUVs = spriteDef.m_UVs;
+	m_vertexes[0].m_uvTexCoords = spriteUVs.m_mins;
+	m_vertexes[1].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
+	m_vertexes[2].m_uvTexCoords = spriteUVs.m_maxs;
+	m_vertexes[3].m_uvTexCoords = spriteUVs.m_maxs;
+	m_vertexes[4].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
+	m_vertexes[5].m_uvTexCoords = spriteUVs.m_mins;
+	g_engine->m_render->BindTexture(map->m_game->m_riftStencilAnim->GetTexture());
 	g_engine->m_render->DrawVertexList(&m_vertexes);
 
 	g_engine->m_render->EndCamera(map->m_currentlyRenderedPlayer->m_worldCamera);
@@ -137,6 +150,24 @@ void Rift::RenderRift(const Map* map)
 	// Set rendering modes and shaders back to default
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
+	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+}
+
+void Rift::RenderOutline(const Map* map)
+{
+	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
+	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
+	SpriteDef spriteDef = map->m_game->m_riftAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+	AABB2 spriteUVs = spriteDef.m_UVs;
+	m_vertexes[0].m_uvTexCoords = spriteUVs.m_mins;
+	m_vertexes[1].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
+	m_vertexes[2].m_uvTexCoords = spriteUVs.m_maxs;
+	m_vertexes[3].m_uvTexCoords = spriteUVs.m_maxs;
+	m_vertexes[4].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
+	m_vertexes[5].m_uvTexCoords = spriteUVs.m_mins;
+	g_engine->m_render->BindTexture(map->m_game->m_riftAnim->GetTexture());
+	g_engine->m_render->DrawVertexList(&m_vertexes);
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 }
 

@@ -16,6 +16,7 @@ class Timer;
 class Shader;
 class BitmapFont;
 class Rift;
+class SpriteAnimDefinition;
 typedef size_t SoundID;
 
 extern std::vector<Rift*> s_rifts;
@@ -46,9 +47,10 @@ public:
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Rifts
-	void SpawnRift(Vec3 position, EulerAngles orientation);
+	void SpawnRift(Vec3 position, EulerAngles orientation, float scale = 1.f);
 	void AddRift(Rift* rift);
 	void RemoveRift(Rift* rift);
+	void RefreshRifts();
 
 private:
 	void Startup_PopulateFromBlackboard();
@@ -97,6 +99,9 @@ public:
 	SoundID		m_buttonClickSound;
 	std::string m_mapDefinitionString;
 	std::string m_riftMapDefinitionString;
+
+	SpriteAnimDefinition* m_riftAnim = nullptr;
+	SpriteAnimDefinition* m_riftStencilAnim = nullptr;
 
 	Camera* m_screenCamera = nullptr;
 

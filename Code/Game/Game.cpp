@@ -25,6 +25,8 @@
 #include "Engine/Core/Timer.hpp"
 #include "Engine/Renderer/Texture.hpp"
 #include "Engine/BitmapFont.hpp"
+#include "Engine/Renderer/SpriteAnimDefinition.hpp"
+#include "Engine/Renderer/Texture.hpp"
 
 std::vector<Rift*> s_rifts;
 
@@ -115,6 +117,20 @@ void Game::Startup_PopulateFromBlackboard()
 	m_mainMenuMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("mainMenuMusic", ""), true);
 	m_gameMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("gameMusic", ""), true);
 	m_buttonClickSound = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("buttonClickSound", ""), true);
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Rift animation information
+	float riftFramesPerSecond = g_gameConfigBlackboard.GetValue("riftFramesPerSecond", -1.f);
+	IntVec2 riftLayout = g_gameConfigBlackboard.GetValue("riftLayout", IntVec2(-1, -1));
+	SpriteSheet* riftSpriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(g_gameConfigBlackboard.GetValue("riftSpriteSheet", "").c_str()), 
+												   riftLayout);
+	m_riftAnim = new SpriteAnimDefinition(*riftSpriteSheet, 0, riftLayout.x - 1, riftFramesPerSecond, SpriteAnimPlaybackType::ONCE);
+
+	IntVec2 riftStencilLayout = g_gameConfigBlackboard.GetValue("riftStencilLayout", IntVec2(-1, -1));
+	SpriteSheet* riftStencilSpriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(g_gameConfigBlackboard.GetValue("riftStencilSpriteSheet", "").c_str()),
+														  riftStencilLayout);
+	m_riftStencilAnim = new SpriteAnimDefinition(*riftStencilSpriteSheet, 0, riftStencilLayout.x - 1, riftFramesPerSecond, SpriteAnimPlaybackType::ONCE);
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	m_mapDefinitionString = g_gameConfigBlackboard.GetValue("defaultMap", "");
 	m_riftMapDefinitionString = g_gameConfigBlackboard.GetValue("defaultRiftMap", "");
@@ -483,9 +499,9 @@ Player* Game::JoinPlayer(int controllerIndex)
 	return m_players[currentIndex];
 }
 
-void Game::SpawnRift(Vec3 position, EulerAngles orientation)
+void Game::SpawnRift(Vec3 position, EulerAngles orientation, float scale)
 {
-	Rift* newRift = new Rift(position, orientation, 2.f, 2.f);
+	Rift* newRift = new Rift(position, orientation, 2.f, 2.f, scale);
 	AddRift(newRift);
 }
 
@@ -514,6 +530,18 @@ void Game::RemoveRift(Rift* rift)
 	}
 }
 
+void Game::RefreshRifts()
+{
+	for (int riftIndex = 0; riftIndex < s_rifts.size(); ++riftIndex)
+	{
+		Rift* rift = s_rifts[riftIndex];
+		Vec3 positionStorage = rift->GetPosition();
+		EulerAngles orientationStorage = rift->GetOrientation();
+		RemoveRift(rift);
+		SpawnRift(positionStorage, orientationStorage);
+	}
+}
+
 void Game::EnterState(GameState state)
 {
 	switch (state)
@@ -526,8 +554,6 @@ void Game::EnterState(GameState state)
 
 			m_currentRiftMap = new Map(this, MapDefinition::GetByName(m_riftMapDefinitionString));
 			m_currentRiftMap->Startup_InitializeActors();
-
-			SpawnRift(Vec3(16.5f, 15.5f, 2.f), EulerAngles());
 
 			m_currentMap->m_riftMap = m_currentRiftMap;
 			m_currentRiftMap->m_riftMap = m_currentMap;

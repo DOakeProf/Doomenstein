@@ -637,6 +637,11 @@ void Player::HandleInputs_Debug()
 		DebugAddMessage(message, 2.f);
 	}
 
+	if (g_engine->m_input->WasKeyJustPressed('R'))
+	{
+		m_map->m_game->RefreshRifts();
+	}
+
 	if (g_engine->m_input->WasKeyJustPressed('N') && m_map->m_game->m_players.size() < 2)
 	{
 		Actor* newActorToPossess = nullptr;

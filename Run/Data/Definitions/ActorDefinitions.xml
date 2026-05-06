@@ -1,6 +1,9 @@
 <Definitions>
   <!-- SpawnPoint -->
   <ActorDefinition name="SpawnPoint" />
+  <!-- RiftPoint -->
+  <ActorDefinition name="RiftPointMain" />
+  <ActorDefinition name="RiftPointRandom" />
   <!-- Marine -->
   <ActorDefinition name="Marine" faction="Marine" health="100" canBePossessed="true" corpseLifetime="2.0" visible="true">
     <Collision radius="0.25" height="0.6" collidesWithWorld="true" collidesWithActors="true"/>

@@ -666,7 +666,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 	if (m_definition->m_rayCount != -1)
 	{
 		float rayRange = m_definition->m_rayRange;
-		float rayCone = m_definition->m_rayCone; reload, muzzle flash
+		float rayCone = m_definition->m_rayCone;
 		if (m_scopeFraction > 0.5f)
 		{
 			rayRange *= 1.3f;

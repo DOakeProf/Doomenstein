@@ -5,21 +5,25 @@
 #include "Engine/VertexUtils.hpp"
 #include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/MathUtils.hpp"
+#include "Engine/Core/Timer.hpp"
+#include "Engine/Renderer/SpriteAnimDefinition.hpp"
 
 #include "Game/Game.hpp"
 #include "Game/Player.hpp"
 #include "Game/GameCommon.hpp"
 #include "Game/Map.hpp"
+#include "Game/App.hpp"
 
 const Vec3 offsetInsidePortalAABB3 = Vec3(0.2f, 0.f, 0.f);
 const Vec3 offsetOutsidePortalAABB3 = Vec3(0.00003f, 0.f, 0.f);
 const Vec3 offsetZValuePortalAABB3 = Vec3(0.f, 0.f, 0.0001f);
 const Vec3 offsetYValuePortalAABB3 = Vec3(0.f, 0.0001f, 0.f);
 
-Portal::Portal(Map* map, Vec3 const& startingPosition, EulerAngles const& orientation, float height, float width)
+Portal::Portal(Map* map, Vec3 const& startingPosition, EulerAngles const& orientation, float height, float width, float sizeScale)
 	: m_map(map)
 	, m_position(startingPosition)
 	, m_orientation(orientation)
+	, m_sizeScale(sizeScale)
 {
 	m_portalCamera = new Camera();
 	m_portalCamera->SetPerspectiveView(SCREEN_ASPECT, 60.f, 0.01f, 420.f);
@@ -55,6 +59,9 @@ Portal::Portal(Map* map, Vec3 const& startingPosition, EulerAngles const& orient
 	AddVertsForAABB3D(m_borderVertexes, bottomAABB3, Rgba8::WHITE);
 	AddVertsForAABB3D(m_borderVertexes, rightAABB3, Rgba8::WHITE);
 	AddVertsForAABB3D(m_borderVertexes, topAABB3, Rgba8::WHITE);
+
+	m_animTimer = new Timer(g_app->m_game->m_riftAnim->GetFPS(), g_app->m_game->m_gameClock);
+	m_animTimer->Start();
 }
 
 Portal::~Portal()
@@ -222,6 +229,8 @@ Mat44 Portal::GetModelToWorldTransform() const
 	Mat44 orientationMatrix = m_orientation.GetAsMatrix_IFwd_JLeft_KUp();
 	modelToWorld.Append(orientationMatrix);
 
+	modelToWorld.AppendScaleUniform3D(m_sizeScale);
+
 	return modelToWorld;
 }
 
@@ -329,10 +338,10 @@ RaycastResult3D Portal::RaycastAgainst(Vec3 const& start, Vec3 const& direction,
 	Vec3 topRight = portalTransform.TransformPosition3D(tr);
 	Vec3 topLeft = portalTransform.TransformPosition3D(tl);
 	RaycastResult3D result = RaycastVSQuad3D(start, direction, length,
-		bottomLeft + GetPosition(),
-		bottomRight + GetPosition(),
-		topRight + GetPosition(),
-		topLeft + GetPosition()
+		m_sizeScale * bottomLeft + GetPosition(),
+		m_sizeScale * bottomRight + GetPosition(),
+		m_sizeScale * topRight + GetPosition(),
+		m_sizeScale * topLeft + GetPosition()
 	);
 	return result;
 }

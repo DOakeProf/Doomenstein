@@ -6,6 +6,12 @@
 	gameMusic="Data/Audio/Music/E1M1_AtDoomsGate.mp2"
 	buttonClickSound="Data/Audio/Click.mp3"
 	windowAspect="2.0"
+	
+	riftStencilSpriteSheet="Data/Images/RiftStencil.png"
+	riftStencilLayout="4,1"
+	riftSpriteSheet="Data/Images/RiftOverworld.png"
+	riftLayout="4,1"
+	riftFramesPerSecond="7.0"
 
 	perspectiveFOV = "60.f"
 	rollSensitivity = "720.f"

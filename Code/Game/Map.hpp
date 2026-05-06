@@ -163,6 +163,7 @@ public:
 
 	void Render_Portals() const;
 	void Render_Rifts() const;
+	void Render_RiftOutlines() const;
 
 	RaycastResultDoomenstein	RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
 	RaycastResult3D				RaycastWorldXY(const Vec3& start, const Vec3& direction, float distance) const;
@@ -213,6 +214,8 @@ protected:
 	std::vector<Tile> m_tiles;
 	std::vector<Actor*> m_actors;
 	std::vector<Actor*> m_spawnPoints;
+	std::vector<Actor*> m_riftPointMains;
+	std::vector<Actor*> m_riftPointRandoms;
 	std::vector<Portal*> m_portals;
 	unsigned int m_nextActorUID = 0;
 	Actor* m_bulletActor;

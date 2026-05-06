@@ -9,12 +9,13 @@
 
 struct Camera;
 class Map;
+class Timer;
 
 class Portal
 {
 public:
-	Portal(Map* map, Vec3 const& startingPosition, EulerAngles const& orientation, float height, float width);
-	~Portal();
+	Portal(Map* map, Vec3 const& startingPosition, EulerAngles const& orientation, float height, float width, float sizeScale = 1.f);
+	virtual ~Portal();
 
 	virtual void Update();
 	void RenderOutline() const;
@@ -55,6 +56,9 @@ protected:
 	Map* m_map = nullptr;
 	Vec3 m_position;
 	EulerAngles m_orientation;
+	Timer* m_animTimer;
+
+	float m_sizeScale;
 	
 	std::vector<Vertex> m_vertexes;
 	std::vector<Vertex> m_borderVertexes;

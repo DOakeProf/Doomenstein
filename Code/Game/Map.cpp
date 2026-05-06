@@ -116,10 +116,34 @@ void Map::Startup_InitializeActors()
 	}
 	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
 	{
-		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name != "SpawnPoint" && m_definition->m_spawnInfos[spawnInfoIndex].m_name != "Marine")
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "RiftPointMain")
+		{
+			Actor* spawnPoint = SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
+			m_riftPointMains.push_back(spawnPoint);
+		}
+	}
+	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
+	{
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "RiftPointMain")
+		{
+			Actor* spawnPoint = SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
+			m_riftPointRandoms.push_back(spawnPoint);
+		}
+	}
+	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
+	{
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name != "SpawnPoint" && 
+			m_definition->m_spawnInfos[spawnInfoIndex].m_name != "Marine" &&
+			m_definition->m_spawnInfos[spawnInfoIndex].m_name != "RiftPointMain" &&
+			m_definition->m_spawnInfos[spawnInfoIndex].m_name != "RiftPointRandom")
 		{
 			SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
 		}
+	}
+
+	for (Actor* rift : m_riftPointMains)
+	{
+		m_game->SpawnRift(rift->m_position, rift->m_orientation, 2.f);
 	}
 
 	m_DOG = new DOG(this);
@@ -1290,6 +1314,7 @@ void Map::Render()
 		g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
 	
 		Render_World();
+		Render_RiftOutlines(); // This is outside of the world and after it because I don't want the portals/rifts to also render the outlines, and it is transparent which should be rendered last.
 
 		m_isRenderingPortal = true;
 		Render_Portals();
@@ -1401,6 +1426,14 @@ void Map::Render_Rifts() const
 		{
 			rift->RenderRift(this);
 		}
+	}
+}
+
+void Map::Render_RiftOutlines() const
+{
+	for (Rift* rift : s_rifts)
+	{
+		rift->RenderOutline(this);
 	}
 }
 

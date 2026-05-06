@@ -97,7 +97,7 @@ public:
 	// Creating Geometry/Map tiles
 	void CreateTiles();
 	void CreateGeometry();
-	void AddGeometryForWall(const AABB3& bounds, const AABB2& UVs);
+	void AddGeometryForWall(int tileIndex, const AABB3& bounds, const AABB2& UVs);
 	void AddGeometryForFloor(const AABB3& bounds, const AABB2& UVs);
 	void AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs);
 	void AddGeometryForRamp(const AABB3& bounds, const AABB2& RampUVs, const AABB2& WallUVs, IntVec2 const& direction);

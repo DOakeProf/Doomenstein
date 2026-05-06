@@ -4,6 +4,7 @@
 #include "Game/ActorHandle.hpp"
 #include "Game/AI.hpp"
 #include "Game/Player.hpp"
+#include "Game/App.hpp"
 
 #include "Engine/Math/Mat44.hpp"
 #include "Engine/Core/Vertex.hpp"
@@ -127,7 +128,7 @@ void Actor::Update()
 	Update_Gameplay();
 
 	// Reset to default if play once animations have finished
-	if (m_animationGroup.m_playbackMode == SpriteAnimPlaybackType::ONCE && m_animTimer->HasPeriodElapsed())
+	if (m_animationGroup.m_playbackMode == SpriteAnimPlaybackType::ONCE && m_animTimer->HasPeriodElapsed() && !m_isDead)
 	{
 		SetAnimGroup(m_defaultAnimationGroup);
 	}
@@ -208,12 +209,16 @@ void Actor::Render()
 	g_engine->m_render->BindTexture(m_definition->m_spriteSheet->GetTexture());
 	g_engine->m_render->DrawIndexedVertexList(&m_verts, &m_vertexIndexes, m_map->GetVertexBuffer(), m_map->GetIndexBuffer());
 
-	//Render_Debug();
+	if (g_app->IsDebug())
+	{
+		Render_Debug();
+	}
 }
 
 void Actor::Render_Debug() const
 {
 	g_engine->m_render->SetModelConstants(GetModelMatrixOnlyYaw());
+	g_engine->m_render->BindTexture(nullptr);
 	std::vector<Vertex> debugVerts;
 
 	Rgba8 colorToUse = m_color;
@@ -222,19 +227,19 @@ void Actor::Render_Debug() const
 		colorToUse.ScaleColor(0.5f);
 	}
 
-	AddVertsForCylinder3D(debugVerts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height), m_definition->m_radius, colorToUse, AABB2::ZERO_TO_ONE, 16);
 	Vec3 displacementFromCenter = Vec3(m_definition->m_radius, 0.f, 0.f);
-	displacementFromCenter.GetRotatedAboutZDegrees(m_orientation.m_yawDegrees);
+	//AddVertsForCylinder3D(debugVerts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height), m_definition->m_radius, colorToUse, AABB2::ZERO_TO_ONE, 16);
+	//displacementFromCenter.GetRotatedAboutZDegrees(m_orientation.m_yawDegrees);
 
-	if (!m_definition->m_isFlying)
-	{
-		Vec3 noseStart = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter;
-		Vec3 noseEnd = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter + displacementFromCenter * 0.3f;
-		AddVertsForCone3D(debugVerts, noseStart, noseEnd, 0.1f, colorToUse, AABB2::ZERO_TO_ONE, 16);
-	}
+	//if (!m_definition->m_isFlying)
+	//{
+	//	Vec3 noseStart = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter;
+	//	Vec3 noseEnd = Vec3(0.f, 0.f, m_definition->m_eyeHeight - 0.1f) + displacementFromCenter + displacementFromCenter * 0.3f;
+	//	AddVertsForCone3D(debugVerts, noseStart, noseEnd, 0.1f, colorToUse, AABB2::ZERO_TO_ONE, 16);
+	//}
 
-	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
-	g_engine->m_render->DrawVertexList(&debugVerts);
+	//g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+	//g_engine->m_render->DrawVertexList(&debugVerts);
 
 	debugVerts.clear();
 	AddVertsForCylinder3D(debugVerts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height + 0.001f), m_definition->m_radius + 0.001f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 16);
@@ -393,7 +398,7 @@ void Actor::SetAnimGroup(std::string animGroupName)
 		if (curAnimGroup.m_name == animGroupName)
 		{
 			m_animationGroup = curAnimGroup;
-			m_animTimer->m_period = curAnimGroup.m_secondsPerFrame * (m_animationGroup.m_animations[0].m_endFrame - m_animationGroup.m_animations[0].m_startFrame); // Just take the first animations frame count, all the animations in a group happen to have the same frame count so it should be ok.
+			m_animTimer->m_period = curAnimGroup.m_secondsPerFrame * (m_animationGroup.m_animations[0].m_endFrame - m_animationGroup.m_animations[0].m_startFrame + 1); // Just take the first animations frame count, all the animations in a group happen to have the same frame count so it should be ok.
 			m_animTimer->Start();
 			return;
 		}
@@ -403,7 +408,7 @@ void Actor::SetAnimGroup(std::string animGroupName)
 void Actor::SetAnimGroup(ActorDefinition::AnimationGroup animGroup)
 {
 	m_animationGroup = animGroup;
-	m_animTimer->m_period = animGroup.m_secondsPerFrame * (m_animationGroup.m_animations[0].m_endFrame - m_animationGroup.m_animations[0].m_startFrame);
+	m_animTimer->m_period = animGroup.m_secondsPerFrame * (m_animationGroup.m_animations[0].m_endFrame - m_animationGroup.m_animations[0].m_startFrame + 1);
 	m_animTimer->Start();
 }
 
@@ -544,7 +549,7 @@ void Actor::Die()
 
 void Actor::OnCollide(Actor* otherActor)
 {
-	if (otherActor != nullptr && m_definition->m_damageOnCollide != FloatRange(-1, -1))
+	if (otherActor != nullptr && m_definition->m_damageOnCollide != FloatRange(-1, -1) && m_definition->m_faction != otherActor->m_definition->m_faction)
 	{
 		float damage = m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_damageOnCollide.m_min, m_definition->m_damageOnCollide.m_max);
 		otherActor->Damage(RoundDownToInt(damage), m_owner->m_handle);
@@ -626,6 +631,23 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 		if (AIElement != nullptr)
 		{
 			newActorDef->m_aiEnabled = ParseXmlAttribute(*AIElement, "aiEnabled", false);
+			std::string aiTypeString = ParseXmlAttribute(*AIElement, "aiType", "");
+			if (aiTypeString == "Melee")
+			{
+				newActorDef->m_aiType = AIType::MELEE;
+			}
+			else if (aiTypeString == "Ranged")
+			{
+				newActorDef->m_aiType = AIType::RANGED;
+			}
+			else if (aiTypeString == "Flying_Melee")
+			{
+				newActorDef->m_aiType = AIType::FLYING_MELEE;
+			}
+			else if (aiTypeString == "Flying_Ranged")
+			{
+				newActorDef->m_aiType = AIType::FLYING_RANGED;
+			}
 			newActorDef->m_sightRadius = ParseXmlAttribute(*AIElement, "sightRadius", -1.f);
 			newActorDef->m_sightAngle = ParseXmlAttribute(*AIElement, "sightAngle", -1.f);
 		}

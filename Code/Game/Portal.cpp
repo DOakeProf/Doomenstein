@@ -330,6 +330,11 @@ Vec3 Portal::GetPosition() const
 	return m_position;
 }
 
+float Portal::GetScale() const
+{
+	return m_sizeScale;
+}
+
 RaycastResult3D Portal::RaycastAgainst(Vec3 const& start, Vec3 const& direction, float length)
 {
 	Mat44 portalTransform = GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();

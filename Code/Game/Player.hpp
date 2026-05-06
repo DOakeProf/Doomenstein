@@ -73,6 +73,7 @@ public:
 	Vec3 m_position; // Not initialized like the others because by simply just defining a new object of these classes, they are already initialized in their constructors.
 	Vec3 m_velocity;
 	EulerAngles m_orientation;
+	EulerAngles m_orientationRecoil;
 	EulerAngles m_angularVelocity;
 	EulerAngles m_recoil;
 	Rgba8 m_color = Rgba8::WHITE;

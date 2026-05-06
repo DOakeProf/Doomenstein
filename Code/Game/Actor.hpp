@@ -9,6 +9,7 @@
 #include "Engine/Audio/AudioSystem.hpp"
 
 #include "Game/Weapon.hpp"
+#include "Game/AI.hpp"
 
 #include <string>
 
@@ -59,6 +60,7 @@ struct ActorDefinition
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// AI
 	bool						m_aiEnabled;
+	AIType						m_aiType;
 	float						m_sightRadius;
 	float						m_sightAngle;
 

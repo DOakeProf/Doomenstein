@@ -143,7 +143,7 @@ void Map::Startup_InitializeActors()
 
 	for (Actor* rift : m_riftPointMains)
 	{
-		m_game->SpawnRift(rift->m_position, rift->m_orientation, 2.f);
+		m_game->SpawnRift(rift->m_position, rift->m_orientation, 3.f);
 	}
 
 	m_DOG = new DOG(this);
@@ -159,6 +159,10 @@ void Map::CreateTiles()
 			{
 				Rgba8 texelColor = m_definition->m_mapImages[zCoord]->GetTexelColor(IntVec2(xCoord, yCoord));
 				const TileDefinition* tileDef = TileDefinition::GetByPixelColor(texelColor);
+				if (tileDef == nullptr)
+				{
+					ERROR_AND_DIE(Stringf("Pixel at location X: %i Y: %i Z: %i was of an unknown color.", xCoord, yCoord, zCoord));
+				}
 				AABB3 tileAABB3 = AABB3(Vec3((float)xCoord, (float)yCoord, (float)zCoord), Vec3((float)xCoord + 1.f, (float)yCoord + 1.f, (float)zCoord + 1.f));
 				m_tiles.emplace_back(tileDef, tileAABB3);
 			}
@@ -182,7 +186,7 @@ void Map::CreateGeometry()
 		if (currentTileDefinition->m_wallSpriteCoords != IntVec2(-1, -1))
 		{
 			AABB2 currentUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_wallSpriteCoords);
-			AddGeometryForWall(currentBounds, currentUVs);
+			AddGeometryForWall(tileIndex, currentBounds, currentUVs);
 		}
 		if (currentTileDefinition->m_ceilingSpriteCoords != IntVec2(-1, -1))
 		{
@@ -219,25 +223,38 @@ void Map::CreateGeometry()
 	}
 }
 
-void Map::AddGeometryForWall(const AABB3& bounds, const AABB2& UVs)
+void Map::AddGeometryForWall(int tileIndex, const AABB3& bounds, const AABB2& UVs)
 {
+	const Tile* tileXPos = GetTile(tileIndex + m_dimensions.y);
+	const Tile* tileXNeg = GetTile(tileIndex - m_dimensions.y);
+	const Tile* tileYPos = GetTile(tileIndex + 1);
+	const Tile* tileYNeg = GetTile(tileIndex - 1);
+
 	// + X
-	AddVertsForQuad3D(m_vertexes, m_indexes,
-		Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
-		Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
-		Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
-		Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
-		Rgba8::WHITE,
-		UVs);
+	if (tileXPos != nullptr && tileXPos->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1))
+	{
+		AddVertsForQuad3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
+			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
+			Rgba8::WHITE,
+			UVs);
+	}
 	// + Y
-	AddVertsForQuad3D(m_vertexes, m_indexes,
-		Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
-		Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
-		Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
-		Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
-		Rgba8::WHITE,
-		UVs);
+	if (tileYPos != nullptr && tileYPos->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1))
+	{
+		AddVertsForQuad3D(m_vertexes, m_indexes,
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
+			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
+			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
+			Rgba8::WHITE,
+			UVs);
+	}
 	// - X
+	if (tileXNeg != nullptr && tileXNeg->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1))
+	{
 	AddVertsForQuad3D(m_vertexes, m_indexes,
 		Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 		Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
@@ -245,7 +262,10 @@ void Map::AddGeometryForWall(const AABB3& bounds, const AABB2& UVs)
 		Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
 		Rgba8::WHITE,
 		UVs);
+	}
 	// - Y
+	if (tileYNeg != nullptr && tileYNeg->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1))
+	{
 	AddVertsForQuad3D(m_vertexes, m_indexes,
 		Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
 		Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
@@ -253,6 +273,7 @@ void Map::AddGeometryForWall(const AABB3& bounds, const AABB2& UVs)
 		Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
 		Rgba8::WHITE,
 		UVs);
+	}
 }
 
 void Map::AddGeometryForFloor(const AABB3& bounds, const AABB2& UVs)
@@ -579,7 +600,7 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 
 	if (newActor->m_definition->m_aiEnabled)
 	{
-		AI* aiController = new AI(this);
+		AI* aiController = new AI(this, newActor->m_definition->m_aiType);
 		aiController->Possess(newActor->m_handle);
 	}
 

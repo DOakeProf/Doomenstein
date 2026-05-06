@@ -7,8 +7,9 @@
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Core/Clock.hpp"
 
-AI::AI(Map* map)
+AI::AI(Map* map, AIType aiType)
 	: Controller(map)
+	, m_type(aiType)
 {
 
 }
@@ -19,6 +20,15 @@ void AI::DamagedBy(ActorHandle* otherActor)
 }
 
 void AI::Update()
+{
+	switch (m_type)
+	{
+		case AIType::MELEE: Update_Melee(); break;
+		case AIType::RANGED: Update_Ranged(); break;
+	}
+}
+
+void AI::Update_Melee()
 {
 	Actor* actor = m_map->GetActorByHandle(*m_actorHandle);
 	if (actor != nullptr && !actor->m_isDead)
@@ -48,8 +58,8 @@ void AI::Update()
 				}
 				else if (distBetweenSelfAndTarget < distToStartSlowingDown) // Slow down when near player.
 				{
-					actor->MoveInDirection(selfToOtherActorNormalized, actor->m_definition->m_runSpeed * 
-					(distBetweenSelfAndTarget - distToStop) / (distToStartSlowingDown - distToStop));
+					actor->MoveInDirection(selfToOtherActorNormalized, actor->m_definition->m_runSpeed *
+						(distBetweenSelfAndTarget - distToStop) / (distToStartSlowingDown - distToStop));
 					m_map->GetActorByHandle(*m_actorHandle)->Attack();
 				}
 				else
@@ -64,6 +74,68 @@ void AI::Update()
 				float angleBetweenVectors2D = GetShortestAngularDispDegrees(angleOfSelfToOther2D, angleOfForwardVector2D);
 				float maxTurnSpeedThisFrame = actor->m_definition->m_turnSpeed * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 				actor->m_orientation.m_yawDegrees -= GetClamped(angleBetweenVectors2D, -maxTurnSpeedThisFrame, maxTurnSpeedThisFrame);
+
+				RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
+				if (result.m_didImpact)
+				{
+					actor->Jump(11.f);
+				}
+			}
+		}
+	}
+}
+
+void AI::Update_Ranged()
+{
+	Actor* actor = m_map->GetActorByHandle(*m_actorHandle);
+	if (actor != nullptr && !actor->m_isDead)
+	{
+		Update_FindTargetActor();
+
+		if (m_targetActorHandle != nullptr)
+		{
+			Actor* otherActor = m_map->GetActorByHandle(*m_targetActorHandle);
+			if (otherActor == nullptr)
+			{
+				m_targetActorHandle = nullptr;
+			}
+			else
+			{
+				// Move towards target.
+				Vec3 selfToOtherActor = otherActor->m_position - actor->m_position;
+				selfToOtherActor.z = 0.f; // Flatten the vector to the XY plane.
+				Vec3 selfToOtherActorNormalized = selfToOtherActor.GetNormalized();
+
+				float distToStop = 5.f;
+				float distToStartSlowingDown = 7.f;
+				float distBetweenSelfAndTarget = selfToOtherActor.GetLength();
+				if (distBetweenSelfAndTarget < distToStop * 3.f) // attack when near player.
+				{
+					m_map->GetActorByHandle(*m_actorHandle)->Attack();
+				}
+				if (distBetweenSelfAndTarget < distToStartSlowingDown) // Slow down when near player.
+				{
+					actor->MoveInDirection(selfToOtherActorNormalized, actor->m_definition->m_runSpeed *
+						(distBetweenSelfAndTarget - distToStop) / (distToStartSlowingDown - distToStop));
+					m_map->GetActorByHandle(*m_actorHandle)->Attack();
+				}
+				else
+				{
+					actor->MoveInDirection(selfToOtherActorNormalized, actor->m_definition->m_runSpeed);
+				}
+
+				// Orient towards target.
+				Vec3 forwardVector = actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp();
+				float angleOfSelfToOther2D = Atan2Degrees(selfToOtherActorNormalized.y, selfToOtherActorNormalized.x);
+				float angleOfForwardVector2D = Atan2Degrees(forwardVector.y, forwardVector.x);
+				float angleBetweenVectors2D = GetShortestAngularDispDegrees(angleOfSelfToOther2D, angleOfForwardVector2D);
+				float maxTurnSpeedThisFrame = actor->m_definition->m_turnSpeed * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
+				actor->m_orientation.m_yawDegrees -= GetClamped(angleBetweenVectors2D, -maxTurnSpeedThisFrame, maxTurnSpeedThisFrame);
+
+				// Alter pitch for accurate ranged weapon usage
+				Vec3 selfToOtherActorPitch = (otherActor->m_position + Vec3(0.f, 0.f, otherActor->m_definition->m_eyeHeight)) - (actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight));
+				Vec3 selfToOtherActorPitchNormalized = selfToOtherActorPitch.GetNormalized();
+				actor->m_orientation.m_pitchDegrees = -AsinDegrees(DotProduct3D(selfToOtherActorPitchNormalized, Vec3(0.f, 0.f, 1.f)));
 
 				RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
 				if (result.m_didImpact)

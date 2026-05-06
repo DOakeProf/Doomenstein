@@ -86,8 +86,12 @@ struct WeaponDefinition
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Sound
-	std::string			m_soundName;
-	SoundID				m_sound;
+	struct Sound
+	{
+		std::string			m_soundName;
+		SoundID				m_sound;
+	};
+	std::vector<Sound*> m_sounds;
 
 	static void InitializeDefinitions(const char* path);
 	static void ClearDefinitions();
@@ -128,6 +132,8 @@ public:
 
 	Mat44 m_scopedTranslation;
 
+	SoundPlaybackID m_reloadSound;
+
 	void Update();
 	void Render();
 
@@ -145,11 +151,13 @@ public:
 	void SetAnimation(std::string animationName);
 	void SetAnimation(WeaponDefinition::Animation animation);
 
-	void StartReload();
+	void StartReload(Actor* actor);
 	void StopReload();
 
 	void startScope();
 	void StopScope();
 
 	void PushImpactPointToFitSurface(RaycastResultDoomenstein& result);
+
+	SoundPlaybackID PlaySoundOnActor(std::string soundName, Actor* actor);
 };

@@ -145,9 +145,15 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 		if (SoundsElement != nullptr)
 		{
 			XmlElement* SoundElement = SoundsElement->FirstChildElement("Sound");
-			newWeaponDef->m_soundName = ParseXmlAttribute(*SoundElement, "sound", "");
-			std::string soundPath = ParseXmlAttribute(*SoundElement, "name", "");
-			newWeaponDef->m_sound = g_engine->m_audio->CreateOrGetSound(soundPath.c_str(), true);
+			while (SoundElement)
+			{
+				WeaponDefinition::Sound* newSound = new Sound();
+				newSound->m_soundName = ParseXmlAttribute(*SoundElement, "sound", "");
+				std::string soundPath = ParseXmlAttribute(*SoundElement, "name", "");
+				newSound->m_sound = g_engine->m_audio->CreateOrGetSound(soundPath.c_str(), true);
+				newWeaponDef->m_sounds.push_back(newSound);
+				SoundElement = SoundElement->NextSiblingElement();
+			}
 		}
 
 		s_definitions.push_back(newWeaponDef);
@@ -255,6 +261,14 @@ void Weapon::Update()
 	{
 		m_scopedTranslation.AppendTranslation3D(Vec3(-0.05f, 0.f, 0.f));
 	}
+
+	if (!g_engine->m_input->IsKeyDown(KEYCODE_LEFT_MOUSE))
+	{
+		m_rideTheBull = 0;
+		m_rideTheBullTimer->Stop();
+		m_fireTimer->m_period = m_definition->m_refireTime;
+	}
+
 	Vec3 translation = m_scopedTranslation.GetTranslation3D();
 	DebugAddMessage(Stringf("ScopedTranslation, %.2f %.2f %.2f", translation.x, translation.y, translation.z), 0.f, Rgba8::BLUE);
 }
@@ -362,7 +376,7 @@ void Weapon::Fire(Actor* actor)
 	}
 	else if (m_definition->m_maxAmmo != -1 && m_bullets <= 0)
 	{
-		StartReload();
+		StartReload(actor);
 		return;
 	}
 	else
@@ -371,9 +385,11 @@ void Weapon::Fire(Actor* actor)
 		m_fireTimer->Start();
 		actor->SetAnimGroup("Attack");
 		SetAnimation("Attack");
-		SoundPlaybackID playbackID = g_engine->m_audio->StartSoundAt(m_definition->m_sound, actor->m_position, false);
+		SoundPlaybackID playbackID = PlaySoundOnActor("Fire", actor);
+		g_engine->m_audio->SetSoundPlaybackSpeed(playbackID, 1.f + (0.02f * m_rideTheBull));
 		actor->AddSoundPlaybackID(playbackID);
 
+		// Add recoil
 		if (m_definition->m_recoil != -1.f && actor->m_controller != nullptr && actor->m_controller->IsPlayer())
 		{
 			float recoil = m_definition->m_recoil;
@@ -381,7 +397,11 @@ void Weapon::Fire(Actor* actor)
 			{
 				recoil /= 1.3f;
 			}
-			((Player*)actor->m_controller)->m_recoil.m_pitchDegrees -= recoil * (1.f + (0.1f * m_rideTheBull));
+			float recoilDirRotation = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-30.f, 30.f);
+			Vec2 recoilDir = Vec2(recoil, 0.f);
+			recoilDir = recoilDir.GetRotatedByDegrees(recoilDirRotation);
+			((Player*)actor->m_controller)->m_recoil.m_pitchDegrees -= recoilDir.x * (1.f + (0.1f * m_rideTheBull));
+			((Player*)actor->m_controller)->m_recoil.m_yawDegrees -= recoilDir.y * (1.f + (0.1f * m_rideTheBull));
 		}
 	}
 	switch (m_definition->m_type)
@@ -402,8 +422,7 @@ void Weapon::AlternateFire(Actor* actor)
 		m_alternateFireTimer->Start();
 		actor->SetAnimGroup("Attack");
 		SetAnimation("Attack");
-		SoundPlaybackID playbackID = g_engine->m_audio->StartSoundAt(m_definition->m_sound, actor->m_position, false);
-		actor->AddSoundPlaybackID(playbackID);
+		PlaySoundOnActor("Fire", actor);
 	}
 	switch (m_definition->m_type)
 	{
@@ -522,10 +541,11 @@ void Weapon::SetAnimation(WeaponDefinition::Animation animation)
 	m_animTimer->Start();
 }
 
-void Weapon::StartReload()
+void Weapon::StartReload(Actor* actor)
 {
 	if (!m_isReloading)
 	{
+		m_reloadSound = PlaySoundOnActor("Reload", actor);
 		m_reloadTimer->Start();
 		m_isReloading = true;
 	}
@@ -533,6 +553,7 @@ void Weapon::StartReload()
 
 void Weapon::StopReload()
 {
+	g_engine->m_audio->StopSound(m_reloadSound);
 	m_isReloading = false;
 	m_reloadTimer->Stop();
 }
@@ -661,6 +682,20 @@ void Weapon::PushImpactPointToFitSurface(RaycastResultDoomenstein& result)
 	}
 }
 
+SoundPlaybackID Weapon::PlaySoundOnActor(std::string soundName, Actor* actor)
+{
+	for (WeaponDefinition::Sound* sound : m_definition->m_sounds)
+	{
+		if (sound->m_soundName == soundName)
+		{
+			SoundPlaybackID playbackID = g_engine->m_audio->StartSoundAt(sound->m_sound, actor->m_position, false);
+			actor->AddSoundPlaybackID(playbackID);
+			return playbackID;
+		}
+	}
+	return (SoundPlaybackID)-1;
+}
+
 void Weapon::Fire_Weapon(Actor* actor)
 {
 	if (m_definition->m_rayCount != -1)
@@ -700,13 +735,16 @@ void Weapon::Fire_Weapon(Actor* actor)
 	}
 	if (!m_definition->m_projectileActor.empty())
 	{
-		Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_projectileCone);
-		Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.1f);
+		for (int projectileIndex = 0; projectileIndex < m_definition->m_projectileCount; ++projectileIndex)
+		{
+			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_definition->m_projectileCone);
+			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight - 0.1f);
 
-		SpawnInfo spawnInfo = SpawnInfo(m_definition->m_projectileActor, initialFirePosition, actor->m_orientation);
-		Actor* projectile = actor->m_map->SpawnActor(spawnInfo);
-		projectile->m_owner = actor;
-		projectile->AddImpulse(randomDirection * m_definition->m_projectileSpeed);
+			SpawnInfo spawnInfo = SpawnInfo(m_definition->m_projectileActor, initialFirePosition, actor->m_orientation);
+			Actor* projectile = actor->m_map->SpawnActor(spawnInfo);
+			projectile->m_owner = actor;
+			projectile->AddImpulse(randomDirection * m_definition->m_projectileSpeed);
+		}
 	}
 	if (m_definition->m_meleeCount != -1)
 	{

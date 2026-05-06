@@ -34,6 +34,7 @@ public:
 	Portal* GetOtherPortal() const;
 	EulerAngles GetOrientation() const;
 	Vec3 GetPosition() const;
+	float GetScale() const;
 
 	RaycastResult3D RaycastAgainst(Vec3 const& start, Vec3 const& direction, float length);
 	Vec3 TransformPointIntoOtherPortalSpace(Vec3& point);

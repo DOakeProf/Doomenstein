@@ -38,10 +38,11 @@ void Player::Update()
 	m_jumpBuffer += (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 
 	// Recoil
-	float interpolateValue = 5.f * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
+	float interpolateValue = 1.f * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 	m_recoil.m_yawDegrees = Interpolate(m_recoil.m_yawDegrees, 0.f, interpolateValue);
 	m_recoil.m_pitchDegrees = Interpolate(m_recoil.m_pitchDegrees, 0.f, interpolateValue);
 	m_recoil.m_rollDegrees = Interpolate(m_recoil.m_rollDegrees, 0.f, interpolateValue);
+	m_orientationRecoil = m_orientation + m_recoil;
 
 	// Scope
 	float scopeFraction = GetActor()->m_equippedWeapon->m_scopeFraction;
@@ -352,7 +353,7 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
 		m_orientation = newOrientation;
 
-		actor->m_orientation = m_orientation;
+		actor->m_orientation = m_orientationRecoil;
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		// Movement
@@ -450,6 +451,10 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 				actor->m_equippedWeapon = actor->m_weapons[newWeaponIndex];
 			}
 		}
+		if (g_engine->m_input->WasKeyJustPressed('R'))
+		{
+			actor->m_equippedWeapon->StartReload(actor);
+		}
 
 		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 	}
@@ -534,19 +539,7 @@ void Player::HandleInputs_FirstPerson_Controller()
 		{
 			actor->m_equippedWeapon->StopScope();
 		}
-		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_X) && actor->m_weapons.size() > 0)
-		{
-			actor->m_equippedWeapon = actor->m_weapons[0];
-		}
-		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_Y) && actor->m_weapons.size() > 1)
-		{
-			actor->m_equippedWeapon = actor->m_weapons[1];
-		}
-		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_B) && actor->m_weapons.size() > 2)
-		{
-			actor->m_equippedWeapon = actor->m_weapons[2];
-		}
-		if (controller->WasButtonJustPressed(XboxButtonID::DPAD_LEFT) || controller->WasButtonJustPressed(XboxButtonID::DPAD_DOWN))
+		if (controller->WasButtonJustPressed(XboxButtonID::DPAD_LEFT) || controller->WasButtonJustPressed(XboxButtonID::DPAD_DOWN) || controller->WasButtonJustPressed(XboxButtonID::LEFT_SHOULDER))
 		{
 			int weaponIndex = actor->GetEquippedWeaponIndex();
 			int newWeaponIndex = --weaponIndex;
@@ -559,7 +552,7 @@ void Player::HandleInputs_FirstPerson_Controller()
 				actor->m_equippedWeapon = actor->m_weapons[newWeaponIndex];
 			}
 		}
-		if (controller->WasButtonJustPressed(XboxButtonID::DPAD_RIGHT) || controller->WasButtonJustPressed(XboxButtonID::DPAD_UP))
+		if (controller->WasButtonJustPressed(XboxButtonID::DPAD_RIGHT) || controller->WasButtonJustPressed(XboxButtonID::DPAD_UP) || controller->WasButtonJustPressed(XboxButtonID::RIGHT_SHOULDER))
 		{
 			int weaponIndex = actor->GetEquippedWeaponIndex();
 			int newWeaponIndex = ++weaponIndex;
@@ -571,6 +564,10 @@ void Player::HandleInputs_FirstPerson_Controller()
 			{
 				actor->m_equippedWeapon = actor->m_weapons[newWeaponIndex];
 			}
+		}
+		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_X))
+		{
+			actor->m_equippedWeapon->StartReload(actor);
 		}
 
 		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);

@@ -537,8 +537,9 @@ void Game::RefreshRifts()
 		Rift* rift = s_rifts[riftIndex];
 		Vec3 positionStorage = rift->GetPosition();
 		EulerAngles orientationStorage = rift->GetOrientation();
+		float scaleStorage = rift->GetScale();
 		RemoveRift(rift);
-		SpawnRift(positionStorage, orientationStorage);
+		SpawnRift(positionStorage, orientationStorage, scaleStorage);
 	}
 }
 

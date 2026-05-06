@@ -55,11 +55,11 @@
     </Inventory>
   </ActorDefinition>
   <!-- Demon -->
-  <ActorDefinition name="Demon" faction="Demon" health="100" canBePossessed="true" corpseLifetime="1.0" visible="true">
+  <ActorDefinition name="Demon" faction="Demon" health="80" canBePossessed="true" corpseLifetime="1.0" visible="true">
     <Collision radius="0.35" height="0.85" collidesWithWorld="true" collidesWithActors="true"/>
     <Physics simulated="true" walkSpeed="2.0f" runSpeed="5.0f" turnSpeed="180.0f" drag="9.0f"/>
     <Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
-    <AI aiEnabled="true" sightRadius="64.0" sightAngle="120.0"/>
+    <AI aiEnabled="true" aiType ="Melee" sightRadius="64.0" sightAngle="120.0"/>
     <Visuals size="2.1,2.1" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Pinky_8x9.png" cellCount="8,9">
       <AnimationGroup name="Walk" scaleBySpeed="true" secondsPerFrame="0.25" playbackMode="Loop">
         <Direction vector="-1,0,0"><Animation startFrame="0" endFrame="3"/></Direction>
@@ -81,7 +81,7 @@
         <Direction vector="0,1,0"><Animation startFrame="52" endFrame="54"/></Direction>
         <Direction vector="-1,1,0"><Animation startFrame="60" endFrame="62"/></Direction>
       </AnimationGroup>
-      <AnimationGroup name="Hurt" secondsPerFrame="0.75" playbackMode="Once">
+      <AnimationGroup name="Hurt" secondsPerFrame="0.5" playbackMode="Once">
         <Direction vector="-1,0,0"><Animation startFrame="7" endFrame="7"/></Direction>
         <Direction vector="-1,-1,0"><Animation startFrame="15" endFrame="15"/></Direction>
         <Direction vector="0,-1,0"><Animation startFrame="23" endFrame="23"/></Direction>
@@ -103,6 +103,105 @@
       <Weapon name="DemonMelee" />
     </Inventory>
   </ActorDefinition>
+	<!-- Dinosaur -->
+	<ActorDefinition name="Dinosaur" faction="Demon" health="110" canBePossessed="true" corpseLifetime="1.0" visible="true">
+		<Collision radius="0.4" height="1.1" collidesWithWorld="true" collidesWithActors="true"/>
+		<Physics simulated="true" walkSpeed="2.5f" runSpeed="3.5f" turnSpeed="120.0f" drag="9.0f"/>
+		<Camera eyeHeight="0.85f" cameraFOV="100.0f"/>
+		<AI aiEnabled="true" aiType ="Ranged" sightRadius="80.0" sightAngle="120.0"/>
+		<Visuals size="1.8,1.8" pivot="0.45,0.25" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Varg_8x13.png" cellCount="8,13">
+			<AnimationGroup name="Walk" scaleBySpeed="true" secondsPerFrame="0.125" playbackMode="Loop">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="32" endFrame="39"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="40" endFrame="47"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="48" endFrame="55"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="56" endFrame="63"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="0" endFrame="7"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="8" endFrame="15"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="16" endFrame="23"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="24" endFrame="31"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Attack" secondsPerFrame="0.125" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="72" endFrame="73"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="74" endFrame="75"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="76" endFrame="77"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="78" endFrame="79"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="64" endFrame="65"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="66" endFrame="67"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="68" endFrame="69"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="70" endFrame="71"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Hurt" secondsPerFrame="0.5" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="100" endFrame="100"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="101" endFrame="101"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="102" endFrame="102"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="103" endFrame="103"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="96" endFrame="96"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="97" endFrame="97"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="98" endFrame="98"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="99" endFrame="99"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Death" secondsPerFrame="0.125" playbackMode="Once">
+				<Direction vector="1,0,0">
+					<Animation startFrame="80" endFrame="87"/>
+				</Direction>
+			</AnimationGroup>
+		</Visuals>
+		<Sounds>
+			<Sound sound="Hurt" name="Data/Audio/DemonHurt.wav"/>
+			<Sound sound="Death" name="Data/Audio/DemonDeath.wav"/>
+		</Sounds>
+		<Inventory>
+			<Weapon name="DinosaurGun" />
+		</Inventory>
+	</ActorDefinition>
 	<!-- DevourerHead -->
 	<ActorDefinition name="DevourerHead" faction="Demon" health="1000" canBePossessed="true" corpseLifetime="1.0" visible="true">
 		<Collision radius="1.0f" height="1.0f" collidesWithWorld="false" collidesWithActors="false"/>

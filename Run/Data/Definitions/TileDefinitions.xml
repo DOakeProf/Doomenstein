@@ -29,6 +29,9 @@
   <TileDefinition name="StoneWallLine" isSolid="true" mapImagePixelColor="127,130,100" wallSpriteCoords="2,2"/>
   <TileDefinition name="StoneWallLines" isSolid="true" mapImagePixelColor="127,110,100" wallSpriteCoords="3,2"/>
   <TileDefinition name="StoneCeiling" isSolid="false" mapImagePixelColor="127,100,50" ceilingSpriteCoords="1,2"/>
+
+  <TileDefinition name="GeneratorWall" isSolid="true" mapImagePixelColor="200,200,50" wallSpriteCoords="0,4"/>
+  <TileDefinition name="GeneratorFloor" isSolid="false" mapImagePixelColor="200,200,100" floorSpriteCoords="1,4"/>
 	
   <TileDefinition name="PurpleFloor" isSolid="false" mapImagePixelColor="127,100,255" floorSpriteCoords="7,0"/>
   <TileDefinition name="PurpleWallTop" isSolid="true" mapImagePixelColor="127,80,200" wallSpriteCoords="4,0"/>

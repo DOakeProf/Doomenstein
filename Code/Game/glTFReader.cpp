@@ -578,15 +578,22 @@ void glTF_Node::RenderNode()
 			glTF_Primitive* currentPrimitive = mesh->m_primitives[primitiveIndex];
 
 			// Bind correct texture
-			int textureIndex = m_owner->m_materials[currentPrimitive->m_materialIndex]->m_pbrMetallicRoughness->m_baseColorTextureIndex;
-			int imageIndex = m_owner->m_textures[textureIndex]->m_imageIndex;
-			Texture* texture = m_owner->m_images[imageIndex]->m_texture;
-			g_engine->m_render->BindTexture(texture);
+			if (currentPrimitive->m_materialIndex != -1 && m_owner->m_materials[currentPrimitive->m_materialIndex]->m_pbrMetallicRoughness != nullptr)
+			{
+				int textureIndex = m_owner->m_materials[currentPrimitive->m_materialIndex]->m_pbrMetallicRoughness->m_baseColorTextureIndex;
+				int imageIndex = m_owner->m_textures[textureIndex]->m_imageIndex;
+				Texture* texture = m_owner->m_images[imageIndex]->m_texture;
+				g_engine->m_render->BindTexture(texture);
 
-			// Swap sampler mode
-			int samplerIndex = m_owner->m_textures[textureIndex]->m_samplerIndex;
-			glTF_Sampler* sampler = m_owner->m_samplers[samplerIndex];
-			g_engine->m_render->SetSamplerMode(sampler->m_samplerMode);
+				// Swap sampler mode
+				int samplerIndex = m_owner->m_textures[textureIndex]->m_samplerIndex;
+				glTF_Sampler* sampler = m_owner->m_samplers[samplerIndex];
+				g_engine->m_render->SetSamplerMode(sampler->m_samplerMode);
+			}
+			else
+			{
+				g_engine->m_render->BindTexture(nullptr);
+			}
 
 			// Bind the node transform
 			Vec4 iBasis = Vec4(1.f, 0.f, 0.f, 0.f);

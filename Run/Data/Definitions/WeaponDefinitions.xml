@@ -10,12 +10,39 @@
     </Sounds>
   </WeaponDefinition>
 	<!-- Huckleberry -->
-	<WeaponDefinition name="Huckleberry" refireTime="0.08" rayCount="1" rayCone="5.0" rayRange="25.0" rayDamage="4.0~8.0" rayImpulse="2.0" maxAmmo="30" reloadTime="2.1" recoil="0.5" canScope ="true" perk="RideTheBull">
+	<WeaponDefinition name="Huckleberry" refireTime="0.08" rayCount="1" rayCone="5.0" rayRange="25.0" rayDamage="4.0~8.0" rayImpulse="2.0" maxAmmo="30" reloadTime="2.1" recoil="1" canScope ="true" perk="RideTheBull">
 		<HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" gltfName="Huckleberry" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">
 		</HUD>
 		<Sounds>
 			<Sound sound="Fire" name="Data/Audio/HuckleberryShot.mp3"/>
 			<Sound sound="Reload" name="Data/Audio/HuckleberryReload.mp3"/>
+		</Sounds>
+	</WeaponDefinition>
+	<!-- Red Death -->
+	<WeaponDefinition name="RedDeath" refireTime="0.528" rayCount="1" rayBurst="3" rayBurstTime="0.08" rayCone="1.0" rayRange="35.0" rayDamage="7.0~12.0" rayImpulse="4.0" maxAmmo="27" reloadTime="1.5" recoil="1.0" canScope ="true" perk="Redemption">
+		<HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" gltfName="RedDeath" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">
+		</HUD>
+		<Sounds>
+			<Sound sound="Fire" name="Data/Audio/RedDeathShot.mp3"/>
+			<Sound sound="Reload" name="Data/Audio/RedDeathReload.mp3"/>
+		</Sounds>
+	</WeaponDefinition>
+	<!-- Fourth Horseman -->
+	<WeaponDefinition name="Horseman" refireTime="0.166" rayCount="12" rayCone="10.0" rayRange="12.0" rayDamage="2.0~6.0" rayImpulse="2.0" maxAmmo="4" reloadTime="2.8" recoil="10.0" canScope ="true" perk="Broadside">
+		<HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" gltfName="Horseman" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">
+		</HUD>
+		<Sounds>
+			<Sound sound="Fire" name="Data/Audio/HorsemanShot.mp3"/>
+			<Sound sound="Reload" name="Data/Audio/HorsemanReload.mp3"/>
+		</Sounds>
+	</WeaponDefinition>
+	<!-- Black Spindle -->
+	<WeaponDefinition name="BlackSpindle" refireTime="0.166" rayCount="1" rayCone="10.0" rayRange="12.0" rayDamage="2.0~6.0" rayImpulse="2.0" maxAmmo="4" reloadTime="2.8" recoil="10.0" canScope ="true" perk="Broadside">
+		<HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" gltfName="BlackSpindle" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">
+		</HUD>
+		<Sounds>
+			<Sound sound="Fire" name="Data/Audio/HorsemanShot.mp3"/>
+			<Sound sound="Reload" name="Data/Audio/HorsemanReload.mp3"/>
 		</Sounds>
 	</WeaponDefinition>
   <!-- Plasma Rifle -->

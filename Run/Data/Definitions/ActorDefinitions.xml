@@ -50,8 +50,8 @@
     </Sounds>
     <Inventory>
       <Weapon name="Huckleberry" />
-      <Weapon name="PlasmaRifle" />
-	  <Weapon name="PortalGun" />
+      <Weapon name="RedDeath" />
+	  <Weapon name="Horseman" />
     </Inventory>
   </ActorDefinition>
   <!-- Demon -->

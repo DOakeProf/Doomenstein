@@ -48,6 +48,8 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 		newWeaponDef->m_canScope =					ParseXmlAttribute(*weaponDefElement, "canScope", false);
 
 		newWeaponDef->m_rayCount =					ParseXmlAttribute(*weaponDefElement, "rayCount", -1);
+		newWeaponDef->m_rayBurst =					ParseXmlAttribute(*weaponDefElement, "rayBurst", -1);
+		newWeaponDef->m_rayBurstTime =				ParseXmlAttribute(*weaponDefElement, "rayBurstTime", -1.f);
 		newWeaponDef->m_rayCone =					ParseXmlAttribute(*weaponDefElement, "rayCone", -1.f);
 		newWeaponDef->m_rayRange =					ParseXmlAttribute(*weaponDefElement, "rayRange", -1.f);
 		newWeaponDef->m_rayDamage =					ParseXmlAttribute(*weaponDefElement, "rayDamage", FloatRange());
@@ -189,6 +191,7 @@ Weapon::Weapon(Map* map, std::string definition)
 	m_alternateFireTimer = new Timer(m_definition->m_refireTime, m_map->m_game->m_gameClock);
 	m_alternateFireTimer->Start();
 	m_reloadTimer = new Timer(m_definition->m_reloadTime, m_map->m_game->m_gameClock);
+	m_burstTimer = new Timer(m_definition->m_rayBurstTime, m_map->m_game->m_gameClock);
 
 	m_rideTheBullTimer = new Timer(m_rideTheBullTime, m_map->m_game->m_gameClock);
 
@@ -213,7 +216,7 @@ Weapon::~Weapon()
 	m_fireTimer = nullptr;
 }
 
-void Weapon::Update()
+void Weapon::Update(Actor* actor)
 {
 	if (m_animation.m_name != m_defaultAnimation.m_name && m_animTimer->HasPeriodElapsed())
 	{
@@ -260,6 +263,23 @@ void Weapon::Update()
 	if (g_engine->m_input->WasKeyJustPressed('B'))
 	{
 		m_scopedTranslation.AppendTranslation3D(Vec3(-0.05f, 0.f, 0.f));
+	}
+
+	// Recoil
+	// This one resets back to normal much more quickly than the player's recoil.
+	float interpolateValue = 10.f * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
+	m_orientationRecoil.m_yawDegrees = Interpolate(m_orientationRecoil.m_yawDegrees, 0.f, interpolateValue);
+	m_orientationRecoil.m_pitchDegrees = Interpolate(m_orientationRecoil.m_pitchDegrees, 0.f, interpolateValue);
+	m_orientationRecoil.m_rollDegrees = Interpolate(m_orientationRecoil.m_rollDegrees, 0.f, interpolateValue);
+
+	if (m_definition->m_rayBurst > 0 && m_burstTimer->DecrementPeriodIfElapsed())
+	{
+		FireBullet(actor);
+		--m_burstAmount;
+		if (m_burstAmount <= 0)
+		{
+			m_burstTimer->Stop();
+		}
 	}
 
 	if (!g_engine->m_input->IsKeyDown(KEYCODE_LEFT_MOUSE))
@@ -327,8 +347,10 @@ void Weapon::Render_GLTF()
 		Mat44 modelMatrix = Mat44();
 		modelMatrix.AppendTranslation3D(currentPlayer->m_position);
 
-		modelMatrix.Append(currentPlayer->m_orientation.GetAsMatrix_IFwd_JLeft_KUp());
+		modelMatrix.Append(currentPlayer->m_orientationRecoil.GetAsMatrix_IFwd_JLeft_KUp());
+		modelMatrix.Append(m_orientationRecoil.GetAsMatrix_IFwd_JLeft_KUp());
 		modelMatrix.AppendTranslation3D(Vec3(0.5f, -0.15f, -0.15f));
+
 
 		if (m_scopeFraction > 0.f)
 		{
@@ -381,33 +403,52 @@ void Weapon::Fire(Actor* actor)
 	}
 	else
 	{
-		--m_bullets;
-		m_fireTimer->Start();
-		actor->SetAnimGroup("Attack");
-		SetAnimation("Attack");
-		SoundPlaybackID playbackID = PlaySoundOnActor("Fire", actor);
-		g_engine->m_audio->SetSoundPlaybackSpeed(playbackID, 1.f + (0.02f * m_rideTheBull));
-		actor->AddSoundPlaybackID(playbackID);
-
-		// Add recoil
-		if (m_definition->m_recoil != -1.f && actor->m_controller != nullptr && actor->m_controller->IsPlayer())
+		if (m_definition->m_rayBurst > 0)
 		{
-			float recoil = m_definition->m_recoil;
-			if (m_scopeFraction > 0.5f)
-			{
-				recoil /= 1.3f;
-			}
-			float recoilDirRotation = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-30.f, 30.f);
-			Vec2 recoilDir = Vec2(recoil, 0.f);
-			recoilDir = recoilDir.GetRotatedByDegrees(recoilDirRotation);
-			((Player*)actor->m_controller)->m_recoil.m_pitchDegrees -= recoilDir.x * (1.f + (0.1f * m_rideTheBull));
-			((Player*)actor->m_controller)->m_recoil.m_yawDegrees -= recoilDir.y * (1.f + (0.1f * m_rideTheBull));
+			m_burstAmount = m_definition->m_rayBurst - 1;
+			m_burstTimer->Start();
 		}
+		FireBullet(actor);
 	}
+}
+
+void Weapon::FireBullet(Actor* actor)
+{
+	if (m_definition->m_maxAmmo != -1 && m_bullets < 0)
+	{
+		return;
+	}
+	StopReload();
+	--m_bullets;
+	m_fireTimer->Start();
+	actor->SetAnimGroup("Attack");
+	SetAnimation("Attack");
+	SoundPlaybackID playbackID = PlaySoundOnActor("Fire", actor);
+	g_engine->m_audio->SetSoundPlaybackSpeed(playbackID, 1.f + (0.02f * m_rideTheBull));
+	actor->AddSoundPlaybackID(playbackID);
+
+	// Add recoil
+	if (m_definition->m_recoil != -1.f && actor->m_controller != nullptr && actor->m_controller->IsPlayer())
+	{
+		float recoil = m_definition->m_recoil;
+		// If zoomed in, lower recoil
+		if (m_scopeFraction > 0.5f)
+		{
+			recoil /= 1.5f;
+		}
+		float recoilDirRotation = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(-30.f, 30.f);
+		Vec2 recoilDir = Vec2(recoil, 0.f);
+		recoilDir = recoilDir.GetRotatedByDegrees(recoilDirRotation);
+		((Player*)actor->m_controller)->m_recoil.m_pitchDegrees -= recoilDir.x * (1.f + (0.1f * m_rideTheBull));
+		((Player*)actor->m_controller)->m_recoil.m_yawDegrees -= recoilDir.y * (1.f + (0.1f * m_rideTheBull));
+		m_orientationRecoil.m_pitchDegrees -= recoilDir.x * (1.f + (0.1f * m_rideTheBull) * 0.5f);
+		m_orientationRecoil.m_yawDegrees -= recoilDir.y * (1.f + (0.1f * m_rideTheBull) * 0.5f);
+	}
+
 	switch (m_definition->m_type)
 	{
-		case WeaponType::WEAPON:	Fire_Weapon(actor);		break;
-		case WeaponType::PORTALGUN: Fire_PortalGun(actor);	break;
+	case WeaponType::WEAPON:	Fire_Weapon(actor);		break;
+	case WeaponType::PORTALGUN: Fire_PortalGun(actor);	break;
 	}
 }
 
@@ -719,9 +760,16 @@ void Weapon::Fire_Weapon(Actor* actor)
 				float RandomDamage = damageFalloffMultiplier * actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
 				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 
-				if (m_definition->m_perk == "RideTheBull" && result.m_actor->m_health <= 0)
+				if (result.m_actor->m_health <= 0 )
 				{
-					m_bullets = m_definition->m_maxAmmo;
+					if (m_definition->m_perk == "RideTheBull")
+					{
+						m_bullets = m_definition->m_maxAmmo;
+					}
+					if (m_definition->m_perk == "Redemption")
+					{
+						actor->Heal(10);
+					}
 				}
 
 				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);

@@ -536,6 +536,12 @@ void Actor::Damage(int damage, ActorHandle* otherActor)
 	}
 }
 
+void Actor::Heal(int heal)
+{
+	m_health += heal;
+	m_health = GetClamped(m_health, 0, m_definition->m_health);
+}
+
 void Actor::Die()
 {
 	if (!m_isDead)

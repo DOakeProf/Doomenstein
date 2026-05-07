@@ -109,7 +109,7 @@ struct glTF_Material
 {
 	std::string m_name;
 	std::string m_alphaMode;
-	glTF_pbrMetallicRoughness* m_pbrMetallicRoughness;
+	glTF_pbrMetallicRoughness* m_pbrMetallicRoughness = nullptr;
 	int m_normalTextureIndex;
 	int m_occlusionTextureIndex;
 	int m_emissiveTextureIndex;

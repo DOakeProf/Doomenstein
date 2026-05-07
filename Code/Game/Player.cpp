@@ -79,7 +79,7 @@ void Player::Update()
 	}
 	else
 	{
-		actor->m_equippedWeapon->Update();
+		actor->m_equippedWeapon->Update(actor);
 	}
 
 	g_engine->m_audio->UpdateListener(m_playerIndex, m_position, m_orientation.GetForwardDir_IFwd_JLeft_KUp(), m_orientation.GetUpDir_IFwd_JLeft_KUp());
@@ -634,10 +634,10 @@ void Player::HandleInputs_Debug()
 		DebugAddMessage(message, 2.f);
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed('R'))
-	{
-		m_map->m_game->RefreshRifts();
-	}
+	//if (g_engine->m_input->WasKeyJustPressed('R'))
+	//{
+	//	m_map->m_game->RefreshRifts();
+	//}
 
 	if (g_engine->m_input->WasKeyJustPressed('N') && m_map->m_game->m_players.size() < 2)
 	{

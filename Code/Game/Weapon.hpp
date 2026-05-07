@@ -37,6 +37,8 @@ struct WeaponDefinition
 	float				m_recoil;
 
 	int					m_rayCount;
+	int					m_rayBurst;
+	float				m_rayBurstTime;
 	float				m_rayCone;
 	float				m_rayRange;
 	FloatRange			m_rayDamage;
@@ -107,9 +109,11 @@ public:
 
 	Map* m_map;
 	WeaponDefinition const* m_definition;
-	Timer* m_fireTimer;
-	Timer* m_alternateFireTimer;
-	Timer* m_reloadTimer;
+	Timer* m_fireTimer = nullptr;
+	Timer* m_alternateFireTimer = nullptr;
+	Timer* m_reloadTimer = nullptr;
+	Timer* m_burstTimer = nullptr;
+	int	m_burstAmount = 0;
 
 	Timer* m_animTimer;
 	WeaponDefinition::Animation m_animation;
@@ -121,7 +125,7 @@ public:
 	bool m_isReloading = false;
 
 	// HuckleBerry
-	Timer* m_rideTheBullTimer;
+	Timer* m_rideTheBullTimer = nullptr;
 	float m_rideTheBullTime = 0.833f;
 	int m_maxRideTheBull = 2;
 	int m_rideTheBull = 0;
@@ -131,16 +135,18 @@ public:
 	Portal* m_rightPortal;
 
 	Mat44 m_scopedTranslation;
+	EulerAngles m_orientationRecoil;
 
 	SoundPlaybackID m_reloadSound;
 
-	void Update();
+	void Update(Actor* actor);
 	void Render();
 
 	void Render_Weapon();
 	void Render_GLTF();
 
 	void Fire(Actor* actor);
+	void FireBullet(Actor* actor);
 	void Fire_Weapon(Actor* actor);
 	void Fire_PortalGun(Actor* actor);
 

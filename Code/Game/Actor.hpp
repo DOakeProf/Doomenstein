@@ -202,6 +202,7 @@ public:
 	void SecondaryAttack();
 	void EquipWeapon(Weapon* weapon);
 	void Damage(int damage, ActorHandle* otherActor);
+	void Heal(int heal);
 	void Die();
 
 	void OnCollide(Actor* otherActor);

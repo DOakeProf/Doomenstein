@@ -2,4 +2,8 @@
 	<Model name="PortalGun" gltfModel="Data/glTFModels/PortalGunShell/PortalGunShell.gltf" gltfBin="Data/glTFModels/PortalGunShell/PortalGunShell.bin"/>
 	<Model name="PortalGun" gltfModel="Data/glTFModels/PortalGunTransparent/PortalGunTransparent.gltf" gltfBin="Data/glTFModels/PortalGunTransparent/PortalGunTransparent.bin"/>
 	<Model name="Huckleberry" gltfModel="Data/glTFModels/Huckleberry/Huckleberry.gltf" gltfBin="Data/glTFModels/Huckleberry/Huckleberry.bin"/>
+	<Model name="BlackSpindle" gltfModel="Data/glTFModels/BlackSpindle/BlackSpindle.gltf" gltfBin="Data/glTFModels/BlackSpindle/BlackSpindle.bin"/>
+	<Model name="RedDeath" gltfModel="Data/glTFModels/RedDeath/RedDeath.gltf" gltfBin="Data/glTFModels/RedDeath/RedDeath.bin"/>
+	<Model name="Horseman" gltfModel="Data/glTFModels/Horseman/Horseman.gltf" gltfBin="Data/glTFModels/Horseman/Horseman.bin"/>
+	<Model name="Tractor" gltfModel="Data/glTFModels/Tractor/Tractor.gltf" gltfBin="Data/glTFModels/Tractor/Tractor.bin"/>
 </glTFModels>

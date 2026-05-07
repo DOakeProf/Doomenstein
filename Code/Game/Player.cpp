@@ -19,7 +19,7 @@ Player::Player(Map* owner, Vec3 const& startingPosition)
 
 void Player::Update()
 {
-	HandleInputs();
+ 	HandleInputs();
 
 	Vec3 cursorBasisPosition = m_position + m_orientation.GetForwardDir_IFwd_JLeft_KUp() * 0.2f;
 	Mat44 cursorBasisMatrix = Mat44();
@@ -44,19 +44,20 @@ void Player::Update()
 	m_recoil.m_rollDegrees = Interpolate(m_recoil.m_rollDegrees, 0.f, interpolateValue);
 	m_orientationRecoil = m_orientation + m_recoil;
 
-	// Scope
-	if (GetActor() != nullptr)
+	if (actor != nullptr)
 	{
-		float scopeFraction = GetActor()->m_equippedWeapon->m_scopeFraction;
+		// Scope
+		float scopeFraction = actor->m_equippedWeapon->m_scopeFraction;
 		if (scopeFraction > 0.f)
 		{
-			m_worldCamera->SetPerspectiveFOV(Interpolate(60.f, GetActor()->m_equippedWeapon->m_definition->m_scopedFOV, SmoothStep3(scopeFraction)));
+			m_worldCamera->SetPerspectiveFOV(Interpolate(60.f, actor->m_equippedWeapon->m_definition->m_scopedFOV, SmoothStep3(scopeFraction)));
 		}
 		else
 		{
 			m_worldCamera->SetPerspectiveFOV(60.f);
 		}
 	}
+	
 
 	if (actor != nullptr && actor->m_isDead)
 	{
@@ -361,6 +362,7 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
 		m_orientation = newOrientation;
 
+		HandleAACapture();
 		actor->m_orientation = m_orientationRecoil;
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -423,18 +425,22 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		}
 		if (g_engine->m_input->WasKeyJustPressed('1') && actor->m_weapons.size() > 0)
 		{
+			actor->m_equippedWeapon->StopReload();
 			actor->m_equippedWeapon = actor->m_weapons[0];
 		}
 		if (g_engine->m_input->WasKeyJustPressed('2') && actor->m_weapons.size() > 1)
 		{
+			actor->m_equippedWeapon->StopReload();
 			actor->m_equippedWeapon = actor->m_weapons[1];
 		}
 		if (g_engine->m_input->WasKeyJustPressed('3') && actor->m_weapons.size() > 2)
 		{
+			actor->m_equippedWeapon->StopReload();
 			actor->m_equippedWeapon = actor->m_weapons[2];
 		}
 		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_LEFTARROW))
 		{
+			actor->m_equippedWeapon->StopReload();
 			int weaponIndex = actor->GetEquippedWeaponIndex();
 			int newWeaponIndex = --weaponIndex;
 			if (newWeaponIndex < 0)
@@ -448,6 +454,7 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		}
 		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_RIGHTARROW))
 		{
+			actor->m_equippedWeapon->StopReload();
 			int weaponIndex = actor->GetEquippedWeaponIndex();
 			int newWeaponIndex = ++weaponIndex;
 			if (newWeaponIndex >= actor->m_weapons.size())
@@ -502,7 +509,8 @@ void Player::HandleInputs_FirstPerson_Controller()
 		newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
 		m_orientation = newOrientation;
 
-		actor->m_orientation = m_orientation;
+		HandleAACapture();
+		actor->m_orientation = m_orientationRecoil;
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		// Movement
@@ -554,6 +562,7 @@ void Player::HandleInputs_FirstPerson_Controller()
 		}
 		if (controller->WasButtonJustPressed(XboxButtonID::DPAD_LEFT) || controller->WasButtonJustPressed(XboxButtonID::DPAD_DOWN) || controller->WasButtonJustPressed(XboxButtonID::LEFT_SHOULDER))
 		{
+			actor->m_equippedWeapon->StopReload();
 			int weaponIndex = actor->GetEquippedWeaponIndex();
 			int newWeaponIndex = --weaponIndex;
 			if (newWeaponIndex < 0)
@@ -567,6 +576,7 @@ void Player::HandleInputs_FirstPerson_Controller()
 		}
 		if (controller->WasButtonJustPressed(XboxButtonID::DPAD_RIGHT) || controller->WasButtonJustPressed(XboxButtonID::DPAD_UP) || controller->WasButtonJustPressed(XboxButtonID::RIGHT_SHOULDER))
 		{
+			actor->m_equippedWeapon->StopReload();
 			int weaponIndex = actor->GetEquippedWeaponIndex();
 			int newWeaponIndex = ++weaponIndex;
 			if (newWeaponIndex >= actor->m_weapons.size())
@@ -692,6 +702,49 @@ void Player::HandleInputs_Debug()
 	//{
 	//	RaycastAll(m_player->m_position, m_player->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), 0.25f, nullptr);
 	//}
+}
+
+void Player::HandleAACorrection()
+{
+	Actor* actor = GetActor();
+	if (actor != nullptr && m_isAimAssistActive)
+	{
+		Vec3 selfToAAPointNormalized = (m_aimAssistCapturedPos - m_position).GetNormalized();
+		Mat44 newOrientationMatrix = Mat44(selfToAAPointNormalized, Vec3(1.f, 0.f, 0.f), Vec3(1.f, 0.f, 0.f), Vec3());
+		newOrientationMatrix.Orthonormalize_XFwd_YLeft_ZUp();
+		EulerAngles newOrientation = EulerAngles(newOrientationMatrix);
+		newOrientation.m_rollDegrees = 0.f;
+		if (m_orientation.m_yawDegrees != newOrientation.m_yawDegrees)
+		{
+			float AAFraction = 1.f;
+			switch (m_controlState)
+			{
+				case ControlState::CONTROLLER: AAFraction = m_map->m_game->m_controllerAA;
+				case ControlState::KEYBOARD: AAFraction = m_map->m_game->m_mouseAA;
+			}
+			m_orientation = Interpolate(m_orientation, newOrientation, AAFraction);
+		}
+	}
+}
+
+void Player::HandleAACapture()
+{
+	Actor* actor = GetActor();
+	m_isAimAssistActive = false;
+	if (actor != nullptr)
+	{
+		RaycastResultDoomenstein raycastResult = m_map->RaycastWorldActors(
+			m_position,
+			m_orientation.GetForwardDir_IFwd_JLeft_KUp(),
+			actor->m_equippedWeapon->m_definition->m_rayRange,
+			actor
+		);
+		if (raycastResult.m_didImpact && raycastResult.m_impactDist > 2.f)
+		{
+			m_isAimAssistActive = true;
+			m_aimAssistCapturedPos = raycastResult.m_impactPos;
+		}
+	}
 }
 
 Mat44 Player::GetModelToWorldTransform() const

@@ -730,6 +730,14 @@ void Map::Update()
 
 	Update_Portals();
 
+	for (Player* player : m_players) // AA correction occurs after the map has updated the locations of actors, 
+									 // this makes the actor changing location and player moving its orientation 
+									 // separate things, with the player looking taking priority over what is 
+									 // captured by aim assist.
+	{
+		player->HandleAACorrection();
+	}
+
 	DestroyIfGarbage();
 }
 

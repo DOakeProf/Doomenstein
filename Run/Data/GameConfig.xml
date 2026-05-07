@@ -18,6 +18,9 @@
 	mouseSensitivity = "0.075f"
 	controllerSensitivity = "1.f"
 	moveSpeed = "1.f"
+	
+	controllerAA = "0.8f"
+	mouseAA = "0.3f"
 />
 <!--
 	defaultMap="TestMap"

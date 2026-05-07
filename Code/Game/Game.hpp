@@ -90,6 +90,8 @@ public:
 	float		m_rollSensitivity = 0.f;
 	float		m_mouseSensitivity = 0.f;
 	float		m_controllerSensitivity = 0.f;
+	float		m_controllerAA = 0.f;
+	float		m_mouseAA = 0.f;
 	float		m_moveSpeed = 0.f;
 	float		m_musicVolume = 0.f;
 	SoundID		m_mainMenuMusic;

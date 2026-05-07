@@ -53,6 +53,9 @@ public:
 	void HandleInputs_FirstPerson_Controller();
 	void HandleInputs_Debug();
 
+	void HandleAACorrection();
+	void HandleAACapture();
+
 	virtual Mat44 GetModelToWorldTransform() const;
 	virtual Mat44 GetWorldToModelTransform() const;
 
@@ -76,6 +79,8 @@ public:
 	EulerAngles m_orientationRecoil;
 	EulerAngles m_angularVelocity;
 	EulerAngles m_recoil;
+	bool m_isAimAssistActive;
+	Vec3 m_aimAssistCapturedPos;
 	Rgba8 m_color = Rgba8::WHITE;
 	PlayerState m_playerState = PlayerState::FREEFLY;
 	PlayerState m_desiredPlayerState = PlayerState::FREEFLY;

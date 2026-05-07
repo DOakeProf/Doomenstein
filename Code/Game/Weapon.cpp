@@ -594,7 +594,7 @@ void Weapon::SetAnimation(WeaponDefinition::Animation animation)
 
 void Weapon::StartReload(Actor* actor)
 {
-	if (!m_isReloading)
+	if (!m_isReloading && m_bullets < m_definition->m_maxAmmo)
 	{
 		m_reloadSound = PlaySoundOnActor("Reload", actor);
 		m_reloadTimer->Start();

@@ -111,6 +111,8 @@ void Game::Startup_PopulateFromBlackboard()
 	m_rollSensitivity = g_gameConfigBlackboard.GetValue("rollSensitivity", 0.f);
 	m_mouseSensitivity = g_gameConfigBlackboard.GetValue("mouseSensitivity", 0.f);
 	m_controllerSensitivity = g_gameConfigBlackboard.GetValue("controllerSensitivity", 0.f);
+	m_controllerAA = g_gameConfigBlackboard.GetValue("controllerAA", 0.f);
+	m_mouseAA = g_gameConfigBlackboard.GetValue("mouseAA", 0.f);
 	m_moveSpeed = g_gameConfigBlackboard.GetValue("moveSpeed", 0.f);
 
 	m_musicVolume = g_gameConfigBlackboard.GetValue("musicVolume", 0.1f);

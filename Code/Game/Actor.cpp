@@ -14,13 +14,16 @@
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Math/RandomNumberGenerator.hpp"
 #include "Engine/Core/ErrorWarningAssert.hpp"
+#include "Engine/BitmapFont.hpp"
 
 std::vector<ActorDefinition*> ActorDefinition::s_definitions;
 
-Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const& orientation /*= EulerAngles()*/)
+Actor::Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const& orientation /*= EulerAngles()*/, float size)
 	: m_map(map)
 	, m_position(position)
+	, m_desiredPosition(position)
 	, m_orientation(orientation)
+	, m_size(size)
 {
 	m_definition = ActorDefinition::GetByName(name);
 
@@ -156,12 +159,26 @@ void Actor::Render()
 {
 	Player* currentlyRenderedPlayer = m_map->GetCurrentRenderedPlayer();
 
+	// Check for if the actor is the player that is currently having it's view rendered.
 	if (
 	!m_map->m_isRenderingPortal &&
 	(m_controller != nullptr && m_controller->IsPlayer() && currentlyRenderedPlayer->m_desiredPlayerState == PlayerState::FIRSTPERSON && currentlyRenderedPlayer->m_playerIndex == ((Player*)m_controller)->m_playerIndex) ||
 	!m_definition->m_visible
 		)
 	{
+		return;
+	}
+
+	// Check for if it is rendering values.
+	if (m_definition->m_displayValue)
+	{
+		std::vector<Vertex> localVerts;
+		m_map->m_game->m_squirrelFont->AddVertsForText3DAtOriginXForward(localVerts, 0.05f * m_size, Stringf("%.1f", m_valueToDisplay), Rgba8(200, 200, 200, 255), 1.f);
+		g_engine->m_render->BindShader(m_definition->m_shader);
+		g_engine->m_render->SetModelConstants(GetModelMatrixBillboarded());
+		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+		g_engine->m_render->BindTexture(&m_map->m_game->m_squirrelFont->GetTexture());
+		g_engine->m_render->DrawVertexList(&localVerts);
 		return;
 	}
 
@@ -313,7 +330,7 @@ int Actor::GetEquippedWeaponIndex()
 
 void Actor::Update_Physics()
 {
-	if (m_definition->m_physicsIsSimulated && !m_isDead)
+	if (m_definition->m_physicsIsSimulated && (!m_isDead || m_definition->m_moveWhenDead))
 	{
 		float deltaSeconds = (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 		if (!m_definition->m_isFlying)
@@ -624,6 +641,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 			newActorDef->m_turnSpeed = ParseXmlAttribute(*physicsElement, "turnSpeed", -1.f);
 			newActorDef->m_drag = ParseXmlAttribute(*physicsElement, "drag", -1.f);
 			newActorDef->m_isFlying = ParseXmlAttribute(*physicsElement, "flying", false);
+			newActorDef->m_moveWhenDead = ParseXmlAttribute(*physicsElement, "moveWhenDead", false);
 		}
 
 		XmlElement* cameraElement = actorDefElement->FirstChildElement("Camera");
@@ -685,11 +703,15 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 			}
 			newActorDef->m_renderLit = ParseXmlAttribute(*VisualsElement, "renderLit", false);
 			newActorDef->m_renderRounded = ParseXmlAttribute(*VisualsElement, "renderRounded", false);
+			newActorDef->m_displayValue = ParseXmlAttribute(*VisualsElement, "displayValue", false);
 			std::string shaderPath = ParseXmlAttribute(*VisualsElement, "shader", "");
 			newActorDef->m_shader = g_engine->m_render->CreateOrGetShader(shaderPath.c_str(), VertexType::VERTEX_PCUTBN);
 			std::string spriteSheetPath = ParseXmlAttribute(*VisualsElement, "spriteSheet", "");
 			newActorDef->m_cellCount = ParseXmlAttribute(*VisualsElement, "cellCount", IntVec2());
-			newActorDef->m_spriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(spriteSheetPath.c_str()), newActorDef->m_cellCount);
+			if (spriteSheetPath != "")
+			{
+				newActorDef->m_spriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(spriteSheetPath.c_str()), newActorDef->m_cellCount);
+			}
 		}
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

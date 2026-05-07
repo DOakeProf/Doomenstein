@@ -48,7 +48,7 @@ void Player::Update()
 	float scopeFraction = GetActor()->m_equippedWeapon->m_scopeFraction;
 	if (scopeFraction > 0.f)
 	{
-		m_worldCamera->SetPerspectiveFOV(Interpolate(60.f, 50.f, SmoothStep3(scopeFraction)));
+		m_worldCamera->SetPerspectiveFOV(Interpolate(60.f, GetActor()->m_equippedWeapon->m_definition->m_scopedFOV, SmoothStep3(scopeFraction)));
 	}
 	else
 	{

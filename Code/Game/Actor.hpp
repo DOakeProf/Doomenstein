@@ -51,6 +51,7 @@ struct ActorDefinition
 	float						m_turnSpeed;
 	float						m_drag;
 	bool						m_isFlying;
+	bool						m_moveWhenDead;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Player
@@ -74,6 +75,7 @@ struct ActorDefinition
 	Shader*						m_shader;
 	SpriteSheet*				m_spriteSheet;
 	IntVec2						m_cellCount;
+	bool						m_displayValue;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// AnimationGroup
@@ -117,7 +119,7 @@ struct ActorDefinition
 class Actor
 {
 public:
-	Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const& orientation = EulerAngles());
+	Actor(Map* map, std::string name, Vec3 const& position, EulerAngles const& orientation = EulerAngles(), float size = 1.f);
 	~Actor();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -131,6 +133,7 @@ public:
 	bool m_isDead = false;
 	bool m_isGarbage = false;
 	bool m_hasEnteredRift = false;
+	float m_valueToDisplay = -1.f; // Only for actors with displayValue enabled.
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Movement/Abilities
@@ -145,6 +148,7 @@ public:
 	EulerAngles m_orientation;
 	Vec3 m_velocity;
 	Vec3 m_acceleration;
+	float m_size;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Rendering

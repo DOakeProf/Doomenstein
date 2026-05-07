@@ -123,7 +123,7 @@ public:
 	// Utility functions
 	int AddActorToMap(Actor* actor);
 	Actor* SpawnActor(const SpawnInfo& spawnInfo);
-	Actor* SpawnActor(const char* actorName, Vec3 position, EulerAngles orientation);
+	Actor* SpawnActor(const char* actorName, Vec3 position, EulerAngles orientation, float size = 1.f);
 	Actor* SpawnPlayer(Player* player);
 	Actor* SpawnPlayerInitial(Player* player, Vec3& position);
 	void RemoveActorFromMap(Actor* actor);

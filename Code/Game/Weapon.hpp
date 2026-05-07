@@ -31,6 +31,7 @@ struct WeaponDefinition
 	float				m_refireTime;
 	std::string			m_perk;
 	bool				m_canScope;
+	float				m_scopedFOV;
 	
 	int					m_maxAmmo;
 	float				m_reloadTime;
@@ -135,6 +136,7 @@ public:
 	Portal* m_rightPortal;
 
 	Mat44 m_scopedTranslation;
+	Mat44 m_scopedWhisperTranslation;
 	EulerAngles m_orientationRecoil;
 
 	SoundPlaybackID m_reloadSound;

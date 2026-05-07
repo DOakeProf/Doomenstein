@@ -590,7 +590,7 @@ int Map::AddActorToMap(Actor* actor)
 
 Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 {
-	Actor* newActor = new Actor(this, spawnInfo.m_name, spawnInfo.m_position + Vec3(0.f, 0.f, 0.01f), spawnInfo.m_orientation);
+	Actor* newActor = new Actor(this, spawnInfo.m_name, spawnInfo.m_position + Vec3(0.f, 0.f, 0.01f), spawnInfo.m_orientation, spawnInfo.m_size);
 	AddActorToMap(newActor);
 	++m_nextActorUID;
 	if (m_nextActorUID > ActorHandle::MAX_ACTOR_UID)
@@ -607,9 +607,9 @@ Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 	return newActor;
 }
 
-Actor* Map::SpawnActor(const char* actorName, Vec3 position, EulerAngles orientation)
+Actor* Map::SpawnActor(const char* actorName, Vec3 position, EulerAngles orientation, float size)
 {
-	SpawnInfo spawnInfo = SpawnInfo(actorName, position, orientation);
+	SpawnInfo spawnInfo = SpawnInfo(actorName, position, orientation, size);
 	return SpawnActor(spawnInfo);
 }
 

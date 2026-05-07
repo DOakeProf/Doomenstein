@@ -45,6 +45,7 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 		newWeaponDef->m_maxAmmo =					ParseXmlAttribute(*weaponDefElement, "maxAmmo", -1);
 		newWeaponDef->m_reloadTime =				ParseXmlAttribute(*weaponDefElement, "reloadTime", -1.f);
 		newWeaponDef->m_recoil =					ParseXmlAttribute(*weaponDefElement, "recoil", -1.f);
+		newWeaponDef->m_scopedFOV =					ParseXmlAttribute(*weaponDefElement, "scopedFOV", -1.f);
 		newWeaponDef->m_canScope =					ParseXmlAttribute(*weaponDefElement, "canScope", false);
 
 		newWeaponDef->m_rayCount =					ParseXmlAttribute(*weaponDefElement, "rayCount", -1);
@@ -208,6 +209,7 @@ Weapon::Weapon(Map* map, std::string definition)
 	m_bullets = m_definition->m_maxAmmo;
 
 	m_scopedTranslation.AppendTranslation3D(Vec3( -0.52f, 0.15f, 0.025f));
+	m_scopedWhisperTranslation.AppendTranslation3D(Vec3( -0.67f, 0.15f, 0.f));
 }
 
 Weapon::~Weapon()
@@ -354,7 +356,15 @@ void Weapon::Render_GLTF()
 
 		if (m_scopeFraction > 0.f)
 		{
-			Mat44 interpolatedScopeMatrix = Interpolate(Mat44(), m_scopedTranslation, SmoothStep3(m_scopeFraction));
+			Mat44 interpolatedScopeMatrix;
+			if (m_definition->m_name == "BlackSpindle")
+			{
+				interpolatedScopeMatrix = Interpolate(Mat44(), m_scopedWhisperTranslation, SmoothStep3(m_scopeFraction));
+			}
+			else
+			{
+				interpolatedScopeMatrix = Interpolate(Mat44(), m_scopedTranslation, SmoothStep3(m_scopeFraction));
+			}
 			modelMatrix.Append(interpolatedScopeMatrix);
 		}
 
@@ -774,6 +784,17 @@ void Weapon::Fire_Weapon(Actor* actor)
 
 				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
 				m_map->SpawnActor("BloodSplatter", result.m_impactPos, EulerAngles());
+
+				// Damage Number
+				Actor* damageNumber = m_map->SpawnActor("DamageNumber", result.m_impactPos + ( -randomDirection * 0.1f), EulerAngles(), RangeMap(RandomDamage, 10.f, 100.f, 1.f, 4.f));
+				Vec3 damageNumberToActor = (actor->m_position - result.m_impactPos).GetNormalized();
+				Mat44 damageNumberToActorMatrix = Mat44(damageNumberToActor, Vec3(1.f, 0.f, 0.f), Vec3(1.f, 0.f, 0.f), Vec3());
+				damageNumberToActorMatrix.Orthonormalize_XFwd_YLeft_ZUp();
+				EulerAngles damageNumberToActorOrientation = EulerAngles(damageNumberToActorMatrix);
+				damageNumberToActorOrientation.m_yawDegrees += 90.f;
+				damageNumberToActorOrientation.m_pitchDegrees += actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(0.f, 360.f);
+				damageNumber->AddImpulse(actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(1.f, 2.f) * damageNumberToActorOrientation.GetForwardDir_IFwd_JLeft_KUp());
+				damageNumber->m_valueToDisplay = RandomDamage;
 			}
 			else
 			{

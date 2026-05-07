@@ -49,6 +49,7 @@ struct ActorDefinition
 	float						m_walkSpeed;
 	float						m_runSpeed;
 	float						m_turnSpeed;
+	float						m_jumpHeight;
 	float						m_drag;
 	bool						m_isFlying;
 	bool						m_moveWhenDead;
@@ -200,7 +201,7 @@ public:
 
 	void MoveInDirection(Vec3 const& direction, float speed);
 	void TurnInDirection(float angleToTurnTowards, float maximumTurn);
-	void Jump(float jumpStrength);
+	void Jump();
 	void CancelJump();
 	void Attack();
 	void SecondaryAttack();

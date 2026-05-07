@@ -107,6 +107,28 @@
 		<MapImages>
 			<MapImage image="Data/Maps/DOG0.png"/>
 			<MapImage image="Data/Maps/DOG1.png"/>
+			<MapImage image="Data/Maps/DOG2.png"/>
+			<MapImage image="Data/Maps/DOG3.png"/>
+			<MapImage image="Data/Maps/DOG4.png"/>
+			<MapImage image="Data/Maps/DOG5.png"/>
+			<MapImage image="Data/Maps/DOG6.png"/>
+			<MapImage image="Data/Maps/DOG7.png"/>
+			<MapImage image="Data/Maps/DOG8.png"/>
+			<MapImage image="Data/Maps/DOG9.png"/>
+			<MapImage image="Data/Maps/DOG10.png"/>
+			<MapImage image="Data/Maps/DOG11.png"/>
+			<MapImage image="Data/Maps/DOG12.png"/>
+			<MapImage image="Data/Maps/DOG13.png"/>
+			<MapImage image="Data/Maps/DOG14.png"/>
+			<MapImage image="Data/Maps/DOG15.png"/>
+			<MapImage image="Data/Maps/DOG16.png"/>
+			<MapImage image="Data/Maps/DOG17.png"/>
+			<MapImage image="Data/Maps/DOG18.png"/>
+			<MapImage image="Data/Maps/DOG19.png"/>
+			<MapImage image="Data/Maps/DOG20.png"/>
+			<MapImage image="Data/Maps/DOG21.png"/>
+			<MapImage image="Data/Maps/DOG22.png"/>
+			<MapImage image="Data/Maps/DOG23.png"/>
 		</MapImages>
 	</MapDefinition>
 </Definitions>

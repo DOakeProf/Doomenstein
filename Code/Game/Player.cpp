@@ -33,7 +33,7 @@ void Player::Update()
 	Actor* actor = m_map->GetActorByHandle(*m_actorHandle);
 	if (m_jumpBuffer < 0.05f)
 	{
-		actor->Jump(13.5f);
+		actor->Jump();
 	}
 	m_jumpBuffer += (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 
@@ -45,14 +45,17 @@ void Player::Update()
 	m_orientationRecoil = m_orientation + m_recoil;
 
 	// Scope
-	float scopeFraction = GetActor()->m_equippedWeapon->m_scopeFraction;
-	if (scopeFraction > 0.f)
+	if (GetActor() != nullptr)
 	{
-		m_worldCamera->SetPerspectiveFOV(Interpolate(60.f, GetActor()->m_equippedWeapon->m_definition->m_scopedFOV, SmoothStep3(scopeFraction)));
-	}
-	else
-	{
-		m_worldCamera->SetPerspectiveFOV(60.f);
+		float scopeFraction = GetActor()->m_equippedWeapon->m_scopeFraction;
+		if (scopeFraction > 0.f)
+		{
+			m_worldCamera->SetPerspectiveFOV(Interpolate(60.f, GetActor()->m_equippedWeapon->m_definition->m_scopedFOV, SmoothStep3(scopeFraction)));
+		}
+		else
+		{
+			m_worldCamera->SetPerspectiveFOV(60.f);
+		}
 	}
 
 	if (actor != nullptr && actor->m_isDead)
@@ -348,8 +351,13 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		// Camera Orientation
 		EulerAngles newOrientation = m_orientation;
-		newOrientation.m_yawDegrees += g_engine->m_input->GetCursorClientDelta().x * m_map->m_game->m_mouseSensitivity;
-		newOrientation.m_pitchDegrees -= g_engine->m_input->GetCursorClientDelta().y * m_map->m_game->m_mouseSensitivity;
+		float scopeFraction = 1.f;
+		if (GetActor() != nullptr && GetActor()->m_equippedWeapon->m_isScoped)
+		{
+			scopeFraction = GetActor()->m_equippedWeapon->m_definition->m_scopedFOV / GetActor()->m_definition->m_cameraFOV;
+		}
+		newOrientation.m_yawDegrees += g_engine->m_input->GetCursorClientDelta().x * m_map->m_game->m_mouseSensitivity * scopeFraction;
+		newOrientation.m_pitchDegrees -= g_engine->m_input->GetCursorClientDelta().y * m_map->m_game->m_mouseSensitivity * scopeFraction;
 		newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
 		m_orientation = newOrientation;
 
@@ -484,8 +492,13 @@ void Player::HandleInputs_FirstPerson_Controller()
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		// Camera Orientation
 		EulerAngles newOrientation = m_orientation;
-		newOrientation.m_yawDegrees -= controller->GetRightStick().GetPosition().x * actor->m_definition->m_turnSpeed * deltaSeconds;
-		newOrientation.m_pitchDegrees -= controller->GetRightStick().GetPosition().y * actor->m_definition->m_turnSpeed * deltaSeconds;m_map->m_game->m_controllerSensitivity;
+		float scopeFraction = 1.f;
+		if (GetActor() != nullptr && GetActor()->m_equippedWeapon->m_isScoped)
+		{
+			scopeFraction = GetActor()->m_equippedWeapon->m_definition->m_scopedFOV / GetActor()->m_definition->m_cameraFOV;
+		}
+		newOrientation.m_yawDegrees -= controller->GetRightStick().GetPosition().x * actor->m_definition->m_turnSpeed * deltaSeconds * scopeFraction;
+		newOrientation.m_pitchDegrees -= controller->GetRightStick().GetPosition().y * actor->m_definition->m_turnSpeed * deltaSeconds * scopeFraction;
 		newOrientation.m_pitchDegrees = GetClamped(newOrientation.m_pitchDegrees, -89.f, 89.f);
 		m_orientation = newOrientation;
 

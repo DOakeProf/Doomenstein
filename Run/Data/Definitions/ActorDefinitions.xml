@@ -6,10 +6,10 @@
   <ActorDefinition name="RiftPointRandom" />
   <!-- Marine -->
   <ActorDefinition name="Marine" faction="Marine" health="100" canBePossessed="true" corpseLifetime="2.0" visible="true">
-    <Collision radius="0.25" height="0.6" collidesWithWorld="true" collidesWithActors="true"/>
-    <Physics simulated="true" walkSpeed="2.5f" runSpeed="5.5f" turnSpeed="180.0f" drag="9.0f"/>
-    <Camera eyeHeight="0.5" cameraFOV="60.0f"/>
-    <Visuals size="1.6,1.6" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Marine_7x9.png" cellCount="7,9">
+    <Collision radius="0.35" height="0.72" collidesWithWorld="true" collidesWithActors="true"/>
+    <Physics simulated="true" walkSpeed="3.0f" runSpeed="6.0f" turnSpeed="220.0f" drag="9.0f" jumpHeight="15.5f"/>
+    <Camera eyeHeight="0.65" cameraFOV="60.0f"/>
+    <Visuals size="1.8,1.8" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Marine_7x9.png" cellCount="7,9">
       <AnimationGroup name="Walk" scaleBySpeed="true" secondsPerFrame="0.25" playbackMode="Loop">
         <Direction vector="-1,0,0"><Animation startFrame="0" endFrame="3"/></Direction>
         <Direction vector="-1,-1,0"><Animation startFrame="7" endFrame="10"/></Direction>
@@ -50,14 +50,16 @@
     </Sounds>
     <Inventory>
       <Weapon name="Huckleberry" />
+      <Weapon name="RedDeath" />
       <Weapon name="Horseman" />
 	  <Weapon name="BlackSpindle" />
+	  <Weapon name="PortalGun" />
     </Inventory>
   </ActorDefinition>
   <!-- Demon -->
   <ActorDefinition name="Demon" faction="Demon" health="80" canBePossessed="true" corpseLifetime="1.0" visible="true">
     <Collision radius="0.35" height="0.85" collidesWithWorld="true" collidesWithActors="true"/>
-    <Physics simulated="true" walkSpeed="2.0f" runSpeed="5.0f" turnSpeed="180.0f" drag="9.0f"/>
+    <Physics simulated="true" walkSpeed="2.0f" runSpeed="5.0f" turnSpeed="180.0f" drag="9.0f" jumpHeight="11.5f"/>
     <Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
     <AI aiEnabled="true" aiType ="Melee" sightRadius="64.0" sightAngle="120.0"/>
     <Visuals size="2.1,2.1" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Pinky_8x9.png" cellCount="8,9">
@@ -106,7 +108,7 @@
 	<!-- Dinosaur -->
 	<ActorDefinition name="Dinosaur" faction="Demon" health="110" canBePossessed="true" corpseLifetime="1.0" visible="true">
 		<Collision radius="0.4" height="1.1" collidesWithWorld="true" collidesWithActors="true"/>
-		<Physics simulated="true" walkSpeed="2.5f" runSpeed="3.5f" turnSpeed="120.0f" drag="9.0f"/>
+		<Physics simulated="true" walkSpeed="2.5f" runSpeed="3.5f" turnSpeed="120.0f" drag="9.0f" jumpHeight="20.5f"/>
 		<Camera eyeHeight="0.85f" cameraFOV="100.0f"/>
 		<AI aiEnabled="true" aiType ="Ranged" sightRadius="80.0" sightAngle="120.0"/>
 		<Visuals size="1.8,1.8" pivot="0.45,0.25" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Varg_8x13.png" cellCount="8,13">

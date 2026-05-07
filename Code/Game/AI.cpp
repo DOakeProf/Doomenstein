@@ -78,7 +78,7 @@ void AI::Update_Melee()
 				RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
 				if (result.m_didImpact)
 				{
-					actor->Jump(11.f);
+					actor->Jump();
 				}
 			}
 		}
@@ -140,7 +140,7 @@ void AI::Update_Ranged()
 				RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
 				if (result.m_didImpact)
 				{
-					actor->Jump(11.f);
+					actor->Jump();
 				}
 			}
 		}

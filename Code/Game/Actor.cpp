@@ -259,7 +259,7 @@ void Actor::Render_Debug() const
 	//g_engine->m_render->DrawVertexList(&debugVerts);
 
 	debugVerts.clear();
-	AddVertsForCylinder3D(debugVerts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height + 0.001f), m_definition->m_radius + 0.001f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 16);
+	AddVertsForCylinder3D(debugVerts, Vec3(), Vec3(0.f, 0.f, m_definition->m_height + 0.001f), m_definition->m_radius + 0.001f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 8);
 
 	if (!m_definition->m_isFlying)
 	{
@@ -484,12 +484,12 @@ void Actor::TurnInDirection(float angleToTurnTowards, float maximumTurn)
 	}
 }
 
-void Actor::Jump(float jumpStrength)
+void Actor::Jump()
 {
 	if (!m_isDead && m_coyoteTime < m_coyoteTimeMax)
 	{
 		m_velocity.z = 0.f;
-		AddImpulse(Vec3(0.f, 0.f, jumpStrength));
+		AddImpulse(Vec3(0.f, 0.f, m_definition->m_jumpHeight));
 		m_isJumping = true;
 		m_coyoteTime += 0.09f;
 		m_isGrounded = false;
@@ -640,6 +640,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 			newActorDef->m_runSpeed = ParseXmlAttribute(*physicsElement, "runSpeed", -1.f);
 			newActorDef->m_turnSpeed = ParseXmlAttribute(*physicsElement, "turnSpeed", -1.f);
 			newActorDef->m_drag = ParseXmlAttribute(*physicsElement, "drag", -1.f);
+			newActorDef->m_jumpHeight = ParseXmlAttribute(*physicsElement, "jumpHeight", -1.f);
 			newActorDef->m_isFlying = ParseXmlAttribute(*physicsElement, "flying", false);
 			newActorDef->m_moveWhenDead = ParseXmlAttribute(*physicsElement, "moveWhenDead", false);
 		}

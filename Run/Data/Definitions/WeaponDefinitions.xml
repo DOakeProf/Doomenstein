@@ -37,7 +37,7 @@
 		</Sounds>
 	</WeaponDefinition>
 	<!-- Black Spindle -->
-	<WeaponDefinition name="BlackSpindle" refireTime="0.83" rayCount="1" rayCone="0.1" rayRange="60.0" rayDamage="60.0~80.0" rayImpulse="10.0" maxAmmo="3" reloadTime="2.35" recoil="5.0" canScope ="true" scopedFOV="30" perk="WhiteNail">
+	<WeaponDefinition name="BlackSpindle" refireTime="0.83" rayCount="1" rayCone="0.1" rayRange="60.0" rayDamage="60.0~80.0" rayImpulse="10.0" maxAmmo="3" reloadTime="2.35" recoil="5.0" canScope ="true" scopedFOV="10" perk="WhiteNail">
 		<HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" gltfName="BlackSpindle" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">
 		</HUD>
 		<Sounds>

@@ -55,6 +55,7 @@ void WeaponDefinition::InitializeDefinitions(const char* path)
 		newWeaponDef->m_rayRange =					ParseXmlAttribute(*weaponDefElement, "rayRange", -1.f);
 		newWeaponDef->m_rayDamage =					ParseXmlAttribute(*weaponDefElement, "rayDamage", FloatRange());
 		newWeaponDef->m_rayImpulse =				ParseXmlAttribute(*weaponDefElement, "rayImpulse", -1.f);
+		newWeaponDef->m_precisionMultiplier =		ParseXmlAttribute(*weaponDefElement, "precisionMultiplier", -1.f);
 
 		newWeaponDef->m_projectileCount =			ParseXmlAttribute(*weaponDefElement, "projectileCount", -1);
 		newWeaponDef->m_projectileActor =			ParseXmlAttribute(*weaponDefElement, "projectileActor", "");
@@ -345,7 +346,7 @@ void Weapon::Render_GLTF()
 {
 	if (m_definition->m_gltfAssets.size() > 0)
 	{
-		Player* currentPlayer = m_map->m_currentlyRenderedPlayer;
+		Player* currentPlayer = m_map->m_game->m_currentlyRenderedPlayer;
 		Mat44 modelMatrix = Mat44();
 		modelMatrix.AppendTranslation3D(currentPlayer->m_position);
 
@@ -766,8 +767,16 @@ void Weapon::Fire_Weapon(Actor* actor)
 			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, rayRange, actor);
 			if (result.m_didImpact && result.m_actor != nullptr)
 			{
+				// Was it a precision hit?
+				float precisionMultiplier = 1.f;
+				RaycastResult3D precisionResult = result.m_actor->RaycastVsPrecision(initialFirePosition, randomDirection, rayRange);
+				if (precisionResult.m_didImpact)
+				{
+					precisionMultiplier = m_definition->m_precisionMultiplier;
+				}
+
 				float damageFalloffMultiplier = SmoothStop6(1.f - (result.m_impactDist / rayRange));
-				float RandomDamage = damageFalloffMultiplier * actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
+				float RandomDamage = damageFalloffMultiplier * precisionMultiplier * actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
 				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 
 				if (result.m_actor->m_health <= 0 )
@@ -787,6 +796,14 @@ void Weapon::Fire_Weapon(Actor* actor)
 
 				// Damage Number
 				Actor* damageNumber = m_map->SpawnActor("DamageNumber", result.m_impactPos + ( -randomDirection * 0.1f), EulerAngles(), RangeMap(RandomDamage, 10.f, 100.f, 1.f, 4.f));
+				if (precisionResult.m_didImpact)
+				{
+					damageNumber->m_color = Rgba8(200, 200, 100, 255);
+				}
+				else
+				{
+					damageNumber->m_color = Rgba8(200, 200, 200, 255);
+				}
 				Vec3 damageNumberToActor = (actor->m_position - result.m_impactPos).GetNormalized();
 				Mat44 damageNumberToActorMatrix = Mat44(damageNumberToActor, Vec3(1.f, 0.f, 0.f), Vec3(1.f, 0.f, 0.f), Vec3());
 				damageNumberToActorMatrix.Orthonormalize_XFwd_YLeft_ZUp();

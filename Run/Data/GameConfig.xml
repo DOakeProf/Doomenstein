@@ -20,7 +20,7 @@
 	moveSpeed = "1.f"
 	
 	controllerAA = "0.8f"
-	mouseAA = "0.3f"
+	mouseAA = "0.1f"
 />
 <!--
 	defaultMap="TestMap"

@@ -173,7 +173,7 @@ void Actor::Render()
 	if (m_definition->m_displayValue)
 	{
 		std::vector<Vertex> localVerts;
-		m_map->m_game->m_squirrelFont->AddVertsForText3DAtOriginXForward(localVerts, 0.05f * m_size, Stringf("%.1f", m_valueToDisplay), Rgba8(200, 200, 200, 255), 1.f);
+		m_map->m_game->m_squirrelFont->AddVertsForText3DAtOriginXForward(localVerts, 0.05f * m_size, Stringf("%.1f", m_valueToDisplay), m_color, 1.f);
 		g_engine->m_render->BindShader(m_definition->m_shader);
 		g_engine->m_render->SetModelConstants(GetModelMatrixBillboarded());
 		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
@@ -230,6 +230,7 @@ void Actor::Render()
 	{
 		Render_Debug();
 	}
+
 }
 
 void Actor::Render_Debug() const
@@ -272,6 +273,43 @@ void Actor::Render_Debug() const
 	g_engine->m_render->DrawVertexList(&debugVerts);
 }
 
+void Actor::Render_Precision() const
+{
+	// Check for if the actor is the player that is currently having it's view rendered.
+	if (
+		m_definition->m_precisionRadius <= 0.f
+		||
+		(!m_map->m_isRenderingPortal &&
+		(m_controller != nullptr && m_controller->IsPlayer() && m_map->m_game->m_currentlyRenderedPlayer->m_desiredPlayerState == PlayerState::FIRSTPERSON && m_map->m_game->m_currentlyRenderedPlayer->m_playerIndex == ((Player*)m_controller)->m_playerIndex) ||
+		!m_definition->m_visible)
+		)
+	{
+		return;
+	}
+
+	std::vector<Vertex> localVerts;
+	AddVertsForDiscXZ2D(localVerts, Vec2(), m_definition->m_precisionRadius, Rgba8(200, 200, 100, 127), Rgba8(200, 200, 100, 0));
+
+	Mat44 playerTransform = Mat44();
+	playerTransform.AppendTranslation3D(m_map->m_game->m_currentlyRenderedPlayer->m_position);
+
+	Mat44 selfOrientationAsMatrix = Mat44();
+	selfOrientationAsMatrix.AppendZRotation(m_orientation.m_yawDegrees);
+
+	Mat44 fullFacingMat44 = GetBillboardTransform(
+		BillboardType::FULL_FACING,
+		playerTransform, m_position + selfOrientationAsMatrix.TransformPosition3D(m_definition->m_precisionOffset)
+	);
+	fullFacingMat44.AppendZRotation(90.f);
+
+	g_engine->m_render->SetModelConstants(fullFacingMat44);
+	g_engine->m_render->BindTexture(nullptr);
+	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
+	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::DISABLED);
+	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	g_engine->m_render->DrawVertexList(&localVerts);
+}
+
 Mat44 Actor::GetModelMatrix() const
 {
 	Mat44 modelToWorld = Mat44();
@@ -311,12 +349,12 @@ Mat44 Actor::GetModelMatrixBillboarded() const
 	return modelToWorld;
 }
 
-Vec3 Actor::GetEyePos()
+Vec3 Actor::GetEyePos() const
 {
 	return m_position + Vec3(0.f, 0.f, m_definition->m_eyeHeight);
 }
 
-int Actor::GetEquippedWeaponIndex()
+int Actor::GetEquippedWeaponIndex() const
 {
 	for (int weaponIndex = 0; weaponIndex < m_weapons.size(); ++weaponIndex)
 	{
@@ -397,6 +435,19 @@ void Actor::Update_Position()
 	{
 		m_position = m_desiredPosition;
 	}
+}
+
+RaycastResult3D Actor::RaycastVsPrecision(Vec3 startPos, Vec3 rayFwd, float raycastDist)
+{
+	Mat44 selfOrientationAsMatrix = Mat44();
+	selfOrientationAsMatrix.AppendZRotation(m_orientation.m_yawDegrees);
+
+	RaycastResult3D result = RaycastVsSphere3D(
+		startPos, rayFwd, raycastDist,
+		m_position + selfOrientationAsMatrix.TransformPosition3D(m_definition->m_precisionOffset),
+		m_definition->m_precisionRadius
+	);
+	return result;
 }
 
 void Actor::SetActorHandle(ActorHandle* handle)
@@ -630,6 +681,8 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 			newActorDef->m_impulseOnCollide = ParseXmlAttribute(*collisionElement, "impulseOnCollide", -1.f);
 			newActorDef->m_dieOnCollide = ParseXmlAttribute(*collisionElement, "dieOnCollide", false);
 			newActorDef->m_collidesWithSameActor = ParseXmlAttribute(*collisionElement, "collidesWithSameActor", true);
+			newActorDef->m_precisionOffset = ParseXmlAttribute(*collisionElement, "precisionOffset", Vec3());
+			newActorDef->m_precisionRadius = ParseXmlAttribute(*collisionElement, "precisionRadius", -1.f);
 		}
 
 		XmlElement* physicsElement = actorDefElement->FirstChildElement("Physics");

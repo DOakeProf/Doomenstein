@@ -488,7 +488,7 @@ Actor* Map::GetActorByHandle(const ActorHandle handle) const
 
 Player* Map::GetCurrentRenderedPlayer()
 {
-	return m_currentlyRenderedPlayer;
+	return m_game->m_currentlyRenderedPlayer;
 }
 
 std::vector<Actor*> Map::GetActors()
@@ -735,7 +735,10 @@ void Map::Update()
 									 // separate things, with the player looking taking priority over what is 
 									 // captured by aim assist.
 	{
-		player->HandleAACorrection();
+		if (player != nullptr)
+		{
+			player->HandleAACorrection();
+		}
 	}
 
 	DestroyIfGarbage();
@@ -1320,7 +1323,7 @@ void Map::Render()
 		{
 			continue;
 		}
-		m_currentlyRenderedPlayer = player;
+		m_game->m_currentlyRenderedPlayer = player;
 		g_engine->m_render->BeginCamera(player->m_worldCamera);
 
 		// Render Everything
@@ -1350,7 +1353,7 @@ void Map::Render()
 		Render_Rifts();
 		m_isRenderingPortal = false;
 	
-		g_engine->m_render->BindShader(m_currentlyRenderedPlayer->GetActor()->m_definition->m_shader);
+		g_engine->m_render->BindShader(m_game->m_currentlyRenderedPlayer->GetActor()->m_definition->m_shader);
 
 		portalAABB3Constants.isEnabled = 0;
 		g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
@@ -1383,8 +1386,9 @@ void Map::Render_World() const
 {
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
-	Render_Tiles();
 	Render_Actors();
+	g_engine->m_render->SetModelConstants(Mat44());
+	Render_Tiles();
 
 	for (int portalIndex = 0; portalIndex < m_portals.size(); ++portalIndex)
 	{
@@ -1432,6 +1436,19 @@ void Map::Render_Actors() const
 		{
 			m_actors[actorIndex]->Render();
 		}
+	}
+	if (m_game->m_currentlyRenderedPlayer->GetActor()->m_equippedWeapon->m_isScoped)
+	{
+		for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+		{
+			Actor* actor = m_actors[actorIndex];
+			if (actor != nullptr)
+			{
+				m_actors[actorIndex]->Render_Precision();
+			}
+		}
+		g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
+		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	}
 }
 

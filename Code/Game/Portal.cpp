@@ -109,7 +109,7 @@ void Portal::RenderPortal()
 	g_engine->m_render->ClearTargetTextureDepthBuffer();
 
 	// Render Everything from the other portal's camera
-	g_engine->m_render->EndCamera(m_map->m_currentlyRenderedPlayer->m_worldCamera);
+	g_engine->m_render->EndCamera(m_map->m_game->m_currentlyRenderedPlayer->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_portalCamera);
 
 	Vec3 portalNormal = m_otherPortal->GetOrientation().GetForwardDir_IFwd_JLeft_KUp();
@@ -138,7 +138,7 @@ void Portal::RenderPortal()
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	g_engine->m_render->EndCamera(m_portalCamera);
-	g_engine->m_render->BeginCamera(m_map->m_currentlyRenderedPlayer->m_worldCamera);
+	g_engine->m_render->BeginCamera(m_map->m_game->m_currentlyRenderedPlayer->m_worldCamera);
 
 	// Draw portal onto stencil buffer
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
@@ -159,7 +159,7 @@ void Portal::RenderPortal()
 	}
 	g_engine->m_render->DrawVertexList(&m_vertexes);
 
-	g_engine->m_render->EndCamera(m_map->m_currentlyRenderedPlayer->m_worldCamera);
+	g_engine->m_render->EndCamera(m_map->m_game->m_currentlyRenderedPlayer->m_worldCamera);
 	g_engine->m_render->BeginCamera(m_map->m_game->m_screenCamera);
 
 	// Draw full screen quad only where stencil is drawn to
@@ -175,7 +175,7 @@ void Portal::RenderPortal()
 	g_engine->m_render->DrawVertexList(&screenVerts);
 
 	g_engine->m_render->EndCamera(m_map->m_game->m_screenCamera);
-	g_engine->m_render->BeginCamera(m_map->m_currentlyRenderedPlayer->m_worldCamera);
+	g_engine->m_render->BeginCamera(m_map->m_game->m_currentlyRenderedPlayer->m_worldCamera);
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Set rendering modes and shaders back to default
@@ -188,8 +188,8 @@ void Portal::MoveCamera()
 {
 	// Get starting world values
 	Vec3 otherPortalPos = m_otherPortal->m_position;
-	Vec3 playerPos = m_map->m_currentlyRenderedPlayer->m_worldCamera->GetPosition();
-	EulerAngles playerOrientation = m_map->m_currentlyRenderedPlayer->m_worldCamera->GetOrientation();
+	Vec3 playerPos = m_map->m_game->m_currentlyRenderedPlayer->m_worldCamera->GetPosition();
+	EulerAngles playerOrientation = m_map->m_game->m_currentlyRenderedPlayer->m_worldCamera->GetOrientation();
 
 	// Convert player position from world space to self portal space
 	Mat44 selfMatrixWorldToModel = GetWorldToModelTransform();
@@ -212,7 +212,7 @@ void Portal::MoveCamera()
 	m_portalCamera->SetViewport(g_engine->m_render->GetCamera()->GetViewport());
 
 	// Calculate what the near plane should be at based on the player's position to the portal and the player's camera orientation.
-	Vec3 playerToSelfPortal = m_position - m_map->m_currentlyRenderedPlayer->m_position;
+	Vec3 playerToSelfPortal = m_position - m_map->m_game->m_currentlyRenderedPlayer->m_position;
 	//float agreementBetweenCameraFwdAndCameraToPortal = DotProduct3D(playerToSelfPortal.GetNormalized(), playerOrientation.GetForwardDir_IFwd_JLeft_KUp());
 	//m_portalCamera->ChangeNearPlane(lengthOfCameraToPortal * agreementBetweenCameraFwdAndCameraToPortal); // TODO: Make this another plane clip in the pixel shader.
 

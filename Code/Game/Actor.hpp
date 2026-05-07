@@ -42,6 +42,8 @@ struct ActorDefinition
 	float						m_impulseOnCollide;
 	bool						m_dieOnCollide;
 	bool						m_collidesWithSameActor;
+	Vec3						m_precisionOffset;
+	float						m_precisionRadius;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Physics
@@ -179,18 +181,20 @@ public:
 	void Update();
 	void Render();
 	void Render_Debug() const;
+	void Render_Precision() const;
 	Mat44 GetModelMatrix() const;
 	Mat44 GetModelMatrixOnlyYaw() const;
 	Mat44 GetModelMatrixBillboarded() const;
 
-	Vec3 GetEyePos();
-	int GetEquippedWeaponIndex();
+	Vec3 GetEyePos() const;
+	int GetEquippedWeaponIndex() const;
 
 	void Update_Physics();
 	void AddForce(Vec3 const& force);
 	void AddImpulse(Vec3 const& impulse);
 	void Update_Gameplay();
 	void Update_Position();
+	RaycastResult3D RaycastVsPrecision(Vec3 startPos, Vec3 rayFwd, float raycastDist);
 
 	void SetActorHandle(ActorHandle* handle);
 	void SetAnimGroup(std::string animGroupName);

@@ -180,7 +180,6 @@ public:
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Player
-	Player* m_currentlyRenderedPlayer;
 	//Vec3* m_playerTranslationThisFrame;
 	bool m_isControllingBullet = false;
 	bool m_isRenderingPortal = false;

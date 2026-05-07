@@ -706,6 +706,11 @@ void Player::HandleInputs_Debug()
 
 void Player::HandleAACorrection()
 {
+	if (m_playerState != PlayerState::FIRSTPERSON) // We don't want aim assist to take over if not in first person.
+	{
+		return;
+	}
+
 	Actor* actor = GetActor();
 	if (actor != nullptr && m_isAimAssistActive)
 	{
@@ -716,7 +721,7 @@ void Player::HandleAACorrection()
 		newOrientation.m_rollDegrees = 0.f;
 		if (m_orientation.m_yawDegrees != newOrientation.m_yawDegrees)
 		{
-			float AAFraction = 1.f;
+			float AAFraction = 0.f;
 			switch (m_controlState)
 			{
 				case ControlState::CONTROLLER: AAFraction = m_map->m_game->m_controllerAA;

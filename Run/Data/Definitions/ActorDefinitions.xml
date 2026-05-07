@@ -58,7 +58,7 @@
   </ActorDefinition>
   <!-- Demon -->
   <ActorDefinition name="Demon" faction="Demon" health="80" canBePossessed="true" corpseLifetime="1.0" visible="true">
-    <Collision radius="0.35" height="0.85" collidesWithWorld="true" collidesWithActors="true"/>
+    <Collision radius="0.35" height="0.85" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.3f, 0.f, 0.5f" precisionRadius ="0.2f"/>
     <Physics simulated="true" walkSpeed="2.0f" runSpeed="5.0f" turnSpeed="180.0f" drag="9.0f" jumpHeight="11.5f"/>
     <Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
     <AI aiEnabled="true" aiType ="Melee" sightRadius="64.0" sightAngle="120.0"/>
@@ -107,7 +107,7 @@
   </ActorDefinition>
 	<!-- Dinosaur -->
 	<ActorDefinition name="Dinosaur" faction="Demon" health="110" canBePossessed="true" corpseLifetime="1.0" visible="true">
-		<Collision radius="0.4" height="1.1" collidesWithWorld="true" collidesWithActors="true"/>
+		<Collision radius="0.4" height="1.2" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.4f, 0.f, 1.1f" precisionRadius ="0.2f"/>
 		<Physics simulated="true" walkSpeed="2.5f" runSpeed="3.5f" turnSpeed="120.0f" drag="9.0f" jumpHeight="20.5f"/>
 		<Camera eyeHeight="0.85f" cameraFOV="100.0f"/>
 		<AI aiEnabled="true" aiType ="Ranged" sightRadius="80.0" sightAngle="120.0"/>
@@ -206,7 +206,7 @@
 	</ActorDefinition>
 	<!-- DevourerHead -->
 	<ActorDefinition name="DevourerHead" faction="Demon" health="1000" canBePossessed="true" corpseLifetime="1.0" visible="true">
-		<Collision radius="1.0f" height="1.0f" collidesWithWorld="false" collidesWithActors="false"/>
+		<Collision radius="1.0f" height="1.0f" collidesWithWorld="false" collidesWithActors="false" precisionOffset="0.f, 0.f, 0.f" precisionRadius ="1.f"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.85f" cameraFOV="130.0f"/>
 		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>

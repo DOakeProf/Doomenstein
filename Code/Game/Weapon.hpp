@@ -44,6 +44,7 @@ struct WeaponDefinition
 	float				m_rayRange;
 	FloatRange			m_rayDamage;
 	float				m_rayImpulse;
+	float				m_precisionMultiplier;
 
 	int					m_projectileCount;
 	std::string			m_projectileActor;

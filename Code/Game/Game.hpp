@@ -75,6 +75,7 @@ public:
 	Map* m_currentMap = nullptr;
 	Map* m_currentRiftMap = nullptr;
 	std::vector<Player*> m_players;
+	Player* m_currentlyRenderedPlayer;
 	BitmapFont* m_squirrelFont;
 
 	float m_hitStopTimer = 0.f;

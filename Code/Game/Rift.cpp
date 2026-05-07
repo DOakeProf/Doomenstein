@@ -33,7 +33,7 @@ void Rift::RenderRift(const Map* map)
 	g_engine->m_render->ClearTargetTextureDepthBuffer();
 
 	// Render Everything from the player's camera, but from the perspective of if it was in the rift map. 
-	g_engine->m_render->BeginCamera(map->m_currentlyRenderedPlayer->m_worldCamera);
+	g_engine->m_render->BeginCamera(map->m_game->m_currentlyRenderedPlayer->m_worldCamera);
 
 	Vec3 portalNormal = GetOrientation().GetForwardDir_IFwd_JLeft_KUp();
 	Vec3 portalLeft = GetOrientation().GetLeftDir_IFwd_JLeft_KUp();
@@ -41,7 +41,7 @@ void Rift::RenderRift(const Map* map)
 	Mat44 portalOrientationMatrix = GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
 	Vec4 portalPlane;
 
-	float playerDotPortal = DotProduct3D(portalNormal, map->m_currentlyRenderedPlayer->m_position - m_position);
+	float playerDotPortal = DotProduct3D(portalNormal, map->m_game->m_currentlyRenderedPlayer->m_position - m_position);
 
 	if (playerDotPortal < 0.f)
 	{
@@ -128,7 +128,7 @@ void Rift::RenderRift(const Map* map)
 	g_engine->m_render->BindTexture(map->m_game->m_riftStencilAnim->GetTexture());
 	g_engine->m_render->DrawVertexList(&m_vertexes);
 
-	g_engine->m_render->EndCamera(map->m_currentlyRenderedPlayer->m_worldCamera);
+	g_engine->m_render->EndCamera(map->m_game->m_currentlyRenderedPlayer->m_worldCamera);
 	g_engine->m_render->BeginCamera(map->m_game->m_screenCamera);
 
 	// Draw full screen quad only where stencil is drawn to
@@ -144,7 +144,7 @@ void Rift::RenderRift(const Map* map)
 	g_engine->m_render->DrawVertexList(&screenVerts);
 
 	g_engine->m_render->EndCamera(map->m_game->m_screenCamera);
-	g_engine->m_render->BeginCamera(map->m_currentlyRenderedPlayer->m_worldCamera);
+	g_engine->m_render->BeginCamera(map->m_game->m_currentlyRenderedPlayer->m_worldCamera);
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	// Set rendering modes and shaders back to default

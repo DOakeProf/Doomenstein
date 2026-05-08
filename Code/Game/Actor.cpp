@@ -223,13 +223,13 @@ void Actor::Render()
 			m_verts[2].m_uvTexCoords = spriteUVs.m_maxs;
 			m_verts[3].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
 		}
-	}
+		g_engine->m_render->BindTexture(m_definition->m_spriteSheet->GetTexture());
 
-	g_engine->m_render->BindShader(m_definition->m_shader);
-	g_engine->m_render->SetModelConstants(GetModelMatrixBillboarded());
-	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
-	g_engine->m_render->BindTexture(m_definition->m_spriteSheet->GetTexture());
-	g_engine->m_render->DrawIndexedVertexList(&m_verts, &m_vertexIndexes, m_map->GetVertexBuffer(), m_map->GetIndexBuffer());
+		g_engine->m_render->BindShader(m_definition->m_shader);
+		g_engine->m_render->SetModelConstants(GetModelMatrixBillboarded());
+		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+		g_engine->m_render->DrawIndexedVertexList(&m_verts, &m_vertexIndexes, m_map->GetVertexBuffer(), m_map->GetIndexBuffer());
+	}
 
 	if (g_app->IsDebug())
 	{

@@ -8,6 +8,8 @@
 
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/RandomNumberGenerator.hpp"
+#include "Engine/VertexUtils.hpp"
+#include "Engine/Renderer/Texture.hpp"
 
 DOG::DOG(Map* map)
 	: m_map(map)
@@ -21,7 +23,12 @@ DOG::DOG(Map* map)
 		m_segments.push_back(m_map->SpawnActor(bodySpawnInfo));
 	}
 
+	SpawnInfo tailSpawnInfo = SpawnInfo("DevourerBody", Vec3(-5.f, -5.f, 0.f), EulerAngles());
+	m_tail = m_map->SpawnActor(tailSpawnInfo);
+
 	ChooseInitialSpline();
+
+	m_bodyTexture = g_engine->m_render->CreateOrGetTextureFromFile("Data/Images/DOGBody.png");
 }
 
 DOG::~DOG()
@@ -48,6 +55,47 @@ void DOG::Update()
 		{
 			curSegment->m_position = prevSegment->m_position + prevToCur.GetNormalized() * m_followDistance;
 		}
+	}
+}
+
+void DOG::Render() const
+{
+	std::vector<Vertex_PCUTBN> localVerts;
+	std::vector<unsigned int> localIndexes;
+
+	float devourerSize = 2.5f;
+
+	Vec3 BL1 = Vec3(devourerSize, devourerSize, 0.f);
+	Vec3 BR1 = Vec3(devourerSize, -devourerSize, 0.f);
+	Vec3 TR1 = Vec3(0.f, -devourerSize, 0.f);
+	Vec3 TL1 = Vec3(0.f, devourerSize, 0.f);
+
+	Vec3 BL2 = Vec3(devourerSize, 0.f, devourerSize);
+	Vec3 BR2 = Vec3(devourerSize, 0.f, -devourerSize);
+	Vec3 TR2 = Vec3(0.f, 0.f, -devourerSize);
+	Vec3 TL2 = Vec3(0.f, 0.f, devourerSize);
+
+	g_engine->m_render->BindTexture(m_bodyTexture);
+	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	g_engine->m_render->BindShader(m_head->m_definition->m_shader);
+	for (int bodyIndex = 1; bodyIndex < m_segments.size(); ++bodyIndex)
+	{
+		localVerts.clear();
+		localIndexes.clear();
+		Actor* curSegment = m_segments[bodyIndex];
+		Actor* prevSegment = m_segments[bodyIndex - 1];
+
+		AddVertsForRoundedQuad3D(localVerts, localIndexes, BL1, BR1, TR1, TL1);
+		AddVertsForRoundedQuad3D(localVerts, localIndexes, BL2, BR2, TR2, TL2);
+
+		// Render from prev to cur
+		Vec3 prevToCur = curSegment->m_position - prevSegment->m_position;
+		Mat44 prevToCurDirection = Mat44();
+		prevToCurDirection.AppendTranslation3D(prevSegment->m_position + Vec3(0.f, 0.f, prevSegment->m_definition->m_height * 0.5f));
+		prevToCurDirection.SetIJK3D(prevToCur.GetNormalized(), Vec3(0.f, 1.f, 0.f), Vec3(0.f, 0.f, 1.f));
+		prevToCurDirection.Orthonormalize_XFwd_YLeft_ZUp();
+		g_engine->m_render->SetModelConstants(prevToCurDirection);
+		g_engine->m_render->DrawIndexedVertexList(&localVerts, &localIndexes);
 	}
 }
 
@@ -101,11 +149,11 @@ void DOG::ChooseNextSpline()
 
 Vec3 DOG::FindRandomVec3()
 {
-	float maxVertical = 8.f;
-	float maxHorizontal = 40.f;
+	float maxVertical = 30.f;
+	float maxHorizontal = 100.f;
 
-	float horizontalDisplacement = 30.f;
-	float verticalDisplacement = 7.f;
+	float horizontalDisplacement = 40.f;
+	float verticalDisplacement = 15.f;
 
 	Vec3 randomVec3 = Vec3(
 		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(GetClamped(m_head->m_position.x - horizontalDisplacement, -maxHorizontal, maxHorizontal), GetClamped(m_head->m_position.x + horizontalDisplacement, -maxHorizontal, maxHorizontal)),

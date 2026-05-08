@@ -564,7 +564,7 @@ SpawnInfo const& Map::GetSpawnInfoForGrounded()
 
 SpawnInfo const& Map::GetSpawnInfoForFlying()
 {
-	int maxEnemySpawnIndex = m_flyingEnemySpawnPoints.size() - 1;
+	int maxEnemySpawnIndex = (int)m_flyingEnemySpawnPoints.size() - 1;
 	int randomEnemySpawnIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, maxEnemySpawnIndex);
 	Actor* spawnPoint = m_flyingEnemySpawnPoints[randomEnemySpawnIndex];
 	return SpawnInfo("", spawnPoint->m_position, spawnPoint->m_orientation);
@@ -1491,6 +1491,7 @@ void Map::Render_World() const
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
 	Render_Actors();
+	m_DOG->Render();
 	g_engine->m_render->SetModelConstants(Mat44());
 	Render_Tiles();
 

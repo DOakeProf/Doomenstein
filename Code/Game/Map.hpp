@@ -55,6 +55,18 @@ struct MapDefinition
 	Texture* m_skyboxTexture = nullptr;
 	bool m_isSkyboxCylinder = false;
 
+	// Spawning
+	float m_secondsUntilNextWave = -1.f;
+	int m_enemiesPerWave = -1;
+	int m_maxEnemies = -1;
+	struct Enemy
+	{
+		std::string m_name;
+		float m_weight;
+		std::string m_type;
+	};
+	std::vector<Enemy*> m_enemies;
+
 	static void InitializeDefinitions(const char* path);
 	static void ClearDefinitions();
 	static const MapDefinition* GetByName(const std::string& name);
@@ -118,6 +130,8 @@ public:
 	bool AreActorsSameFaction(Actor* actorA, Actor* actorB);
 	VertexBuffer* GetVertexBuffer();
 	IndexBuffer* GetIndexBuffer();
+	SpawnInfo const& GetSpawnInfoForGrounded();
+	SpawnInfo const& GetSpawnInfoForFlying();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Utility functions
@@ -126,6 +140,8 @@ public:
 	Actor* SpawnActor(const char* actorName, Vec3 position, EulerAngles orientation, float size = 1.f);
 	Actor* SpawnPlayer(Player* player);
 	Actor* SpawnPlayerInitial(Player* player, Vec3& position);
+	void SpawnWave();
+	void SpawnEnemy();
 	void RemoveActorFromMap(Actor* actor);
 	void AddPortal(Portal* portal);
 	void RemovePortal(Portal* portal);
@@ -213,9 +229,12 @@ protected:
 	std::vector<Tile> m_tiles;
 	std::vector<Actor*> m_actors;
 	std::vector<Actor*> m_spawnPoints;
+	std::vector<Actor*> m_enemySpawnPoints;
+	std::vector<Actor*> m_flyingEnemySpawnPoints;
 	std::vector<Actor*> m_riftPointMains;
 	std::vector<Actor*> m_riftPointRandoms;
 	std::vector<Portal*> m_portals;
+	Timer* m_nextWaveTimer;
 	unsigned int m_nextActorUID = 0;
 	Actor* m_bulletActor;
 	DOG* m_DOG;

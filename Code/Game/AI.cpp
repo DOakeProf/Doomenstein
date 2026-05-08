@@ -6,12 +6,21 @@
 
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Core/Clock.hpp"
+#include "Engine/Math/RandomNumberGenerator.hpp"
+#include "Engine/Core/Timer.hpp"
 
 AI::AI(Map* map, AIType aiType)
 	: Controller(map)
 	, m_type(aiType)
 {
+	Startup();
+}
 
+void AI::Startup()
+{
+	m_randomPatrolTimer = new Timer(2.f, m_map->m_game->m_gameClock);
+	m_randomPatrolTimer->Start();
+	ChooseNewPatrolDirection();
 }
 
 void AI::DamagedBy(ActorHandle* otherActor)
@@ -21,6 +30,12 @@ void AI::DamagedBy(ActorHandle* otherActor)
 
 void AI::Update()
 {
+	if (m_randomPatrolTimer->DecrementPeriodIfElapsed())
+	{
+		ChooseNewPatrolDirection();
+		m_randomPatrolTimer->m_period = m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(1.5f, 6.f);
+	}
+
 	switch (m_type)
 	{
 		case AIType::MELEE: Update_Melee(); break;
@@ -74,13 +89,28 @@ void AI::Update_Melee()
 				float angleBetweenVectors2D = GetShortestAngularDispDegrees(angleOfSelfToOther2D, angleOfForwardVector2D);
 				float maxTurnSpeedThisFrame = actor->m_definition->m_turnSpeed * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 				actor->m_orientation.m_yawDegrees -= GetClamped(angleBetweenVectors2D, -maxTurnSpeedThisFrame, maxTurnSpeedThisFrame);
-
-				RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
-				if (result.m_didImpact)
-				{
-					actor->Jump();
-				}
 			}
+		}
+		else if (m_map == m_map->m_game->m_currentRiftMap) // Move into portal
+		{
+			MoveTowardNearestRift();
+		}
+		else // Move away from portal / Pathfind.
+		{
+			bool didMoveAway = MoveAwayFromRifts();
+
+			if (!didMoveAway)
+			{
+				actor->MoveInDirection(m_randomPatrolDirection, actor->m_definition->m_walkSpeed);
+				actor->TurnInDirection(m_randomPatrolDirection.GetOrientationAboutZDegrees(), actor->m_definition->m_turnSpeed);
+			}
+		}
+
+		Vec3 forwardVector = actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp();
+		RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
+		if (result.m_didImpact)
+		{
+			actor->Jump();
 		}
 	}
 }
@@ -136,13 +166,28 @@ void AI::Update_Ranged()
 				Vec3 selfToOtherActorPitch = (otherActor->m_position + Vec3(0.f, 0.f, otherActor->m_definition->m_eyeHeight)) - (actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight));
 				Vec3 selfToOtherActorPitchNormalized = selfToOtherActorPitch.GetNormalized();
 				actor->m_orientation.m_pitchDegrees = -AsinDegrees(DotProduct3D(selfToOtherActorPitchNormalized, Vec3(0.f, 0.f, 1.f)));
-
-				RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
-				if (result.m_didImpact)
-				{
-					actor->Jump();
-				}
 			}
+		}
+		else if (m_map == m_map->m_game->m_currentRiftMap) // Move into portal
+		{
+			MoveTowardNearestRift();
+		}
+		else // Move away from portal / Pathfind.
+		{
+			bool didMoveAway = MoveAwayFromRifts();
+
+			if (!didMoveAway)
+			{
+				actor->MoveInDirection(m_randomPatrolDirection, actor->m_definition->m_walkSpeed);
+				actor->TurnInDirection(m_randomPatrolDirection.GetOrientationAboutZDegrees(), actor->m_definition->m_turnSpeed);
+			}
+		}
+
+		Vec3 forwardVector = actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp();
+		RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
+		if (result.m_didImpact)
+		{
+			actor->Jump();
 		}
 	}
 }
@@ -184,6 +229,70 @@ void AI::Update_FindTargetActor()
 			}
 		}
 	}
+}
+
+void AI::MoveTowardNearestRift()
+{
+	Actor* actor = GetActor();
+
+	Rift* nearestRift = nullptr;
+	float nearestRiftDist = 100.f;
+	for (Rift* rift : s_rifts)
+	{
+		float distTowardRift = (rift->GetPosition() - GetActor()->m_position).GetLength();
+		if (distTowardRift < nearestRiftDist)
+		{
+			nearestRift = rift;
+			nearestRiftDist = distTowardRift;
+		}
+	}
+
+	if (nearestRift != nullptr)
+	{
+		Vec3 actorToRift = (nearestRift->GetPosition() - actor->m_position);
+		actorToRift.z = 0.f;
+		actor->MoveInDirection(actorToRift.GetNormalized(), actor->m_definition->m_runSpeed);
+		actor->TurnInDirection(actorToRift.GetOrientationAboutZDegrees(), actor->m_definition->m_turnSpeed);
+	}
+}
+
+bool AI::MoveAwayFromRifts()
+{
+	Actor* actor = GetActor();
+
+	Rift* nearestRift = nullptr;
+	float nearestRiftDist = 100.f;
+	for (Rift* rift : s_rifts)
+	{
+		float distTowardRift = (rift->GetPosition() - GetActor()->m_position).GetLength();
+		if (distTowardRift < nearestRiftDist)
+		{
+			nearestRift = rift;
+			nearestRiftDist = distTowardRift;
+		}
+	}
+
+	if (nearestRift != nullptr)
+	{
+		Vec3 actorToRift = nearestRift->GetPosition() - actor->m_position;
+		actorToRift.z = 0.f;
+		if (actorToRift.GetLength() < 3.f)
+		{
+			actor->MoveInDirection(-actorToRift.GetNormalized(), actor->m_definition->m_runSpeed);
+			actor->TurnInDirection(-actorToRift.GetOrientationAboutZDegrees(), actor->m_definition->m_turnSpeed);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void AI::ChooseNewPatrolDirection()
+{
+	float randomDirectionDegree = m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(0.f, 360.f);
+	Vec3 newRandomDirection = Vec3(1.f, 0.f, 0.f);
+	newRandomDirection = newRandomDirection.GetRotatedAboutZDegrees(randomDirectionDegree);
+	m_randomPatrolDirection = newRandomDirection;
 }
 
 void AI::Possess(ActorHandle* handle)

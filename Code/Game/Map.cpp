@@ -68,6 +68,12 @@ void Map::Startup()
 
 	m_clipPlaneCBO = new ConstantBuffer(g_engine->m_render->GetDevice(), sizeof(ClipPlaneConstants));
 	m_portalAABB3CBO = new ConstantBuffer(g_engine->m_render->GetDevice(), sizeof(PortalAABB3Constants));
+
+	if (m_definition->m_secondsUntilNextWave != -1.f)
+	{
+		m_nextWaveTimer = new Timer(m_definition->m_secondsUntilNextWave, m_game->m_gameClock);
+		m_nextWaveTimer->Start();
+	}
 }
 
 void Map::Startup_InitializePlayers()
@@ -116,6 +122,22 @@ void Map::Startup_InitializeActors()
 	}
 	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
 	{
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "EnemySpawnPoint")
+		{
+			Actor* spawnPoint = SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
+			m_enemySpawnPoints.push_back(spawnPoint);
+		}
+	}
+	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
+	{
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "FlyingEnemySpawnPoint")
+		{
+			Actor* spawnPoint = SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
+			m_flyingEnemySpawnPoints.push_back(spawnPoint);
+		}
+	}
+	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
+	{
 		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "RiftPointMain")
 		{
 			Actor* spawnPoint = SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
@@ -133,9 +155,11 @@ void Map::Startup_InitializeActors()
 	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
 	{
 		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name != "SpawnPoint" && 
+			m_definition->m_spawnInfos[spawnInfoIndex].m_name != "EnemySpawnPoint" &&
+			m_definition->m_spawnInfos[spawnInfoIndex].m_name != "FlyingEnemySpawnPoint" &&
 			m_definition->m_spawnInfos[spawnInfoIndex].m_name != "Marine" &&
 			m_definition->m_spawnInfos[spawnInfoIndex].m_name != "RiftPointMain" &&
-			m_definition->m_spawnInfos[spawnInfoIndex].m_name != "RiftPointRandom")
+			m_definition->m_spawnInfos[spawnInfoIndex].m_name != "RiftPointRandom") 
 		{
 			SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
 		}
@@ -530,6 +554,22 @@ IndexBuffer* Map::GetIndexBuffer()
 	return m_indexBuffer;
 }
 
+SpawnInfo const& Map::GetSpawnInfoForGrounded()
+{
+	int maxEnemySpawnIndex = (int)m_enemySpawnPoints.size() - 1;
+	int randomEnemySpawnIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, maxEnemySpawnIndex);
+	Actor* spawnPoint = m_enemySpawnPoints[randomEnemySpawnIndex];
+	return SpawnInfo("", spawnPoint->m_position, spawnPoint->m_orientation);
+}
+
+SpawnInfo const& Map::GetSpawnInfoForFlying()
+{
+	int maxEnemySpawnIndex = m_flyingEnemySpawnPoints.size() - 1;
+	int randomEnemySpawnIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, maxEnemySpawnIndex);
+	Actor* spawnPoint = m_flyingEnemySpawnPoints[randomEnemySpawnIndex];
+	return SpawnInfo("", spawnPoint->m_position, spawnPoint->m_orientation);
+}
+
 int Map::AddActorToMap(Actor* actor)
 {
 	// Add actor and store index
@@ -634,6 +674,61 @@ Actor* Map::SpawnPlayerInitial(Player* player, Vec3& position)
 	return nullptr;
 }
 
+void Map::SpawnWave()
+{
+	int numEnemies = 0;
+	for (Actor* actor : m_actors)
+	{
+		if (actor != nullptr && actor->m_definition->m_faction == "Demon" && actor->m_definition->m_canBePossessed)
+		{
+			++numEnemies;
+		}
+	}
+	for (Actor* actor : m_riftMap->m_actors)
+	{
+		if (actor != nullptr && actor->m_definition->m_faction == "Demon" && actor->m_definition->m_canBePossessed)
+		{
+			++numEnemies;
+		}
+	}
+
+	int enemySlotsLeftToFill = m_definition->m_maxEnemies - numEnemies;
+	for (int spawnEnemyIndex = 0; spawnEnemyIndex < enemySlotsLeftToFill && spawnEnemyIndex < m_definition->m_enemiesPerWave; ++spawnEnemyIndex)
+	{
+		SpawnEnemy();
+	}
+}
+
+void Map::SpawnEnemy()
+{
+	float totalWeightNumber = 0.f;
+	for (MapDefinition::Enemy* enemy : m_definition->m_enemies)
+	{
+		totalWeightNumber += enemy->m_weight;
+	}
+	float randomNumber = m_game->m_randomNumberGenerator->RollRandomFloatInRange(0.f, totalWeightNumber);
+
+	for (MapDefinition::Enemy* enemy : m_definition->m_enemies)
+	{
+		if (randomNumber <= enemy->m_weight)
+		{
+			SpawnInfo spawnInfo;
+			if (enemy->m_type == "Grounded")
+			{
+				spawnInfo = GetSpawnInfoForGrounded();
+			}
+			else if (enemy->m_type == "Flying")
+			{
+				spawnInfo = GetSpawnInfoForFlying();
+			}
+			spawnInfo.m_name = enemy->m_name;
+			SpawnActor(spawnInfo);
+			break;
+		}
+		randomNumber -= enemy->m_weight;
+	}
+}
+
 void Map::RemoveActorFromMap(Actor* actor)
 {
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
@@ -691,7 +786,16 @@ void Map::RemovePortal(Portal* portal)
 			return;
 		}
 	}
-	ERROR_AND_DIE("Attempted to remove portal that wasn't in map.");
+	for (int portalIndex = 0; portalIndex < m_riftMap->m_portals.size(); ++portalIndex)
+	{
+		Portal* portalToCheck = m_riftMap->m_portals[portalIndex];
+		if (portal == portalToCheck)
+		{
+			delete portalToCheck;
+			m_riftMap->m_portals[portalIndex] = nullptr;
+			return;
+		}
+	}
 }
 
 void Map::Update()
@@ -703,9 +807,9 @@ void Map::Update()
 		return;
 	}
 
-	if (g_engine->m_input->WasKeyJustPressed('K'))
+	if (m_definition->m_secondsUntilNextWave != -1.f && m_nextWaveTimer->DecrementPeriodIfElapsed())
 	{
-		Debug_KillAllActors();
+		SpawnWave();
 	}
 
 	Update_AddDebugScreenText();
@@ -1547,11 +1651,11 @@ RaycastResultDoomenstein Map::RaycastAll(const Vec3& start, const Vec3& directio
 
 		if (result.m_portal->GetOrientation().GetForwardDir_IFwd_JLeft_KUp().z != 0.f) // Is a horizontal portal
 		{
-			result = RaycastAll(newStart + result.m_portal->GetOtherPortal()->GetOrientation().GetForwardDir_IFwd_JLeft_KUp() * -0.01f, newDirection.GetForwardDir_IFwd_JLeft_KUp(), distance - result.m_impactDist);
+			result = RaycastAll(newStart - result.m_portal->GetOtherPortal()->GetOrientation().GetForwardDir_IFwd_JLeft_KUp() * 0.01f, newDirection.GetForwardDir_IFwd_JLeft_KUp(), distance - result.m_impactDist);
 		}
 		else
 		{
-			result = RaycastAll(newStart + result.m_portal->GetOtherPortal()->GetOrientation().GetForwardDir_IFwd_JLeft_KUp() * 0.01f, newDirection.GetForwardDir_IFwd_JLeft_KUp(), distance - result.m_impactDist);
+			result = RaycastAll(newStart - result.m_portal->GetOtherPortal()->GetOrientation().GetForwardDir_IFwd_JLeft_KUp() * 0.01f, newDirection.GetForwardDir_IFwd_JLeft_KUp(), distance - result.m_impactDist);
 		}
 	}
 
@@ -1846,6 +1950,24 @@ void MapDefinition::InitializeDefinitions(const char* path)
 			std::string mapImagePath = ParseXmlAttribute(*MapImageElement, "image", "");
 			newMapDef->m_mapImages.push_back(new Image(mapImagePath.data()));
 			MapImageElement = MapImageElement->NextSiblingElement();
+		}
+
+		XmlElement* enemySpawning = mapDefElement->FirstChildElement("EnemySpawning");
+		if (enemySpawning != nullptr)
+		{
+			newMapDef->m_secondsUntilNextWave = ParseXmlAttribute(*enemySpawning, "secondsUntilNextWave", -1.f);
+			newMapDef->m_enemiesPerWave = ParseXmlAttribute(*enemySpawning, "enemiesPerWave", -1);
+			newMapDef->m_maxEnemies = ParseXmlAttribute(*enemySpawning, "maxEnemies", -1);
+			XmlElement* enemyElement = enemySpawning->FirstChildElement();
+			while (enemyElement)
+			{
+				Enemy* newEnemy = new Enemy();
+				newEnemy->m_name = ParseXmlAttribute(*enemyElement, "name", "");
+				newEnemy->m_weight = ParseXmlAttribute(*enemyElement, "weight", -1.f);
+				newEnemy->m_type = ParseXmlAttribute(*enemyElement, "type", "");
+				newMapDef->m_enemies.push_back(newEnemy);
+				enemyElement = enemyElement->NextSiblingElement();
+			}
 		}
 
 		XmlElement* mapSpawnInfos = mapDefElement->FirstChildElement("SpawnInfos");

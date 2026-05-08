@@ -41,22 +41,7 @@
 	
 	<MapDefinition name="Overworld" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8" skyboxTexture="Data/Images/Clouds4.png" isSkyboxCylinder="true">
 		<SpawnInfos>
-			<SpawnInfo actor="Marine" position="4.5,18.5,1.0" orientation="270.0,0.0,0.0" />
 			<SpawnInfo actor="SpawnPoint" position="26.5,15.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="27.5,15.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="28.5,15.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="29.5,15.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint"  position="30.5,15.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="1.5,15.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="4.0,15.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="6.5,15.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="26.5,10.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="29.5,10.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Dinosaur" position="24.5,10.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Dinosaur" position="24.5,11.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Dinosaur" position="24.5,12.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Dinosaur" position="24.5,13.5,1.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Dinosaur" position="24.5,14.5,1.0" orientation="270.0,0.0,0.0" />
 
 			<SpawnInfo actor="RiftPointMain" position="6.0,12.0,4.75" orientation="45.0,0.0,0.0" />
 			<SpawnInfo actor="RiftPointMain" position="47.0,60.0,9.75" orientation="270.0,0.0,0.0" />
@@ -91,18 +76,45 @@
 	</MapDefinition>
 	
 	<MapDefinition name="DOGDimension" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8" skyboxTexture="Data/Images/DOGBackground.png" isSkyboxCylinder="false">
+		<EnemySpawning secondsUntilNextWave="10.f" enemiesPerWave="7" maxEnemies="30">
+			<enemy name="Dinosaur" weight="1.f" type="Grounded"/>
+			<enemy name="Demon" weight="2.f" type="Grounded"/>
+		</EnemySpawning>
 		<SpawnInfos>
-			<SpawnInfo actor="Marine" position="4.5,18.5,0.0" orientation="270.0,0.0,0.0" />
 			<SpawnInfo actor="SpawnPoint" position="26.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="27.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="28.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint" position="29.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="SpawnPoint"  position="30.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="1.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="4.0,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="6.5,15.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="26.5,10.5,0.0" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Demon" position="29.5,10.5,0.0" orientation="270.0,0.0,0.0" />
+
+			<SpawnInfo actor="EnemySpawnPoint" position="13.5,8.5,2.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="4.5,24.5,3.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="14.5,15.5,3.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="11.5,12.5,2.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="6.5,5.5,2.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="12.5,7.5,2.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="10.5,19.5,3.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="65.5,13.5,21.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="72.5,24.5,21.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="61.5,29.5,21.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="49.5,20.5,21.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="49.5,32.5,20.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="62.5,38.5,20.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="50.5,32.5,4.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="40.5,45.5,4.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="32.5,42.5,4.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="29.5,52.5,5.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="45.5,50.5,5.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="30.5,64.5,6.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="43.5,65.5,7.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="53.5,51.5,8.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="EnemySpawnPoint" position="64.5,45.5,9.0" orientation="270.0,0.0,0.0" />
+
+			<SpawnInfo actor="FlyingEnemySpawnPoint" position="66.5,30.5,28.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="FlyingEnemySpawnPoint" position="48.5,20.5,31.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="FlyingEnemySpawnPoint" position="67.5,13.5,27.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="FlyingEnemySpawnPoint" position="36.5,43.5,12.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="FlyingEnemySpawnPoint" position="31.5,67.5,12.5" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="FlyingEnemySpawnPoint" position="59.0,48.0,16.5" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="FlyingEnemySpawnPoint" position="29.5,30.5,9.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="FlyingEnemySpawnPoint" position="13.5,53.0,10.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="FlyingEnemySpawnPoint" position="42.5,18.0,11.0" orientation="270.0,0.0,0.0" />
 		</SpawnInfos>
 		<MapImages>
 			<MapImage image="Data/Maps/DOG0.png"/>

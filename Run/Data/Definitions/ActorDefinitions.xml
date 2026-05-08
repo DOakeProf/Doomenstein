@@ -1,12 +1,14 @@
 <Definitions>
   <!-- SpawnPoint -->
   <ActorDefinition name="SpawnPoint" />
+  <ActorDefinition name="EnemySpawnPoint" />
+  <ActorDefinition name="FlyingEnemySpawnPoint" />
   <!-- RiftPoint -->
   <ActorDefinition name="RiftPointMain" />
   <ActorDefinition name="RiftPointRandom" />
   <!-- Marine -->
   <ActorDefinition name="Marine" faction="Marine" health="100" canBePossessed="true" corpseLifetime="2.0" visible="true">
-    <Collision radius="0.35" height="0.72" collidesWithWorld="true" collidesWithActors="true"/>
+    <Collision radius="0.35" height="0.72" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.1f, 0.f, 0.8f" precisionRadius ="0.15f"/>
     <Physics simulated="true" walkSpeed="3.0f" runSpeed="6.0f" turnSpeed="220.0f" drag="9.0f" jumpHeight="15.5f"/>
     <Camera eyeHeight="0.65" cameraFOV="60.0f"/>
     <Visuals size="1.8,1.8" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Marine_7x9.png" cellCount="7,9">
@@ -61,7 +63,7 @@
     <Collision radius="0.35" height="0.85" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.3f, 0.f, 0.5f" precisionRadius ="0.2f"/>
     <Physics simulated="true" walkSpeed="2.0f" runSpeed="5.0f" turnSpeed="180.0f" drag="9.0f" jumpHeight="11.5f"/>
     <Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
-    <AI aiEnabled="true" aiType ="Melee" sightRadius="64.0" sightAngle="120.0"/>
+    <AI aiEnabled="true" aiType ="Melee" sightRadius="10.0" sightAngle="120.0"/>
     <Visuals size="2.1,2.1" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Pinky_8x9.png" cellCount="8,9">
       <AnimationGroup name="Walk" scaleBySpeed="true" secondsPerFrame="0.25" playbackMode="Loop">
         <Direction vector="-1,0,0"><Animation startFrame="0" endFrame="3"/></Direction>
@@ -110,7 +112,7 @@
 		<Collision radius="0.4" height="1.2" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.4f, 0.f, 1.1f" precisionRadius ="0.2f"/>
 		<Physics simulated="true" walkSpeed="2.5f" runSpeed="3.5f" turnSpeed="120.0f" drag="9.0f" jumpHeight="20.5f"/>
 		<Camera eyeHeight="0.85f" cameraFOV="100.0f"/>
-		<AI aiEnabled="true" aiType ="Ranged" sightRadius="80.0" sightAngle="120.0"/>
+		<AI aiEnabled="true" aiType ="Ranged" sightRadius="20.0" sightAngle="120.0"/>
 		<Visuals size="1.8,1.8" pivot="0.45,0.25" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Actor_Varg_8x13.png" cellCount="8,13">
 			<AnimationGroup name="Walk" scaleBySpeed="true" secondsPerFrame="0.125" playbackMode="Loop">
 				<Direction vector="-1,0,0">
@@ -205,7 +207,7 @@
 		</Inventory>
 	</ActorDefinition>
 	<!-- DevourerHead -->
-	<ActorDefinition name="DevourerHead" faction="Demon" health="1000" canBePossessed="true" corpseLifetime="1.0" visible="true">
+	<ActorDefinition name="DevourerHead" faction="DOG" health="1000" canBePossessed="true" corpseLifetime="1.0" visible="true">
 		<Collision radius="1.0f" height="1.0f" collidesWithWorld="false" collidesWithActors="false" precisionOffset="0.f, 0.f, 0.f" precisionRadius ="1.f"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.85f" cameraFOV="130.0f"/>
@@ -304,7 +306,7 @@
 		</Inventory>
 	</ActorDefinition>
 	<!-- DevourerBody -->
-	<ActorDefinition name="DevourerBody" faction="Demon" health="-1" canBePossessed="false" corpseLifetime="1.0" visible="true">
+	<ActorDefinition name="DevourerBody" faction="DOG" health="-1" canBePossessed="false" corpseLifetime="1.0" visible="true">
 		<Collision radius="1.0f" height="1.0f" collidesWithWorld="false" collidesWithActors="false"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>

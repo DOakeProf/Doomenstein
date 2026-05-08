@@ -152,6 +152,11 @@ void Actor::Update()
 	}
 	ClearStoppedPlaybackID();
 
+	if (m_position.z <= -2.f)
+	{
+		//Die();
+	}
+
 	m_isGrounded = false;
 }
 

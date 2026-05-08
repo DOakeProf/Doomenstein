@@ -19,7 +19,7 @@
 	controllerSensitivity = "1.f"
 	moveSpeed = "1.f"
 	
-	controllerAA = "0.8f"
+	controllerAA = "0.6f"
 	mouseAA = "0.1f"
 />
 <!--

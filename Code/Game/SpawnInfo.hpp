@@ -6,6 +6,7 @@
 
 struct SpawnInfo
 {
+	SpawnInfo() = default;
 	SpawnInfo(std::string name, Vec3 position, EulerAngles orientation, float size = 1.f);
 	~SpawnInfo() = default;
 

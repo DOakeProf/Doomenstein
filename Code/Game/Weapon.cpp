@@ -508,7 +508,7 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 			{
 				if (m_rightPortal != nullptr)
 				{
-					m_map->RemovePortal(m_rightPortal);
+					actor->m_map->RemovePortal(m_rightPortal);
 					m_rightPortal = nullptr;
 				}
 				//Vec3 portalPosition = actor->m_position + actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp() * 1.f;
@@ -516,7 +516,7 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 				PushImpactPointToFitSurface(result);
 
 				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001f;
-				m_rightPortal = new Portal(m_map, portalPosition, EulerAngles(), m_definition->m_portalHeight, m_definition->m_portalWidth);
+				m_rightPortal = new Portal(actor->m_map, portalPosition, EulerAngles(), m_definition->m_portalHeight, m_definition->m_portalWidth);
 				m_rightPortal->m_isFlipped = true;
 
 				Vec3 inverseImpactNormal = result.m_impactNormal * -1.f; // Flip the right portal so that it is directing towards the surface its on. This will make the link between both portals shoot things that are entering away from the walls instead of towards them.
@@ -562,7 +562,7 @@ void Weapon::AlternateFire_PortalGun(Actor* actor)
 					m_leftPortal->AssignPortal(m_rightPortal);
 				}
 
-				m_map->AddPortal(m_rightPortal);
+				actor->m_map->AddPortal(m_rightPortal);
 			}
 		}
 	}
@@ -792,10 +792,10 @@ void Weapon::Fire_Weapon(Actor* actor)
 				}
 
 				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
-				m_map->SpawnActor("BloodSplatter", result.m_impactPos, EulerAngles());
+				result.m_actor->m_map->SpawnActor("BloodSplatter", result.m_impactPos, EulerAngles());
 
 				// Damage Number
-				Actor* damageNumber = m_map->SpawnActor("DamageNumber", result.m_impactPos + ( -randomDirection * 0.1f), EulerAngles(), RangeMap(RandomDamage, 10.f, 100.f, 1.f, 4.f));
+				Actor* damageNumber = result.m_actor->m_map->SpawnActor("DamageNumber", result.m_impactPos + ( -randomDirection * 0.1f), EulerAngles(), RangeMap(RandomDamage, 10.f, 100.f, 1.f, 4.f));
 				if (precisionResult.m_didImpact)
 				{
 					damageNumber->m_color = Rgba8(200, 200, 100, 255);
@@ -815,7 +815,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 			}
 			else
 			{
-				m_map->SpawnActor("BulletHit", result.m_impactPos, EulerAngles());
+				actor->m_map->SpawnActor("BulletHit", result.m_impactPos, EulerAngles());
 			}
 		}
 	}
@@ -834,11 +834,11 @@ void Weapon::Fire_Weapon(Actor* actor)
 	}
 	if (m_definition->m_meleeCount != -1)
 	{
-		std::vector<Actor*> actors = m_map->GetActors();
+		std::vector<Actor*> actors = actor->m_map->GetActors();
 		for (int actorIndex = 0; actorIndex < actors.size(); ++actorIndex)
 		{
 			Actor* currentActor = actors[actorIndex];
-			bool isActorSameFaction = m_map->AreActorsSameFaction(actor, currentActor);
+			bool isActorSameFaction = actor->m_map->AreActorsSameFaction(actor, currentActor);
 
 			if (currentActor != nullptr && currentActor != actor && !isActorSameFaction)
 			{
@@ -876,7 +876,7 @@ void Weapon::Fire_PortalGun(Actor* actor)
 			{
 				if (m_leftPortal != nullptr)
 				{
-					m_map->RemovePortal(m_leftPortal);
+					actor->m_map->RemovePortal(m_leftPortal);
 					m_leftPortal = nullptr;
 				}
 				//Vec3 portalPosition = actor->m_position + actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp() * 1.f;
@@ -884,7 +884,7 @@ void Weapon::Fire_PortalGun(Actor* actor)
 				PushImpactPointToFitSurface(result);
 
 				Vec3 portalPosition = result.m_impactPos + result.m_impactNormal * 0.0001f;
-				m_leftPortal = new Portal(m_map, portalPosition, EulerAngles(), m_definition->m_portalHeight, m_definition->m_portalWidth);
+				m_leftPortal = new Portal(actor->m_map, portalPosition, EulerAngles(), m_definition->m_portalHeight, m_definition->m_portalWidth);
 				
 				if (result.m_impactNormal.z == 0.f) // If the impact normal is horizontal
 				{
@@ -928,7 +928,7 @@ void Weapon::Fire_PortalGun(Actor* actor)
 					m_rightPortal->AssignPortal(m_leftPortal);
 				}
 
-				m_map->AddPortal(m_leftPortal);
+				actor->m_map->AddPortal(m_leftPortal);
 			}
 		}
 	}

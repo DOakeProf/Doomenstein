@@ -724,8 +724,8 @@ void Player::HandleAACorrection()
 			float AAFraction = 0.f;
 			switch (m_controlState)
 			{
-				case ControlState::CONTROLLER: AAFraction = m_map->m_game->m_controllerAA;
-				case ControlState::KEYBOARD: AAFraction = m_map->m_game->m_mouseAA;
+				case ControlState::CONTROLLER: AAFraction = m_map->m_game->m_controllerAA; break;
+				case ControlState::KEYBOARD: AAFraction = m_map->m_game->m_mouseAA; break;
 			}
 			m_orientation = Interpolate(m_orientation, newOrientation, AAFraction);
 		}

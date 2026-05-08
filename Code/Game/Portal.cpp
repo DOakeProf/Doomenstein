@@ -218,6 +218,9 @@ void Portal::MoveCamera()
 
 	//std::string portal1CameraRotation = Stringf("Portal 1 Camera Rotation: %.4f, %.4f, %.4f", m_portals[1]->m_portalCamera->GetOrientation().m_yawDegrees, m_portals[1]->m_portalCamera->GetOrientation().m_pitchDegrees, m_portals[1]->m_portalCamera->GetOrientation().m_rollDegrees);
 	//DebugAddMessage(portal1CameraRotation, 0.f, Rgba8::CYAN);
+
+	// Assign the FOV of the currently rendered player to this portal's camera.
+	m_portalCamera->SetPerspectiveFOV(m_map->m_game->m_currentlyRenderedPlayer->m_worldCamera->GetPerspectiveFOV());
 }
 
 Mat44 Portal::GetModelToWorldTransform() const

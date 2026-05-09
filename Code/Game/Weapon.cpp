@@ -194,6 +194,14 @@ Weapon::Weapon(Map* map, std::string definition)
 	m_alternateFireTimer->Start();
 	m_reloadTimer = new Timer(m_definition->m_reloadTime, m_map->m_game->m_gameClock);
 	m_burstTimer = new Timer(m_definition->m_rayBurstTime, m_map->m_game->m_gameClock);
+	if (m_definition->m_perk == "WhiteNail")
+	{
+		m_perkTimer = new Timer(1.7f, m_map->m_game->m_gameClock);
+	}
+	if (m_definition->m_perk == "Broadside")
+	{
+		m_perkTimer = new Timer(0.5f, m_map->m_game->m_gameClock);
+	}
 
 	m_rideTheBullTimer = new Timer(m_rideTheBullTime, m_map->m_game->m_gameClock);
 
@@ -230,6 +238,24 @@ void Weapon::Update(Actor* actor)
 	{
 		StopReload();
 		m_bullets = m_definition->m_maxAmmo;
+	}
+
+	if (m_definition->m_perk == "WhiteNail")
+	{
+		if (m_perkTimer->DecrementPeriodIfElapsed())
+		{
+			m_consecutivePrecisionHits = 0;
+			m_perkTimer->Stop();
+		}
+	}
+
+	if (m_definition->m_perk == "Broadside")
+	{
+		if (m_perkTimer->DecrementPeriodIfElapsed())
+		{
+			m_consecutiveHits = 0;
+			m_perkTimer->Stop();
+		}
 	}
 
 	if (m_isScoped)
@@ -454,6 +480,12 @@ void Weapon::FireBullet(Actor* actor)
 		((Player*)actor->m_controller)->m_recoil.m_yawDegrees -= recoilDir.y * (1.f + (0.1f * m_rideTheBull));
 		m_orientationRecoil.m_pitchDegrees -= recoilDir.x * (1.f + (0.1f * m_rideTheBull) * 0.5f);
 		m_orientationRecoil.m_yawDegrees -= recoilDir.y * (1.f + (0.1f * m_rideTheBull) * 0.5f);
+	}
+
+	if (m_definition->m_perk == "Broadside")
+	{
+		++m_consecutiveHits;
+		m_perkTimer->Start();
 	}
 
 	switch (m_definition->m_type)
@@ -761,7 +793,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 		}
 		for (int rayIndex = 0; rayIndex < m_definition->m_rayCount; ++rayIndex)
 		{
-			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), rayCone);
+			Vec3 randomDirection = actor->m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp(), rayCone * (1.f + 0.25f * (float)m_consecutiveHits));
 			Vec3 initialFirePosition = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 
 			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, rayRange, actor);
@@ -773,10 +805,23 @@ void Weapon::Fire_Weapon(Actor* actor)
 				if (precisionResult.m_didImpact)
 				{
 					precisionMultiplier = m_definition->m_precisionMultiplier;
+					if (m_definition->m_perk == "WhiteNail")
+					{
+						++m_consecutivePrecisionHits;
+						if (m_consecutivePrecisionHits >= 3)
+						{
+							m_bullets = m_definition->m_maxAmmo;
+							m_consecutivePrecisionHits = 0;
+						}
+						m_perkTimer->Start();
+					}
 				}
 
 				float damageFalloffMultiplier = SmoothStop6(1.f - (result.m_impactDist / rayRange));
-				float RandomDamage = damageFalloffMultiplier * precisionMultiplier * actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
+				float RandomDamage = damageFalloffMultiplier * // Damage falloff
+									 precisionMultiplier * // Precision damage
+									 (1.f + 0.25f * (float)m_consecutiveHits) * // Broadside perk damage increase
+									 actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
 				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 
 				if (result.m_actor->m_health <= 0 )

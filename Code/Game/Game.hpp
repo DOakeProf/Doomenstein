@@ -1,5 +1,6 @@
 #pragma once
 #include "Game/GameCommon.hpp"
+#include "Game/ActorHandle.hpp"
 
 #include "Engine/Core/Vertex.hpp"
 #include "Engine/Renderer/Camera.hpp"
@@ -17,9 +18,10 @@ class Shader;
 class BitmapFont;
 class Rift;
 class SpriteAnimDefinition;
+class Actor;
 typedef size_t SoundID;
 
-extern std::vector<Rift*> s_rifts;
+extern std::vector<Rift*> g_rifts;
 
 enum class GameState {
 	GAME_STATE_NONE,
@@ -45,12 +47,15 @@ public:
 
 	Player* JoinPlayer(int controllerIndex);
 
+	Actor* GetActorByHandle(const ActorHandle handle) const;
+
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Rifts
 	void SpawnRift(Vec3 position, EulerAngles orientation, float scale = 1.f);
 	void AddRift(Rift* rift);
 	void RemoveRift(Rift* rift);
 	void RefreshRifts();
+	void Update_Rifts();
 
 private:
 	void Startup_PopulateFromBlackboard();
@@ -65,6 +70,8 @@ private:
 
 	void EnterState(GameState state);
 	void ExitState(GameState state);
+
+	void DestroyIfGarbage();
 
 public:
 	RandomNumberGenerator*	m_randomNumberGenerator = nullptr;

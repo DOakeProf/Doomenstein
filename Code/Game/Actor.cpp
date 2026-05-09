@@ -235,7 +235,6 @@ void Actor::Render()
 	{
 		Render_Debug();
 	}
-
 }
 
 void Actor::Render_Debug() const

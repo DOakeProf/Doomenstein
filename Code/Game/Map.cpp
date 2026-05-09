@@ -170,7 +170,7 @@ void Map::Startup_InitializeActors()
 		m_game->SpawnRift(rift->m_position, rift->m_orientation, 3.f);
 	}
 
-	m_DOG = new DOG(this);
+	//m_DOG = new DOG(this);
 }
 
 void Map::CreateTiles()
@@ -844,8 +844,6 @@ void Map::Update()
 			player->HandleAACorrection();
 		}
 	}
-
-	DestroyIfGarbage();
 }
 
 void Map::Update_AddDebugScreenText()
@@ -1260,7 +1258,7 @@ void Map::CollideActorsWithRifts()
 		Actor* actor = m_actors[actorIndex];
 		if (actor != nullptr && actor->m_hasEnteredRift == false)
 		{
-			for (Rift* rift : s_rifts)
+			for (Rift* rift : g_rifts)
 			{
 				if (rift != nullptr)
 				{
@@ -1450,12 +1448,20 @@ void Map::Render()
 		g_engine->m_render->SetConstantBufferData(k_portalAABB3ConstantsSlot, portalAABB3Constants, m_portalAABB3CBO);
 	
 		Render_World();
+		for (Rift* rift : g_rifts)
+		{
+			rift->Render_ActorsNearRift(this);
+		}
 		Render_RiftOutlines(); // This is outside of the world and after it because I don't want the portals/rifts to also render the outlines, and it is transparent which should be rendered last.
 
-		m_isRenderingPortal = true;
+		m_isRenderingPortal = true; // This lets the player whose view we're rendering be rendered in portal views.
 		Render_Portals();
+		m_isRenderingPortal = false; // Should not render the player in rift views.
+		m_isRenderingRift = true; // This tells the render actors function whether or not it can bind new clip plane constants. If not rendering a rift, it can for the purpose of cutting actors off at a rift.
+		m_riftMap->m_isRenderingRift = true; // This tells the render actors function whether or not it can bind new clip plane constants. If not rendering a rift, it can for the purpose of cutting actors off at a rift.
 		Render_Rifts();
-		m_isRenderingPortal = false;
+		m_isRenderingRift = false;
+		m_riftMap->m_isRenderingRift = false;
 	
 		g_engine->m_render->BindShader(m_game->m_currentlyRenderedPlayer->GetActor()->m_definition->m_shader);
 
@@ -1491,7 +1497,10 @@ void Map::Render_World() const
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
 	Render_Actors();
-	m_DOG->Render();
+	if (m_DOG != nullptr)
+	{
+		m_DOG->Render();
+	}
 	g_engine->m_render->SetModelConstants(Mat44());
 	Render_Tiles();
 
@@ -1532,6 +1541,7 @@ void Map::Render_Tiles() const
 
 void Map::Render_Actors() const
 {
+	ClipPlaneConstants clipPlaneConstants = ClipPlaneConstants();
 	g_engine->m_render->BindTexture(nullptr);
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
@@ -1539,8 +1549,57 @@ void Map::Render_Actors() const
 		Actor* actor = m_actors[actorIndex];
 		if (actor != nullptr)
 		{
+			if (m_isRenderingRift)
+			{
+				Vec3 portalNormal = m_currentlyRenderedRift->GetOrientation().GetForwardDir_IFwd_JLeft_KUp();
+				float playerDotPortal = DotProduct3D(portalNormal, m_game->m_currentlyRenderedPlayer->m_position - m_currentlyRenderedRift->GetPosition());
+				float actorDotPortal = DotProduct3D(portalNormal, actor->m_position - m_currentlyRenderedRift->GetPosition());
+				if (actorDotPortal * playerDotPortal > 0.f) // Don't render this one if the current player is on the same side of the rift as it, AND we are rendering a rift's view.
+				{
+					continue;
+				}
+			}
+			if (actor->m_riftCollidingWith != nullptr) // Clip actor with rift if it is near it.
+			{
+				Vec3 portalNormal = actor->m_riftCollidingWith->GetOrientation().GetForwardDir_IFwd_JLeft_KUp();
+				Vec3 portalLeft = actor->m_riftCollidingWith->GetOrientation().GetLeftDir_IFwd_JLeft_KUp();
+				Vec3 portalUp = actor->m_riftCollidingWith->GetOrientation().GetUpDir_IFwd_JLeft_KUp();
+				Mat44 portalOrientationMatrix = actor->m_riftCollidingWith->GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+				Vec4 portalPlane;
+
+				clipPlaneConstants.amountOfClipPlanes = 1;
+				clipPlaneConstants.isEnabled = 1;
+				float actorDotPortal = DotProduct3D(portalNormal, actor->m_position - actor->m_riftCollidingWith->GetPosition());
+
+				if (actorDotPortal > 0.f)
+				{
+					portalPlane = Vec4(portalNormal.x, portalNormal.y, portalNormal.z, DotProduct3D(-portalNormal, actor->m_riftCollidingWith->GetPosition()));
+				}
+				else
+				{
+					portalPlane = Vec4(-portalNormal.x, -portalNormal.y, -portalNormal.z, DotProduct3D(portalNormal, actor->m_riftCollidingWith->GetPosition()));
+				}
+				clipPlaneConstants.gClipPlane[0] = portalPlane;
+				if (!m_isRenderingRift)
+				{
+					g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_clipPlaneCBO);
+				}
+			}
+			else
+			{	
+				clipPlaneConstants.isEnabled = 0;
+				if (!m_isRenderingRift)
+				{
+					g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_clipPlaneCBO);
+				}
+			}
 			m_actors[actorIndex]->Render();
 		}
+	}
+	clipPlaneConstants.isEnabled = 0;
+	if (!m_isRenderingRift)
+	{
+		g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_clipPlaneCBO);
 	}
 	if (m_game->m_currentlyRenderedPlayer->GetActor()->m_equippedWeapon->m_isScoped)
 	{
@@ -1569,20 +1628,24 @@ void Map::Render_Portals() const
 	}
 }
 
-void Map::Render_Rifts() const
+void Map::Render_Rifts()
 {
-	for (Rift* rift : s_rifts)
+	for (Rift* rift : g_rifts)
 	{
 		if (rift != nullptr)
 		{
+			m_currentlyRenderedRift = rift;
+			m_riftMap->m_currentlyRenderedRift = rift;
 			rift->RenderRift(this);
+			m_currentlyRenderedRift = nullptr;
+			m_riftMap->m_currentlyRenderedRift = nullptr;
 		}
 	}
 }
 
 void Map::Render_RiftOutlines() const
 {
-	for (Rift* rift : s_rifts)
+	for (Rift* rift : g_rifts)
 	{
 		rift->RenderOutline(this);
 	}

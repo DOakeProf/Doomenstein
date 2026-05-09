@@ -178,7 +178,7 @@ public:
 	void Render_Actors() const;
 
 	void Render_Portals() const;
-	void Render_Rifts() const;
+	void Render_Rifts();
 	void Render_RiftOutlines() const;
 
 	RaycastResultDoomenstein	RaycastAll(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
@@ -199,6 +199,7 @@ public:
 	//Vec3* m_playerTranslationThisFrame;
 	bool m_isControllingBullet = false;
 	bool m_isRenderingPortal = false;
+	bool m_isRenderingRift = false;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Debug
@@ -223,6 +224,7 @@ protected:
 	Vec3 m_sunDirection;
 	float m_sunIntensity;
 	float m_ambientIntensity;
+	Rift* m_currentlyRenderedRift = nullptr;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Lists of owned objects

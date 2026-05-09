@@ -28,7 +28,7 @@
 #include "Engine/Renderer/SpriteAnimDefinition.hpp"
 #include "Engine/Renderer/Texture.hpp"
 
-std::vector<Rift*> s_rifts;
+std::vector<Rift*> g_rifts;
 
 Game::Game()
 {
@@ -432,6 +432,7 @@ void Game::Update_PlayingMode()
 			m_currentMap->RemoveActorFromMap(actor);
 			m_currentRiftMap->AddActorToMap(actor);
 			actor->m_hasEnteredRift = false;
+			actor->m_riftCollidingWith = nullptr;
 		}
 	}
 	for (Actor* actor : m_currentRiftMap->GetActors())
@@ -441,6 +442,7 @@ void Game::Update_PlayingMode()
 			m_currentRiftMap->RemoveActorFromMap(actor);
 			m_currentMap->AddActorToMap(actor);
 			actor->m_hasEnteredRift = false;
+			actor->m_riftCollidingWith = nullptr;
 		}
 	}
 
@@ -454,10 +456,12 @@ void Game::Update_PlayingMode()
 		player->Update();
 	}
 
+	Update_Rifts(); // Checks for each actor that is near a rift, and adds it to that rift's list so that it can be rendered again in the other map.
+
 	m_currentMap->Update();
 	m_currentRiftMap->Update();
 
-	// Camera updates
+	DestroyIfGarbage();
 }
 
 void Game::Render_PlayingMode() const
@@ -501,6 +505,24 @@ Player* Game::JoinPlayer(int controllerIndex)
 	return m_players[currentIndex];
 }
 
+Actor* Game::GetActorByHandle(const ActorHandle handle) const
+{
+	Actor* returnActor = nullptr;
+
+	Actor* mapActor = m_currentMap->GetActorByHandle(handle);
+	if (mapActor != nullptr)
+	{
+		returnActor = mapActor;
+	}
+	Actor* riftMapActor = m_currentRiftMap->GetActorByHandle(handle);
+	if (riftMapActor != nullptr)
+	{
+		returnActor = riftMapActor;
+	}
+
+	return returnActor;
+}
+
 void Game::SpawnRift(Vec3 position, EulerAngles orientation, float scale)
 {
 	Rift* newRift = new Rift(position, orientation, 2.f, 2.f, scale);
@@ -509,39 +531,80 @@ void Game::SpawnRift(Vec3 position, EulerAngles orientation, float scale)
 
 void Game::AddRift(Rift* rift)
 {
-	for (int riftIndex = 0; riftIndex < s_rifts.size(); ++riftIndex)
+	for (int riftIndex = 0; riftIndex < g_rifts.size(); ++riftIndex)
 	{
-		if (s_rifts[riftIndex] == nullptr)
+		if (g_rifts[riftIndex] == nullptr)
 		{
-			s_rifts[riftIndex] = rift;
+			g_rifts[riftIndex] = rift;
 			return;
 		}
 	}
-	s_rifts.push_back(rift);
+	g_rifts.push_back(rift);
 }
 
 void Game::RemoveRift(Rift* rift)
 {
-	for (int riftIndex = 0; riftIndex < s_rifts.size(); ++riftIndex)
+	for (int riftIndex = 0; riftIndex < g_rifts.size(); ++riftIndex)
 	{
-		if (s_rifts[riftIndex] == rift)
+		if (g_rifts[riftIndex] == rift)
 		{
 			delete rift;
-			s_rifts[riftIndex] = nullptr;
+			g_rifts[riftIndex] = nullptr;
 		}
 	}
 }
 
 void Game::RefreshRifts()
 {
-	for (int riftIndex = 0; riftIndex < s_rifts.size(); ++riftIndex)
+	for (int riftIndex = 0; riftIndex < g_rifts.size(); ++riftIndex)
 	{
-		Rift* rift = s_rifts[riftIndex];
+		Rift* rift = g_rifts[riftIndex];
 		Vec3 positionStorage = rift->GetPosition();
 		EulerAngles orientationStorage = rift->GetOrientation();
 		float scaleStorage = rift->GetScale();
 		RemoveRift(rift);
 		SpawnRift(positionStorage, orientationStorage, scaleStorage);
+	}
+}
+
+void Game::Update_Rifts()
+{
+	for (Rift* rift : g_rifts)
+	{
+		if (rift != nullptr)
+		{
+			rift->m_actorsNearRift.clear();
+			for (Actor* actor : m_currentMap->GetActors())
+			{
+				if (
+					actor != nullptr &&
+					DoSpheresOverlap(
+						actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height * 0.5f),
+						actor->m_definition->m_height * 0.5f,
+						rift->GetPosition(),
+						rift->GetScale())
+					)
+				{
+					actor->m_riftCollidingWith = rift;
+					rift->m_actorsNearRift.push_back(actor->m_handle);
+				}
+			}
+			for (Actor* actor : m_currentRiftMap->GetActors())
+			{
+				if (
+					actor != nullptr &&
+					DoSpheresOverlap(
+						actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height * 0.5f),
+						actor->m_definition->m_height * 0.5f,
+						rift->GetPosition(),
+						rift->GetScale())
+					)
+				{
+					actor->m_riftCollidingWith = rift;
+					rift->m_actorsNearRift.push_back(actor->m_handle);
+				}
+			}
+		}
 	}
 }
 
@@ -612,10 +675,10 @@ void Game::ExitState(GameState state)
 	{
 		case GameState::GAME_STATE_PLAYING:
 		{
-			for (int riftIndex = 0; riftIndex < s_rifts.size(); ++riftIndex)
+			for (int riftIndex = 0; riftIndex < g_rifts.size(); ++riftIndex)
 			{
-				delete s_rifts[riftIndex];
-				s_rifts[riftIndex] = nullptr;
+				delete g_rifts[riftIndex];
+				g_rifts[riftIndex] = nullptr;
 			}
 
 			delete m_currentMap;
@@ -637,4 +700,10 @@ void Game::ExitState(GameState state)
 			break;
 		}
 	}
+}
+
+void Game::DestroyIfGarbage()
+{
+	m_currentMap->DestroyIfGarbage();
+	m_currentRiftMap->DestroyIfGarbage();
 }

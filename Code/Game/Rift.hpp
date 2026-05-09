@@ -4,6 +4,7 @@
 #include "Engine/Math/Vec3.hpp"
 
 class Map;
+struct ActorHandle;
 
 class Rift : public Portal 
 {
@@ -14,5 +15,8 @@ public:
 	void RenderRift(const Map* map);
 	void RenderOutline(const Map* map);
 
+	void Render_ActorsNearRift(const Map* map);
+
+	std::vector<ActorHandle*> m_actorsNearRift;
 	Map* m_riftMap;
 };

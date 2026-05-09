@@ -115,6 +115,7 @@ public:
 	Timer* m_alternateFireTimer = nullptr;
 	Timer* m_reloadTimer = nullptr;
 	Timer* m_burstTimer = nullptr;
+	Timer* m_perkTimer = nullptr;
 	int	m_burstAmount = 0;
 
 	Timer* m_animTimer;
@@ -125,6 +126,12 @@ public:
 	bool m_isScoped = false;
 	float m_scopeFraction = 0.f;
 	bool m_isReloading = false;
+
+	// Black Spindle
+	int m_consecutivePrecisionHits = 0;
+
+	// Fourth Horseman
+	int m_consecutiveHits = 0;
 
 	// HuckleBerry
 	Timer* m_rideTheBullTimer = nullptr;

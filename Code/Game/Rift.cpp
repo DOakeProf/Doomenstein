@@ -171,3 +171,44 @@ void Rift::RenderOutline(const Map* map)
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 }
 
+void Rift::Render_ActorsNearRift(const Map* map)
+{
+	Vec3 portalNormal = GetOrientation().GetForwardDir_IFwd_JLeft_KUp();
+	Vec3 portalLeft = GetOrientation().GetLeftDir_IFwd_JLeft_KUp();
+	Vec3 portalUp = GetOrientation().GetUpDir_IFwd_JLeft_KUp();
+	Mat44 portalOrientationMatrix = GetOrientation().GetAsMatrix_IFwd_JLeft_KUp();
+	Vec4 portalPlane;
+
+	ClipPlaneConstants clipPlaneConstants = ClipPlaneConstants();
+	clipPlaneConstants.amountOfClipPlanes = 1;
+	clipPlaneConstants.isEnabled = 1;
+
+	for (ActorHandle* actorHandle : m_actorsNearRift)
+	{
+			Actor* actor = map->m_game->GetActorByHandle(*actorHandle);
+			if (actor != nullptr)
+			{
+				float actorDotPortal = DotProduct3D(portalNormal, actor->m_position - m_position);
+
+				//float playerDotPortal = DotProduct3D(portalNormal, map->m_game->m_currentlyRenderedPlayer->m_position - m_position);
+				//if (actorDotPortal * playerDotPortal < 0.f) // Don't render this one if the current player is on the same side of the rift as it.
+				//{
+				//	continue;
+				//}
+
+				if (actorDotPortal < 0.f)
+				{
+					portalPlane = Vec4(portalNormal.x, portalNormal.y, portalNormal.z, DotProduct3D(-portalNormal, m_position));
+				}
+				else
+				{
+					portalPlane = Vec4(-portalNormal.x, -portalNormal.y, -portalNormal.z, DotProduct3D(portalNormal, m_position));
+				}
+				clipPlaneConstants.gClipPlane[0] = portalPlane;
+				g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, map->m_riftMap->m_clipPlaneCBO);
+
+				actor->Render();
+			}
+	}
+}
+

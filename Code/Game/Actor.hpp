@@ -167,6 +167,7 @@ public:
 	std::vector<Weapon*> m_weapons; 
 	Weapon* m_equippedWeapon;
 	float m_coyoteTimeMax = 0.09f;
+	Rift* m_riftCollidingWith = nullptr;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Timers

@@ -146,7 +146,7 @@ void Map::Startup_InitializeActors()
 	}
 	for (int spawnInfoIndex = 0; spawnInfoIndex < m_definition->m_spawnInfos.size(); ++spawnInfoIndex)
 	{
-		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "RiftPointMain")
+		if (m_definition->m_spawnInfos[spawnInfoIndex].m_name == "RiftPointRandom")
 		{
 			Actor* spawnPoint = SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
 			m_riftPointRandoms.push_back(spawnPoint);
@@ -169,8 +169,6 @@ void Map::Startup_InitializeActors()
 	{
 		m_game->SpawnRift(rift->m_position, rift->m_orientation, 3.f);
 	}
-
-	//m_DOG = new DOG(this);
 }
 
 void Map::CreateTiles()
@@ -729,6 +727,11 @@ void Map::SpawnEnemy()
 	}
 }
 
+void Map::SpawnDOG()
+{
+	m_DOG = new DOG(this);
+}
+
 void Map::RemoveActorFromMap(Actor* actor)
 {
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
@@ -814,6 +817,10 @@ void Map::Update()
 
 	Update_AddDebugScreenText();
 
+	if (m_DOG != nullptr)
+	{
+		m_DOG->Update();
+	}
 	Update_Actors_BeforePreventative(); // Assigns each actors a desired position
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Preventative physics
@@ -827,10 +834,6 @@ void Map::Update()
 	// Corrective Physics
 	CollideActors();
 	CollideActorsWithMap();
-	if (m_DOG != nullptr)
-	{
-		m_DOG->Update();
-	}
 
 	Update_Portals();
 
@@ -1381,6 +1384,12 @@ void Map::DestroyIfGarbage()
 			m_actors[actorIndex] = nullptr;
 		}
 	}
+
+	if (m_DOG != nullptr && m_DOG->m_isGarbage)
+	{
+		delete m_DOG;
+		m_DOG = nullptr;
+	}
 }
 
 void Map::SetActorStates()
@@ -1450,7 +1459,10 @@ void Map::Render()
 		Render_World();
 		for (Rift* rift : g_rifts)
 		{
-			rift->Render_ActorsNearRift(this);
+			if (rift != nullptr)
+			{
+				rift->Render_ActorsNearRift(this);
+			}
 		}
 		Render_RiftOutlines(); // This is outside of the world and after it because I don't want the portals/rifts to also render the outlines, and it is transparent which should be rendered last.
 
@@ -1490,16 +1502,33 @@ void Map::Render()
 		}
 		g_engine->m_render->EndCamera(m_game->m_screenCamera);
 	}
+
+	// Render DOG health.
+	if (m_DOG != nullptr)
+	{
+		g_engine->m_render->BeginCamera(m_game->m_screenCamera);
+		std::vector<Vertex> localVerts;
+		float DOGHealthFraction = (float)m_DOG->m_head->m_health / (float)m_DOG->m_head->m_definition->m_health;
+		AddVertsForAABB2D(localVerts, AABB2(Vec2(SCREEN_SIZE_X * 0.049f, SCREEN_SIZE_Y * 0.969f), Vec2(SCREEN_SIZE_X * 0.951f, SCREEN_SIZE_Y * 0.981f)), Rgba8::BLACK);
+		AddVertsForAABB2D(localVerts, AABB2(Vec2(SCREEN_SIZE_X * 0.05f, SCREEN_SIZE_Y * 0.97f), Vec2(SCREEN_SIZE_X * 0.05f + SCREEN_SIZE_X * 0.9f * DOGHealthFraction, SCREEN_SIZE_Y * 0.98f)), Rgba8::YELLOW);
+		g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
+		g_engine->m_render->BindTexture(nullptr);
+		g_engine->m_render->DrawVertexList(&localVerts);
+	}
 }
 
-void Map::Render_World() const
+void Map::Render_World()
 {
 	g_engine->m_render->SetBlendMode(BlendMode::ALPHA);
 	g_engine->m_render->SetDepthStencilMode(DepthStencilMode::READ_WRITE_LESS_EQUAL);
 	Render_Actors();
 	if (m_DOG != nullptr)
 	{
-		m_DOG->Render();
+		m_DOG->Render(this);
+	}
+	if (m_riftMap->m_DOG != nullptr)
+	{
+		m_riftMap->m_DOG->Render(m_riftMap);
 	}
 	g_engine->m_render->SetModelConstants(Mat44());
 	Render_Tiles();
@@ -1647,7 +1676,10 @@ void Map::Render_RiftOutlines() const
 {
 	for (Rift* rift : g_rifts)
 	{
-		rift->RenderOutline(this);
+		if (rift != nullptr)
+		{
+			rift->RenderOutline(this);
+		}
 	}
 }
 

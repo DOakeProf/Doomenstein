@@ -142,6 +142,7 @@ public:
 	Actor* SpawnPlayerInitial(Player* player, Vec3& position);
 	void SpawnWave();
 	void SpawnEnemy();
+	void SpawnDOG();
 	void RemoveActorFromMap(Actor* actor);
 	void AddPortal(Portal* portal);
 	void RemovePortal(Portal* portal);
@@ -166,14 +167,14 @@ public:
 	bool CollideActorWithRift(Actor* actor, Rift* rift);
 	bool PushActorOutOfTileXY(Actor* actor, Tile const& tile);
 	bool PushActorOutOfRamp(Actor* actor, Tile const& tile);
-	void DestroyIfGarbage();
 	void SetActorStates();
+	void DestroyIfGarbage();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Render
 	void Render();
 
-	void Render_World() const;
+	void Render_World();
 	void Render_Tiles() const;
 	void Render_Actors() const;
 

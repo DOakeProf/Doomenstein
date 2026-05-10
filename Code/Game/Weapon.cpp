@@ -821,6 +821,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 				float RandomDamage = damageFalloffMultiplier * // Damage falloff
 									 precisionMultiplier * // Precision damage
 									 (1.f + 0.25f * (float)m_consecutiveHits) * // Broadside perk damage increase
+									 result.m_actor->m_definition->m_armorMultiplier * // Actor armor multiplier
 									 actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
 				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 
@@ -843,11 +844,11 @@ void Weapon::Fire_Weapon(Actor* actor)
 				Actor* damageNumber = result.m_actor->m_map->SpawnActor("DamageNumber", result.m_impactPos + ( -randomDirection * 0.1f), EulerAngles(), RangeMap(RandomDamage, 10.f, 100.f, 1.f, 4.f));
 				if (precisionResult.m_didImpact)
 				{
-					damageNumber->m_color = Rgba8(200, 200, 100, 255);
+					damageNumber->m_color = Rgba8(255, 255, 50, 255);
 				}
 				else
 				{
-					damageNumber->m_color = Rgba8(200, 200, 200, 255);
+					damageNumber->m_color = Rgba8(150, 150, 150, 255);
 				}
 				Vec3 damageNumberToActor = (actor->m_position - result.m_impactPos).GetNormalized();
 				Mat44 damageNumberToActorMatrix = Mat44(damageNumberToActor, Vec3(1.f, 0.f, 0.f), Vec3(1.f, 0.f, 0.f), Vec3());

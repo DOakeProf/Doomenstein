@@ -162,6 +162,12 @@ void Actor::Update()
 
 void Actor::Render()
 {
+	if (m_prevDOGSegment != nullptr)
+	{
+		Render_DOGSegment();
+		return;
+	}
+
 	Player* currentlyRenderedPlayer = m_map->GetCurrentRenderedPlayer();
 
 	// Check for if the actor is the player that is currently having it's view rendered.
@@ -188,7 +194,7 @@ void Actor::Render()
 	}
 
 	// Set proper UVs
-	if (m_definition->m_spriteSheet != nullptr)
+	if (m_definition->m_spriteSheet != nullptr && m_animationGroup.m_name != "")
 	{
 		float largestDotProduct = -1.f;
 		ActorDefinition::AnimationGroup::Animation animationInUse = m_animationGroup.m_animations[0];
@@ -314,6 +320,40 @@ void Actor::Render_Precision() const
 	g_engine->m_render->DrawVertexList(&localVerts);
 }
 
+void Actor::Render_DOGSegment() const
+{
+	std::vector<Vertex_PCUTBN> localVerts;
+	std::vector<unsigned int> localIndexes;
+
+	float devourerSize = 2.5f;
+
+	Vec3 BL1 = Vec3(devourerSize, devourerSize, 0.f);
+	Vec3 BR1 = Vec3(devourerSize, -devourerSize, 0.f);
+	Vec3 TR1 = Vec3(0.f, -devourerSize, 0.f);
+	Vec3 TL1 = Vec3(0.f, devourerSize, 0.f);
+
+	Vec3 BL2 = Vec3(devourerSize, 0.f, devourerSize);
+	Vec3 BR2 = Vec3(devourerSize, 0.f, -devourerSize);
+	Vec3 TR2 = Vec3(0.f, 0.f, -devourerSize);
+	Vec3 TL2 = Vec3(0.f, 0.f, devourerSize);
+
+	g_engine->m_render->BindTexture(m_definition->m_spriteSheet->GetTexture());
+	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	g_engine->m_render->BindShader(m_definition->m_shader);
+
+	AddVertsForRoundedQuad3D(localVerts, localIndexes, BL1, BR1, TR1, TL1);
+	AddVertsForRoundedQuad3D(localVerts, localIndexes, BL2, BR2, TR2, TL2);
+
+	// Render from prev to cur
+	Vec3 prevToCur = m_position - m_prevDOGSegment->m_position;
+	Mat44 prevToCurDirection = Mat44();
+	prevToCurDirection.AppendTranslation3D(m_prevDOGSegment->m_position + Vec3(0.f, 0.f, m_prevDOGSegment->m_definition->m_height * 0.5f));
+	prevToCurDirection.SetIJK3D(prevToCur.GetNormalized(), Vec3(0.f, 1.f, 0.f), Vec3(0.f, 0.f, 1.f));
+	prevToCurDirection.Orthonormalize_XFwd_YLeft_ZUp();
+	g_engine->m_render->SetModelConstants(prevToCurDirection);
+	g_engine->m_render->DrawIndexedVertexList(&localVerts, &localIndexes);
+}
+
 Mat44 Actor::GetModelMatrix() const
 {
 	Mat44 modelToWorld = Mat44();
@@ -435,7 +475,9 @@ void Actor::Update_Gameplay()
 
 void Actor::Update_Position()
 {
-	if (m_definition->m_physicsIsSimulated)
+	if (m_definition->m_physicsIsSimulated ||
+		m_definition->m_name == "DevourerHead" ||
+		m_definition->m_name == "DevourerBody")
 	{
 		m_position = m_desiredPosition;
 	}
@@ -590,6 +632,12 @@ void Actor::EquipWeapon(Weapon* weapon)
 
 void Actor::Damage(int damage, ActorHandle* otherActor)
 {
+	if (m_shouldRouteDamageToOtherActor)
+	{
+		m_actorToRouteDamageTo->Damage(damage, otherActor);
+		return;
+	}
+
 	m_health -= damage;
 	SetAnimGroup("Hurt");
 	PlaySoundOnActor("Hurt");
@@ -673,6 +721,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 		newActorDef->m_corpseLifetime = ParseXmlAttribute(*actorDefElement, "corpseLifetime", -1.f);
 		newActorDef->m_visible = ParseXmlAttribute(*actorDefElement, "visible", false);
 		newActorDef->m_dieOnSpawn = ParseXmlAttribute(*actorDefElement, "dieOnSpawn", false);
+		newActorDef->m_armorMultiplier = ParseXmlAttribute(*actorDefElement, "armorMultiplier", 1.f);
 
 		XmlElement* collisionElement = actorDefElement->FirstChildElement("Collision");
 		if (collisionElement != nullptr)

@@ -31,6 +31,7 @@ struct ActorDefinition
 	float						m_corpseLifetime;
 	bool						m_visible;
 	bool						m_dieOnSpawn;
+	float						m_armorMultiplier;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Logic
@@ -137,6 +138,9 @@ public:
 	bool m_isGarbage = false;
 	bool m_hasEnteredRift = false;
 	float m_valueToDisplay = -1.f; // Only for actors with displayValue enabled.
+	bool m_shouldRouteDamageToOtherActor = false;
+	Actor* m_actorToRouteDamageTo = nullptr;
+	Actor* m_prevDOGSegment = nullptr;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Movement/Abilities
@@ -183,6 +187,7 @@ public:
 	void Render();
 	void Render_Debug() const;
 	void Render_Precision() const;
+	void Render_DOGSegment() const;
 	Mat44 GetModelMatrix() const;
 	Mat44 GetModelMatrixOnlyYaw() const;
 	Mat44 GetModelMatrixBillboarded() const;

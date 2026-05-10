@@ -239,11 +239,14 @@ void AI::MoveTowardNearestRift()
 	float nearestRiftDist = 100.f;
 	for (Rift* rift : g_rifts)
 	{
-		float distTowardRift = (rift->GetPosition() - GetActor()->m_position).GetLength();
-		if (distTowardRift < nearestRiftDist)
+		if (rift != nullptr)
 		{
-			nearestRift = rift;
-			nearestRiftDist = distTowardRift;
+			float distTowardRift = (rift->GetPosition() - GetActor()->m_position).GetLength();
+			if (distTowardRift < nearestRiftDist)
+			{
+				nearestRift = rift;
+				nearestRiftDist = distTowardRift;
+			}
 		}
 	}
 
@@ -264,11 +267,14 @@ bool AI::MoveAwayFromRifts()
 	float nearestRiftDist = 100.f;
 	for (Rift* rift : g_rifts)
 	{
-		float distTowardRift = (rift->GetPosition() - GetActor()->m_position).GetLength();
-		if (distTowardRift < nearestRiftDist)
+		if (rift != nullptr)
 		{
-			nearestRift = rift;
-			nearestRiftDist = distTowardRift;
+			float distTowardRift = (rift->GetPosition() - GetActor()->m_position).GetLength();
+			if (distTowardRift < nearestRiftDist)
+			{
+				nearestRift = rift;
+				nearestRiftDist = distTowardRift;
+			}
 		}
 	}
 

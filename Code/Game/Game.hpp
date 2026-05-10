@@ -51,7 +51,7 @@ public:
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Rifts
-	void SpawnRift(Vec3 position, EulerAngles orientation, float scale = 1.f);
+	Rift* SpawnRift(Vec3 position, EulerAngles orientation, float scale = 1.f);
 	void AddRift(Rift* rift);
 	void RemoveRift(Rift* rift);
 	void RefreshRifts();

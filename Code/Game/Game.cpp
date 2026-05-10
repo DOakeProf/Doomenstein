@@ -427,22 +427,28 @@ void Game::Update_PlayingMode()
 {
 	for (Actor* actor : m_currentMap->GetActors())
 	{
-		if (actor != nullptr && actor->m_hasEnteredRift)
+		if (actor != nullptr)
 		{
-			m_currentMap->RemoveActorFromMap(actor);
-			m_currentRiftMap->AddActorToMap(actor);
-			actor->m_hasEnteredRift = false;
 			actor->m_riftCollidingWith = nullptr;
+			if (actor->m_hasEnteredRift)
+			{
+				m_currentMap->RemoveActorFromMap(actor);
+				m_currentRiftMap->AddActorToMap(actor);
+				actor->m_hasEnteredRift = false;
+			}
 		}
 	}
 	for (Actor* actor : m_currentRiftMap->GetActors())
 	{
-		if (actor != nullptr && actor->m_hasEnteredRift)
+		if (actor != nullptr)
 		{
-			m_currentRiftMap->RemoveActorFromMap(actor);
-			m_currentMap->AddActorToMap(actor);
-			actor->m_hasEnteredRift = false;
 			actor->m_riftCollidingWith = nullptr;
+			if (actor->m_hasEnteredRift)
+			{
+				m_currentMap->AddActorToMap(actor);
+				m_currentRiftMap->RemoveActorFromMap(actor);
+				actor->m_hasEnteredRift = false;
+			}
 		}
 	}
 
@@ -523,10 +529,11 @@ Actor* Game::GetActorByHandle(const ActorHandle handle) const
 	return returnActor;
 }
 
-void Game::SpawnRift(Vec3 position, EulerAngles orientation, float scale)
+Rift* Game::SpawnRift(Vec3 position, EulerAngles orientation, float scale)
 {
 	Rift* newRift = new Rift(position, orientation, 2.f, 2.f, scale);
 	AddRift(newRift);
+	return newRift;
 }
 
 void Game::AddRift(Rift* rift)
@@ -571,6 +578,7 @@ void Game::Update_Rifts()
 {
 	for (Rift* rift : g_rifts)
 	{
+		DebugAddWorldWireSphere(rift->GetPosition(), rift->GetScale(), 0.f, Rgba8::MAGENTA);
 		if (rift != nullptr)
 		{
 			rift->m_actorsNearRift.clear();
@@ -578,6 +586,7 @@ void Game::Update_Rifts()
 			{
 				if (
 					actor != nullptr &&
+					actor->m_definition->m_spriteSheet != nullptr &&
 					DoSpheresOverlap(
 						actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height * 0.5f),
 						actor->m_definition->m_height * 0.5f,
@@ -617,6 +626,7 @@ void Game::EnterState(GameState state)
 			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString));
 			m_currentMap->Startup_InitializePlayers();
 			m_currentMap->Startup_InitializeActors(); // Initialize actors here because the function calls things that only exist after the map is made.
+			m_currentMap->SpawnDOG();
 
 			m_currentRiftMap = new Map(this, MapDefinition::GetByName(m_riftMapDefinitionString));
 			m_currentRiftMap->Startup_InitializeActors();

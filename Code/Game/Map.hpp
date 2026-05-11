@@ -126,6 +126,7 @@ public:
 	Actor* GetActorByHandle(const ActorHandle handle) const;
 	Player* GetCurrentRenderedPlayer();
 	std::vector<Actor*> GetActors();
+	std::vector<Player*> GetPlayers();
 	int GetNumPortals();
 	bool AreActorsSameFaction(Actor* actorA, Actor* actorB);
 	VertexBuffer* GetVertexBuffer();

@@ -56,6 +56,7 @@ struct ActorDefinition
 	float						m_drag;
 	bool						m_isFlying;
 	bool						m_moveWhenDead;
+	bool						m_canBeShot;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Player
@@ -80,6 +81,8 @@ struct ActorDefinition
 	SpriteSheet*				m_spriteSheet;
 	IntVec2						m_cellCount;
 	bool						m_displayValue;
+	bool						m_renderBackfaces;
+	std::vector<glTF_Asset*>	m_gltfAssets;
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// AnimationGroup
@@ -188,6 +191,7 @@ public:
 	void Render_Debug() const;
 	void Render_Precision() const;
 	void Render_DOGSegment() const;
+	void Render_GLTF() const;
 	Mat44 GetModelMatrix() const;
 	Mat44 GetModelMatrixOnlyYaw() const;
 	Mat44 GetModelMatrixBillboarded() const;

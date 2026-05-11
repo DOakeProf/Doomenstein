@@ -2,7 +2,9 @@
 
 #include "Engine/Core/Engine.hpp"
 #include "Engine/VertexUtils.hpp"
+#include "Engine/Core/Timer.hpp"
 
+#include "Game/App.hpp"
 #include "Game/Map.hpp"
 #include "Game/Game.hpp"
 #include "Game/Player.hpp"
@@ -17,11 +19,62 @@ Rift::Rift(Vec3 const& startingPosition, EulerAngles orientation, float height, 
 						br + Vec3(0.f, -0.5f, -0.5f),
 						tr + Vec3(0.f, -0.5f, 0.5f),
 						tl + Vec3(0.f, 0.5f, 0.5f));
+
+	m_deathTimer = new Timer(g_app->m_game->m_riftStencilAnim->GetTotalTime(), g_app->m_game->m_gameClock);
 }
 
 Rift::~Rift()
 {
 
+}
+
+void Rift::Update()
+{
+
+	if (m_deathTimer->HasPeriodElapsed())
+	{
+		m_isGarbage = true;
+	}
+
+	if (!m_isDead)
+	{
+		DebugAddWorldWireSphere(GetPosition(), GetScale(), 0.f, Rgba8::MAGENTA);
+		m_actorsNearRift.clear();
+		for (Actor* actor : g_app->m_game->m_currentMap->GetActors())
+		{
+			if (
+				actor != nullptr &&
+				actor->m_definition->m_cellCount != IntVec2() &&
+				DoSpheresOverlap(
+					actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height * 0.5f),
+					actor->m_definition->m_height * 0.5f,
+					GetPosition(),
+					GetScale())
+				)
+			{
+				DebugAddWorldWireSphere(actor->m_position, 0.2f, 0.f, Rgba8::GREEN, Rgba8::GREEN);
+				actor->m_riftCollidingWith = this;
+				m_actorsNearRift.push_back(actor);
+			}
+		}
+		for (Actor* actor : g_app->m_game->m_currentRiftMap->GetActors())
+		{
+			if (
+				actor != nullptr &&
+				actor->m_definition->m_cellCount != IntVec2() &&
+				DoSpheresOverlap(
+					actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height * 0.5f),
+					actor->m_definition->m_height * 0.5f,
+					GetPosition(),
+					GetScale())
+				)
+			{
+				DebugAddWorldWireSphere(actor->m_position, 0.2f, 0.f, Rgba8::GREEN, Rgba8::GREEN);
+				actor->m_riftCollidingWith = this;
+				m_actorsNearRift.push_back(actor);
+			}
+		}
+	}
 }
 
 void Rift::RenderRift(const Map* map)
@@ -65,6 +118,7 @@ void Rift::RenderRift(const Map* map)
 	g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, map->m_riftMap->m_clipPlaneCBO);
 
 	map->m_riftMap->Render_World();
+	Render_ActorsNearRift(map->m_riftMap);
 
 	clipPlaneConstants.isEnabled = 0;
 	g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, map->m_riftMap->m_clipPlaneCBO);
@@ -117,7 +171,16 @@ void Rift::RenderRift(const Map* map)
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 
 	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
-	SpriteDef spriteDef = map->m_game->m_riftStencilAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+	SpriteDef spriteDef;
+	if (m_isDead)
+	{
+		float totalTime = map->m_game->m_riftStencilAnim->GetTotalTime();
+		spriteDef = map->m_game->m_riftStencilAnim->GetSpriteDefAtTime(totalTime - (float)m_deathTimer->GetElapsedTime());
+	}
+	else
+	{
+		spriteDef = map->m_game->m_riftStencilAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+	}
 	AABB2 spriteUVs = spriteDef.m_UVs;
 	m_vertexes[0].m_uvTexCoords = spriteUVs.m_mins;
 	m_vertexes[1].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
@@ -158,7 +221,16 @@ void Rift::RenderOutline(const Map* map)
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
-	SpriteDef spriteDef = map->m_game->m_riftAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+	SpriteDef spriteDef;
+	if (m_isDead)
+	{
+		float totalTime = map->m_game->m_riftStencilAnim->GetTotalTime();
+		spriteDef = map->m_game->m_riftAnim->GetSpriteDefAtTime(totalTime - (float)m_deathTimer->GetElapsedTime());
+	}
+	else
+	{
+		spriteDef = map->m_game->m_riftAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+	}
 	AABB2 spriteUVs = spriteDef.m_UVs;
 	m_vertexes[0].m_uvTexCoords = spriteUVs.m_mins;
 	m_vertexes[1].m_uvTexCoords = Vec2(spriteUVs.m_maxs.x, spriteUVs.m_mins.y);
@@ -183,32 +255,37 @@ void Rift::Render_ActorsNearRift(const Map* map)
 	clipPlaneConstants.amountOfClipPlanes = 1;
 	clipPlaneConstants.isEnabled = 1;
 
-	for (ActorHandle* actorHandle : m_actorsNearRift)
+	for (Actor* actor : m_actorsNearRift)
 	{
-			Actor* actor = map->m_game->GetActorByHandle(*actorHandle);
-			if (actor != nullptr)
+		if (actor != nullptr && actor->m_map != map)
+		{
+			float actorDotPortal = DotProduct3D(portalNormal, actor->m_position - GetPosition());
+			
+			float playerDotPortal = DotProduct3D(portalNormal, map->m_game->m_currentlyRenderedPlayer->m_position - GetPosition());
+			if (map->m_isRenderingRift && playerDotPortal * actorDotPortal < 0.f) // Skip rendering this one if the player is on the same side as it.
 			{
-				float actorDotPortal = DotProduct3D(portalNormal, actor->m_position - m_position);
-
-				//float playerDotPortal = DotProduct3D(portalNormal, map->m_game->m_currentlyRenderedPlayer->m_position - m_position);
-				//if (actorDotPortal * playerDotPortal < 0.f) // Don't render this one if the current player is on the same side of the rift as it.
-				//{
-				//	continue;
-				//}
-
-				if (actorDotPortal < 0.f)
-				{
-					portalPlane = Vec4(portalNormal.x, portalNormal.y, portalNormal.z, DotProduct3D(-portalNormal, m_position));
-				}
-				else
-				{
-					portalPlane = Vec4(-portalNormal.x, -portalNormal.y, -portalNormal.z, DotProduct3D(portalNormal, m_position));
-				}
-				clipPlaneConstants.gClipPlane[0] = portalPlane;
-				g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, map->m_riftMap->m_clipPlaneCBO);
-
-				actor->Render();
+				continue;
 			}
+
+			if (actorDotPortal < 0.f)
+			{
+				portalPlane = Vec4(portalNormal.x, portalNormal.y, portalNormal.z, DotProduct3D(-portalNormal, m_position));
+			}
+			else
+			{
+				portalPlane = Vec4(-portalNormal.x, -portalNormal.y, -portalNormal.z, DotProduct3D(portalNormal, m_position));
+			}
+			clipPlaneConstants.gClipPlane[0] = portalPlane;
+			g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, map->m_riftMap->m_clipPlaneCBO);
+
+			actor->Render();
+		}
 	}
+}
+
+void Rift::Die()
+{
+	m_isDead = true;
+	m_deathTimer->Start();
 }
 

@@ -65,6 +65,8 @@ public:
 
 	bool IsPlayer() const override;
 
+	bool m_godMode = false;
+
 	int m_playerIndex = -1;
 	int m_controllerIndex = -1;
 	int m_playerKills;
@@ -73,7 +75,7 @@ public:
 	Camera* m_screenCamera = nullptr;
 	AABB2	m_viewport;
 
-	Vec3 m_position; // Not initialized like the others because by simply just defining a new object of these classes, they are already initialized in their constructors.
+	Vec3 m_position;
 	Vec3 m_velocity;
 	EulerAngles m_orientation;
 	EulerAngles m_orientationRecoil;
@@ -86,6 +88,9 @@ public:
 	PlayerState m_desiredPlayerState = PlayerState::FREEFLY;
 	ControlState m_controlState = ControlState::KEYBOARD;
 	ControlState m_desiredControlState = ControlState::KEYBOARD;
+
+	Actor* m_ballNextTo = nullptr;
+	Actor* m_ballInsideOf = nullptr;
 
 	float m_jumpBuffer = 1.f;
 	bool m_sprintToggle = false;

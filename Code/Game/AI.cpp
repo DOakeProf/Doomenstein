@@ -30,6 +30,10 @@ void AI::DamagedBy(ActorHandle* otherActor)
 
 void AI::Update()
 {
+	if (m_actorHandle == nullptr)
+	{
+		return;
+	}
 	if (m_randomPatrolTimer->DecrementPeriodIfElapsed())
 	{
 		ChooseNewPatrolDirection();
@@ -107,7 +111,7 @@ void AI::Update_Melee()
 		}
 
 		Vec3 forwardVector = actor->m_orientation.GetForwardDir_IFwd_JLeft_KUp();
-		RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight), forwardVector, actor->m_definition->m_radius + 0.5f);
+		RaycastResult3D result = m_map->RaycastWorldXY(actor->m_position + Vec3(0.f, 0.f, 0.1f), forwardVector, actor->m_definition->m_radius + 0.5f);
 		if (result.m_didImpact)
 		{
 			actor->Jump();
@@ -163,7 +167,7 @@ void AI::Update_Ranged()
 				actor->m_orientation.m_yawDegrees -= GetClamped(angleBetweenVectors2D, -maxTurnSpeedThisFrame, maxTurnSpeedThisFrame);
 
 				// Alter pitch for accurate ranged weapon usage
-				Vec3 selfToOtherActorPitch = (otherActor->m_position + Vec3(0.f, 0.f, otherActor->m_definition->m_eyeHeight)) - (actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight));
+				Vec3 selfToOtherActorPitch = (otherActor->m_position + Vec3(0.f, 0.f, 0.1f)) - (actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight));
 				Vec3 selfToOtherActorPitchNormalized = selfToOtherActorPitch.GetNormalized();
 				actor->m_orientation.m_pitchDegrees = -AsinDegrees(DotProduct3D(selfToOtherActorPitchNormalized, Vec3(0.f, 0.f, 1.f)));
 			}

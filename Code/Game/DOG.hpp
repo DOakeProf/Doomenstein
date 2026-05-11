@@ -38,11 +38,15 @@ private:
 	Rift* m_DOGRift = nullptr;
 	Timer* m_riftGoAwayTimer = nullptr;
 	Timer* m_riftSpawnTimer = nullptr;
+	Timer* m_playerChargeAtTimer = nullptr;
+	Timer* m_dpsPhaseTimer = nullptr;
 
 	Actor* m_tail;
 	std::vector<Actor*> m_segments;
 	int m_numSegments = 50;
 	float m_followDistance = 2.5f;
+
+	Actor* m_ballInMouth = nullptr;
 
 	// Movement
 	CubicHermiteSpline3D m_spline;
@@ -51,5 +55,7 @@ private:
 	float m_secondsUntilHit = 1.f;
 	float m_averageVelocity = 25.f;
 	Vec3 m_prevHeadPos = Vec3();
+	bool m_shouldChargeAtSpecificPoint = false;
+	Vec3 m_specificPointToChargeAt = Vec3();
 	AABB3 m_movementBounds;
 };

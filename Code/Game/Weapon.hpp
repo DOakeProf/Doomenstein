@@ -136,7 +136,7 @@ public:
 	// HuckleBerry
 	Timer* m_rideTheBullTimer = nullptr;
 	float m_rideTheBullTime = 0.833f;
-	int m_maxRideTheBull = 2;
+	int m_maxRideTheBull = 3;
 	int m_rideTheBull = 0;
 
 	// Only for portal gun

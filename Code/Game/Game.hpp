@@ -47,8 +47,6 @@ public:
 
 	Player* JoinPlayer(int controllerIndex);
 
-	Actor* GetActorByHandle(const ActorHandle handle) const;
-
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Rifts
 	Rift* SpawnRift(Vec3 position, EulerAngles orientation, float scale = 1.f);
@@ -72,6 +70,13 @@ private:
 	void ExitState(GameState state);
 
 	void DestroyIfGarbage();
+
+	// Commands
+	static bool EventGodMode(EventArgs& args);
+	static bool EventFreeFlyToggle(EventArgs& args);
+	static bool EventSpawnBoss(EventArgs& args);
+	static bool EventDamageBoss(EventArgs& args);
+
 
 public:
 	RandomNumberGenerator*	m_randomNumberGenerator = nullptr;

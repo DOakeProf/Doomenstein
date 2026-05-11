@@ -92,6 +92,11 @@ void Game::Startup()
 	m_squirrelFont = g_engine->m_render->CreateOrGetBitmapFont("Data/Fonts/SquirrelFixedFont");
 
 	m_useTexture1Shader = g_engine->m_render->CreateShader("Data/Shaders/PortalShader", VertexType::VERTEX_PCU);
+
+	SubscribeEventCallbackFunction("god", EventGodMode);
+	SubscribeEventCallbackFunction("fly", EventFreeFlyToggle);
+	SubscribeEventCallbackFunction("spawnBoss", EventSpawnBoss);
+	SubscribeEventCallbackFunction("damageBoss", EventDamageBoss);
 }
 
 void Game::AddScreenShake(float screenShake)
@@ -425,6 +430,8 @@ void Game::Render_LobbyMode() const
 
 void Game::Update_PlayingMode()
 {
+	DestroyIfGarbage();
+
 	for (Actor* actor : m_currentMap->GetActors())
 	{
 		if (actor != nullptr)
@@ -445,8 +452,8 @@ void Game::Update_PlayingMode()
 			actor->m_riftCollidingWith = nullptr;
 			if (actor->m_hasEnteredRift)
 			{
-				m_currentMap->AddActorToMap(actor);
 				m_currentRiftMap->RemoveActorFromMap(actor);
+				m_currentMap->AddActorToMap(actor);
 				actor->m_hasEnteredRift = false;
 			}
 		}
@@ -466,8 +473,6 @@ void Game::Update_PlayingMode()
 
 	m_currentMap->Update();
 	m_currentRiftMap->Update();
-
-	DestroyIfGarbage();
 }
 
 void Game::Render_PlayingMode() const
@@ -509,24 +514,6 @@ Player* Game::JoinPlayer(int controllerIndex)
 	m_players[currentIndex]->m_controllerIndex = controllerIndex;
 
 	return m_players[currentIndex];
-}
-
-Actor* Game::GetActorByHandle(const ActorHandle handle) const
-{
-	Actor* returnActor = nullptr;
-
-	Actor* mapActor = m_currentMap->GetActorByHandle(handle);
-	if (mapActor != nullptr)
-	{
-		returnActor = mapActor;
-	}
-	Actor* riftMapActor = m_currentRiftMap->GetActorByHandle(handle);
-	if (riftMapActor != nullptr)
-	{
-		returnActor = riftMapActor;
-	}
-
-	return returnActor;
 }
 
 Rift* Game::SpawnRift(Vec3 position, EulerAngles orientation, float scale)
@@ -578,41 +565,9 @@ void Game::Update_Rifts()
 {
 	for (Rift* rift : g_rifts)
 	{
-		DebugAddWorldWireSphere(rift->GetPosition(), rift->GetScale(), 0.f, Rgba8::MAGENTA);
 		if (rift != nullptr)
 		{
-			rift->m_actorsNearRift.clear();
-			for (Actor* actor : m_currentMap->GetActors())
-			{
-				if (
-					actor != nullptr &&
-					actor->m_definition->m_spriteSheet != nullptr &&
-					DoSpheresOverlap(
-						actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height * 0.5f),
-						actor->m_definition->m_height * 0.5f,
-						rift->GetPosition(),
-						rift->GetScale())
-					)
-				{
-					actor->m_riftCollidingWith = rift;
-					rift->m_actorsNearRift.push_back(actor->m_handle);
-				}
-			}
-			for (Actor* actor : m_currentRiftMap->GetActors())
-			{
-				if (
-					actor != nullptr &&
-					DoSpheresOverlap(
-						actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_height * 0.5f),
-						actor->m_definition->m_height * 0.5f,
-						rift->GetPosition(),
-						rift->GetScale())
-					)
-				{
-					actor->m_riftCollidingWith = rift;
-					rift->m_actorsNearRift.push_back(actor->m_handle);
-				}
-			}
+			rift->Update();
 		}
 	}
 }
@@ -716,4 +671,51 @@ void Game::DestroyIfGarbage()
 {
 	m_currentMap->DestroyIfGarbage();
 	m_currentRiftMap->DestroyIfGarbage();
+
+	for (int riftIndex = 0; riftIndex < g_rifts.size(); ++riftIndex)
+	{
+		Rift* rift = g_rifts[riftIndex];
+		if (rift != nullptr && rift->m_isGarbage)
+		{
+			RemoveRift(rift);
+		}
+	}
+}
+
+bool Game::EventGodMode([[maybe_unused]] EventArgs& args)
+{
+	for (Player* player : g_app->m_game->m_players)
+	{
+		if (player != nullptr)
+		{
+			player->m_godMode = !player->m_godMode;
+		}
+	}
+	return true;
+}
+
+bool Game::EventFreeFlyToggle([[maybe_unused]] EventArgs& args)
+{
+	if (g_app->m_game->m_players.size() == 1 && g_app->m_game->m_players[0] != nullptr)
+	{
+		if (g_app->m_game->m_players[0]->m_desiredPlayerState == PlayerState::FREEFLY)
+		{
+			g_app->m_game->m_players[0]->m_desiredPlayerState = PlayerState::FIRSTPERSON;
+		}
+		else if (g_app->m_game->m_players[0]->m_desiredPlayerState == PlayerState::FIRSTPERSON)
+		{
+			g_app->m_game->m_players[0]->m_desiredPlayerState = PlayerState::FREEFLY;
+		}
+	}
+	return true;
+}
+
+bool Game::EventSpawnBoss([[maybe_unused]] EventArgs& args)
+{
+	return true;
+}
+
+bool Game::EventDamageBoss([[maybe_unused]] EventArgs& args)
+{
+	return true;
 }

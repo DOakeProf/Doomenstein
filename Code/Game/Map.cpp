@@ -518,6 +518,11 @@ std::vector<Actor*> Map::GetActors()
 	return m_actors;
 }
 
+std::vector<Player*> Map::GetPlayers()
+{
+	return m_players;
+}
+
 int Map::GetNumPortals()
 {
 	int numOfPortals = 0;
@@ -629,6 +634,7 @@ int Map::AddActorToMap(Actor* actor)
 Actor* Map::SpawnActor(const SpawnInfo& spawnInfo)
 {
 	Actor* newActor = new Actor(this, spawnInfo.m_name, spawnInfo.m_position + Vec3(0.f, 0.f, 0.01f), spawnInfo.m_orientation, spawnInfo.m_size);
+	newActor->m_desiredPosition = newActor->m_position;
 	AddActorToMap(newActor);
 	++m_nextActorUID;
 	if (m_nextActorUID > ActorHandle::MAX_ACTOR_UID)
@@ -1263,7 +1269,7 @@ void Map::CollideActorsWithRifts()
 		{
 			for (Rift* rift : g_rifts)
 			{
-				if (rift != nullptr)
+				if (rift != nullptr && !rift->m_isDead)
 				{
 					bool didCollideWithRift = CollideActorWithRift(actor, rift);
 					if (didCollideWithRift)
@@ -1311,6 +1317,7 @@ bool Map::CollideActorWithRift(Actor* actor, Rift* rift)
 	if (raycastResult.m_didImpact)
 	{
 		// Place the actor into the other map.
+		//m_game->MoveActorThroughRift(actor);
 		actor->m_hasEnteredRift = true;
 
 		DebugAddMessage("ENTERED RIFT", 2.f, Rgba8::RED, Rgba8::RED);
@@ -1469,8 +1476,9 @@ void Map::Render()
 		m_isRenderingPortal = true; // This lets the player whose view we're rendering be rendered in portal views.
 		Render_Portals();
 		m_isRenderingPortal = false; // Should not render the player in rift views.
+
 		m_isRenderingRift = true; // This tells the render actors function whether or not it can bind new clip plane constants. If not rendering a rift, it can for the purpose of cutting actors off at a rift.
-		m_riftMap->m_isRenderingRift = true; // This tells the render actors function whether or not it can bind new clip plane constants. If not rendering a rift, it can for the purpose of cutting actors off at a rift.
+		m_riftMap->m_isRenderingRift = true; 
 		Render_Rifts();
 		m_isRenderingRift = false;
 		m_riftMap->m_isRenderingRift = false;
@@ -1576,7 +1584,7 @@ void Map::Render_Actors() const
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
 	{
 		Actor* actor = m_actors[actorIndex];
-		if (actor != nullptr)
+		if (actor != nullptr && !actor->m_hasEnteredRift)
 		{
 			if (m_isRenderingRift)
 			{
@@ -1961,7 +1969,7 @@ RaycastResultDoomenstein Map::RaycastWorldActors(const Vec3& start, const Vec3& 
 	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
 	{
 		Actor* actor = m_actors[actorIndex];
-		if (actor != nullptr && !actor->m_isDead && actor != owner)
+		if (actor != nullptr && !actor->m_isDead && actor != owner && actor->m_definition->m_canBeShot)
 		{
 			RaycastResult3D newRaycastResult = RaycastVsCylinderZ3D(start, direction, distance, Vec2(actor->m_position.x, actor->m_position.y), actor->m_position.z, actor->m_position.z + actor->m_definition->m_height, actor->m_definition->m_radius);
 			if (newRaycastResult.m_impactDist != 0.f && newRaycastResult.m_impactDist < raycastResult.m_impactDist)

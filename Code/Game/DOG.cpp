@@ -6,6 +6,7 @@
 #include "Game/Game.hpp"
 #include "Game/App.hpp"
 #include "Game/Rift.hpp"
+#include "Game/Player.hpp"
 
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/RandomNumberGenerator.hpp"
@@ -20,9 +21,18 @@ DOG::DOG(Map* map)
 	m_head = m_map->SpawnActor(headSpawnInfo);
 
 	SpawnInfo bodySpawnInfo = SpawnInfo("DevourerBody", Vec3(-5.f, -5.f, 0.f), EulerAngles());
+	SpawnInfo bodyNearHeadSpawnInfo = SpawnInfo("DevourerBody_NearHead", Vec3(-5.f, -5.f, 0.f), EulerAngles());
 	for (int bodyIndex = 0; bodyIndex < m_numSegments; ++bodyIndex)
 	{
-		Actor* bodySegment = m_map->SpawnActor(bodySpawnInfo);
+		Actor* bodySegment = nullptr;
+		if (bodyIndex < 2)
+		{
+			bodySegment = m_map->SpawnActor(bodyNearHeadSpawnInfo);
+		}
+		else
+		{
+			bodySegment = m_map->SpawnActor(bodySpawnInfo);
+		}
 		m_segments.push_back(bodySegment);
 		bodySegment->m_shouldRouteDamageToOtherActor = true;
 		bodySegment->m_actorToRouteDamageTo = m_head;
@@ -32,17 +42,24 @@ DOG::DOG(Map* map)
 		}
 	}
 
-	SpawnInfo tailSpawnInfo = SpawnInfo("DevourerBody", Vec3(-5.f, -5.f, 0.f), EulerAngles());
+	SpawnInfo tailSpawnInfo = SpawnInfo("DevourerTail", Vec3(-5.f, -5.f, 0.f), EulerAngles());
 	m_tail = m_map->SpawnActor(tailSpawnInfo);
+	m_tail->m_shouldRouteDamageToOtherActor = true;
+	m_tail->m_actorToRouteDamageTo = m_head;
+	m_tail->m_prevDOGSegment = m_segments[m_numSegments - 1];
 
 	ChooseInitialSpline();
 
 	m_bodyTexture = g_engine->m_render->CreateOrGetTextureFromFile("Data/Images/DOGBody.png");
+	m_tailTexture = g_engine->m_render->CreateOrGetTextureFromFile("Data/Images/DOGTail.png");
 
-	m_movementBounds = AABB3(Vec3(-40.f, -40.f, -5.f), Vec3(120.f, 120.f, 70.f));
+	m_movementBounds = AABB3(Vec3(-40.f, -40.f, 10.f), Vec3(120.f, 120.f, 70.f));
 
 	m_riftGoAwayTimer = new Timer(10.f, m_map->m_game->m_gameClock);
 	m_riftSpawnTimer = new Timer(15.f, m_map->m_game->m_gameClock);
+	m_playerChargeAtTimer = new Timer(20.f, m_map->m_game->m_gameClock);
+	m_playerChargeAtTimer->Start();
+	m_dpsPhaseTimer = new Timer(25.f, m_map->m_game->m_gameClock);
 	m_riftSpawnTimer->Start();
 }
 
@@ -55,16 +72,104 @@ void DOG::Update()
 {
 	Update_MoveAlongSpline();
 
+	if (m_playerChargeAtTimer->HasPeriodElapsed())
+	{
+		for (Player* player : m_map->GetPlayers())
+		{
+			float randomNumber = m_map->m_game->m_randomNumberGenerator->RollRandomFloatZeroToOne();
+			if (!m_shouldChargeAtSpecificPoint && player != nullptr) // If we haven't started charging yet, do so at the first player we see..
+			{
+				m_specificPointToChargeAt = player->m_position;
+				m_shouldChargeAtSpecificPoint = true;
+				m_playerChargeAtTimer->Start();
+			}
+			else if (m_shouldChargeAtSpecificPoint && player != nullptr && randomNumber < 0.5f) // If we already have a player 50 charge at, 50% chance we charge at this next one instead.
+			{
+				m_specificPointToChargeAt = player->m_position;
+				m_shouldChargeAtSpecificPoint = true;
+				m_playerChargeAtTimer->Start();
+			}
+		}
+	}
+
+	if (m_ballInMouth == nullptr)
+	{
+		for (Actor* actor : m_map->GetActors())
+		{
+			if (actor != nullptr && actor->m_definition->m_name == "Ball" &&
+				actor->m_map == m_head->m_map && // Must be on same map
+				DoCylindersZOverlap(
+					Vec2(m_head->m_position.x, m_head->m_position.y), m_head->m_definition->m_radius, m_head->m_position.z, m_head->m_position.z + m_head->m_definition->m_height,
+					Vec2(actor->m_position.x, actor->m_position.y), actor->m_definition->m_radius, actor->m_position.z, actor->m_position.z + actor->m_definition->m_height)
+				)
+			{
+				m_ballInMouth = actor;
+				m_dpsPhaseTimer->Start();
+			}
+		}
+	}
+
+	if (m_ballInMouth)
+	{
+		m_ballInMouth->m_desiredPosition = Vec3(0.f, 0.f, -0.5f) + m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, m_followDistance, 16);
+		if (m_ballInMouth->m_map != m_head->m_map)
+		{
+			m_ballInMouth->m_hasEnteredRift = true;
+		}
+		for (Player* player : m_map->m_game->m_players)
+		{
+			if (player != nullptr && player->m_ballInsideOf != nullptr)
+			{
+				player->GetActor()->m_desiredPosition = player->m_ballInsideOf->m_desiredPosition;
+				if (player->GetActor()->m_map != m_head->m_map)
+				{
+					player->GetActor()->m_hasEnteredRift = true;
+				}
+			}
+		}
+	}
+
+	if (m_dpsPhaseTimer->DecrementPeriodIfElapsed())
+	{
+		m_dpsPhaseTimer->Stop();
+		m_ballInMouth->Die();
+		m_ballInMouth = nullptr;
+	}
+
 	if (m_head->m_isDead)
 	{
 		m_isDead = true;
 		m_isGarbage = true;
+
+		for (Actor* segment : m_segments)
+		{
+			segment->m_isDead = true;
+			segment->m_isGarbage = true;
+		}
+
+		m_tail->m_isDead = true;
+		m_tail->m_isGarbage = true;
 	}
 
 	if (m_DOGRift != nullptr && m_riftGoAwayTimer->HasPeriodElapsed() && m_DOGRift->m_actorsNearRift.size() == 0)
 	{
-		m_map->m_game->RemoveRift(m_DOGRift);
+		m_DOGRift->Die();
+		m_DOGRift = nullptr;
 		m_riftGoAwayTimer->Stop();
+		m_riftSpawnTimer->Start();
+
+		// Sometimes the DOG can get part of it caught in the other world, this just does a check and forces every part to be in the same world as the DOG when the rift closes.
+		for (Actor* segment : m_segments)
+		{
+			if (segment->m_map != m_head->m_map)
+			{
+				segment->m_hasEnteredRift = true;
+			}
+		}
+		if (m_tail->m_map != m_head->m_map)
+		{
+			m_tail->m_hasEnteredRift = true;
+		}
 	}
 
 	if (m_riftSpawnTimer->DecrementPeriodIfElapsed())
@@ -77,31 +182,14 @@ void DOG::Update()
 		Vec3 riftFwd = (m_spline.m_points[m_numPrevSplinePoints + 1] - m_spline.m_points[m_numPrevSplinePoints]).GetNormalized();
 		Mat44 riftOrientationAsMatrix = Mat44(riftFwd, Vec3(0.f, 1.f, 0.f), Vec3(0.f, 0.f, 1.f), Vec3(0.f, 0.f, 0.f));
 		EulerAngles riftOrientation = EulerAngles(riftOrientationAsMatrix);
-		m_DOGRift = m_map->m_game->SpawnRift(riftPosition, riftOrientation, 5.f);
+		m_DOGRift = m_map->m_game->SpawnRift(riftPosition, riftOrientation, 7.f);
 
 		m_riftSpawnTimer->m_period = m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(5.f,17.f);
-		m_riftSpawnTimer->Start();
+		m_riftSpawnTimer->Stop();
 	}
-
-	// Have body follow head.
-	//Vec3 headToSegment = m_segments[0]->m_position - m_head->m_position;
-	//if (headToSegment.GetLength() > m_followDistance)
-	//{
-	//	m_segments[0]->m_position = m_head->m_position + headToSegment.GetNormalized() * m_followDistance;
-	//}
-	//for (int bodyIndex = 1; bodyIndex < m_segments.size(); ++bodyIndex)
-	//{
-	//	Actor* curSegment = m_segments[bodyIndex];
-	//	Actor* prevSegment = m_segments[bodyIndex - 1];
-	//	Vec3 prevToCur =  curSegment->m_position - prevSegment->m_position;
-	//	if (prevToCur.GetLength() > m_followDistance)
-	//	{
-	//		curSegment->m_position = prevSegment->m_position + prevToCur.GetNormalized() * m_followDistance;
-	//	}
-	//}
 }
 
-void DOG::Render(Map* currentlyRenderedMap) const
+void DOG::Render([[maybe_unused]] Map* currentlyRenderedMap) const
 {
 	
 }
@@ -121,8 +209,10 @@ void DOG::Update_MoveAlongSpline()
 
 	for (int segmentIndex = 0; segmentIndex < m_segments.size(); ++segmentIndex)
 	{
-		m_segments[segmentIndex]->m_desiredPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * (float)segmentIndex, 16);
+		m_segments[segmentIndex]->m_desiredPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * ((float)segmentIndex + 1.f), 8);
 	}
+
+	m_tail->m_desiredPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * ((float)m_segments.size() + 1.f), 8);
 
 	if (g_app->IsDebug())
 	{
@@ -163,9 +253,20 @@ void DOG::ChooseNextSpline()
 		points.push_back(m_spline.m_points[m_numPrevSplinePoints - prevIndexReversed]);
 	}
 	points.push_back(m_spline.m_points[m_numPrevSplinePoints]); // Spline position we just hit
-	points.push_back(m_spline.m_points[m_numPrevSplinePoints + 1]); // Next spline position
-	points.push_back(m_spline.m_points[m_numPrevSplinePoints + 2]); // Next Next spline position
-	points.push_back(FindRandomPointInFront()); // a new random point, must be here to calculate next spline position's velocity.
+
+	if (m_shouldChargeAtSpecificPoint)
+	{
+		points.push_back(m_specificPointToChargeAt); // Next spline position
+		points.push_back(FindRandomVec3()); // Next Next spline position
+		points.push_back(FindRandomPointInFront()); // a new random point, must be here to calculate next spline position's velocity.
+		m_shouldChargeAtSpecificPoint = false;
+	}
+	else
+	{
+		points.push_back(m_spline.m_points[m_numPrevSplinePoints + 1]); // Next spline position
+		points.push_back(m_spline.m_points[m_numPrevSplinePoints + 2]); // Next Next spline position
+		points.push_back(FindRandomPointInFront()); // a new random point, must be here to calculate next spline position's velocity.
+	}
 	m_spline = CubicHermiteSpline3D(points, m_spline.m_velocities[m_numPrevSplinePoints]); // Have initial velocity be the velocity of the point we just hit.
 	for (Vec3& velocity : m_spline.m_velocities)
 	{
@@ -197,7 +298,7 @@ Vec3 DOG::FindRandomPointInFront()
 	fwdDir = fwdDir.GetNormalized();
 
 	Vec3 randomDirection = m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(fwdDir, 45.f);
-	Vec3 randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(27.f, 40.f) + m_head->m_position;
+	Vec3 randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(17.f, 30.f) + m_head->m_position;
 
 	int maxRandomRolls = 10;
 	int randomRollsCount = 0;
@@ -210,7 +311,7 @@ Vec3 DOG::FindRandomPointInFront()
 		}
 
 		randomDirection = m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(fwdDir, 35.f);
-		randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(27.f, 40.f) + m_head->m_position;
+		randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(17.f, 30.f) + m_head->m_position;
 	}
 
 	return randomVec3;

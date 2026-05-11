@@ -58,6 +58,34 @@ void Player::Update()
 		}
 	}
 	
+	// Check if near interactable balls
+	m_ballNextTo = nullptr;
+	for (Actor* actorToCheck : m_map->GetActors())
+	{
+		if (actorToCheck != nullptr && actorToCheck->m_definition->m_name == "Ball")
+		{
+			Vec3 ballToPlayer = m_position - actorToCheck->m_position;
+			if (ballToPlayer.GetLength() < 2.f)
+			{
+				m_ballNextTo = actorToCheck;
+			}
+		}
+	}
+
+	if (m_ballInsideOf != nullptr && m_ballInsideOf->m_isDead)
+	{
+		GetActor()->m_desiredPosition = m_ballInsideOf->m_desiredPosition + Vec3(1.f, 0.f, 0.f);
+		Vec3 centerOfMap = Vec3(45.5f, 41.5f, 7.f);
+		Vec3 actorToCenter = centerOfMap - GetActor()->m_position;
+		GetActor()->AddImpulse(actorToCenter * GetActor()->m_definition->m_drag);
+		m_ballInsideOf = nullptr;
+	}
+
+	// If in a ball, override all position adjustments from input and move the player to wherever the ball is. This is done again if the DOG has the ball in its mouth but later after the ball has changed desired position.
+	if (m_ballInsideOf != nullptr)
+	{
+		GetActor()->m_desiredPosition = m_ballInsideOf->m_desiredPosition;
+	}
 
 	if (actor != nullptr && actor->m_isDead)
 	{
@@ -124,6 +152,17 @@ void Player::Render_HUD()
 		if (GetActor()->m_equippedWeapon->m_definition->m_maxAmmo != -1)
 		{
 			m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, Stringf("%i/%i", GetActor()->m_equippedWeapon->m_bullets, GetActor()->m_equippedWeapon->m_definition->m_maxAmmo), SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.15f, 0.06f));
+		}
+		if (m_ballNextTo != nullptr && m_ballInsideOf == nullptr)
+		{
+			if (m_controlState == ControlState::KEYBOARD)
+			{
+				m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Press E to enter Ball", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+			}
+			else if (m_controlState == ControlState::CONTROLLER)
+			{
+				m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Press Y to enter Ball", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+			}
 		}
 		g_engine->m_render->BindTexture(&m_map->m_game->m_squirrelFont->GetTexture());
 		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
@@ -471,6 +510,16 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 			actor->m_equippedWeapon->StartReload(actor);
 		}
 
+		if (m_ballInsideOf != nullptr && g_engine->m_input->WasKeyJustPressed('E'))
+		{
+			GetActor()->m_position = m_ballInsideOf->m_position + Vec3(1.f, 0.f, 0.f);
+			m_ballInsideOf = nullptr;
+		}
+		else if (m_ballNextTo != nullptr && g_engine->m_input->WasKeyJustPressed('E'))
+		{
+			m_ballInsideOf = m_ballNextTo;
+		}
+
 		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 	}
 
@@ -591,6 +640,16 @@ void Player::HandleInputs_FirstPerson_Controller()
 		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_X))
 		{
 			actor->m_equippedWeapon->StartReload(actor);
+		}
+
+		if (m_ballInsideOf != nullptr && controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_Y))
+		{
+			GetActor()->m_position = m_ballInsideOf->m_position + Vec3(1.f, 0.f, 0.f);
+			m_ballInsideOf = nullptr;
+		}
+		else if (m_ballNextTo != nullptr && controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_Y))
+		{
+			m_ballInsideOf = m_ballNextTo;
 		}
 
 		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);

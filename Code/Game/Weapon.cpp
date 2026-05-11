@@ -799,6 +799,10 @@ void Weapon::Fire_Weapon(Actor* actor)
 			RaycastResultDoomenstein result = actor->m_map->RaycastAll(initialFirePosition, randomDirection, rayRange, actor);
 			if (result.m_didImpact && result.m_actor != nullptr)
 			{
+				if (result.m_actor->m_controller != nullptr && result.m_actor->m_controller->IsPlayer() && ((Player*)result.m_actor->m_controller)->m_godMode) // This is here to prevent players from being pushed around in god mode.
+				{
+					return;
+				}
 				// Was it a precision hit?
 				float precisionMultiplier = 1.f;
 				RaycastResult3D precisionResult = result.m_actor->RaycastVsPrecision(initialFirePosition, randomDirection, rayRange);
@@ -820,7 +824,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 				float damageFalloffMultiplier = SmoothStop6(1.f - (result.m_impactDist / rayRange));
 				float RandomDamage = damageFalloffMultiplier * // Damage falloff
 									 precisionMultiplier * // Precision damage
-									 (1.f + 0.25f * (float)m_consecutiveHits) * // Broadside perk damage increase
+									 (1.f + 0.4f * (float)m_consecutiveHits) * // Broadside perk damage increase
 									 result.m_actor->m_definition->m_armorMultiplier * // Actor armor multiplier
 									 actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_rayDamage.m_min, m_definition->m_rayDamage.m_max);
 				result.m_actor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
@@ -837,7 +841,7 @@ void Weapon::Fire_Weapon(Actor* actor)
 					}
 				}
 
-				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse);
+				result.m_actor->AddImpulse(randomDirection * m_definition->m_rayImpulse / result.m_actor->m_definition->m_radius);
 				result.m_actor->m_map->SpawnActor("BloodSplatter", result.m_impactPos, EulerAngles());
 
 				// Damage Number
@@ -893,6 +897,10 @@ void Weapon::Fire_Weapon(Actor* actor)
 				if (distFromSelfToOther.GetLength() < m_definition->m_meleeRange &&
 					angleBetweenSelfToOtherAndForward < m_definition->m_meleeArc)
 				{
+					if (currentActor->m_controller != nullptr && currentActor->m_controller->IsPlayer() && ((Player*)currentActor->m_controller)->m_godMode) // This is here to prevent players from being pushed around in god mode.
+					{
+						return;
+					}
 					float RandomDamage = actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_meleeDamage.m_min, m_definition->m_meleeDamage.m_max);
 					currentActor->Damage(RoundDownToInt(RandomDamage), actor->m_handle);
 					currentActor->AddImpulse(distFromSelfToOther.GetNormalized() * m_definition->m_meleeImpulse);

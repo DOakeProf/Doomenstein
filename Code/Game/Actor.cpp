@@ -5,6 +5,7 @@
 #include "Game/AI.hpp"
 #include "Game/Player.hpp"
 #include "Game/App.hpp"
+#include "Game/glTFReader.hpp"
 
 #include "Engine/Math/Mat44.hpp"
 #include "Engine/Core/Vertex.hpp"
@@ -152,9 +153,9 @@ void Actor::Update()
 	}
 	ClearStoppedPlaybackID();
 
-	if (m_position.z <= -2.f)
+	if (m_position.z <= -2.f && !m_isDead && m_definition->m_faction != "DOG" && m_definition->m_name != "Ball") // Kill actors below a certain Z value.
 	{
-		//Die();
+		Damage(m_health, nullptr);
 	}
 
 	m_isGrounded = false;
@@ -162,6 +163,21 @@ void Actor::Update()
 
 void Actor::Render()
 {
+	g_engine->m_render->BindShader(m_definition->m_shader);
+	if (m_definition->m_renderBackfaces)
+	{
+		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
+	}
+	else
+	{
+		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
+	}
+	
+	if (m_definition->m_gltfAssets.size() > 0)
+	{
+		Render_GLTF();
+	}
+
 	if (m_prevDOGSegment != nullptr)
 	{
 		Render_DOGSegment();
@@ -185,7 +201,6 @@ void Actor::Render()
 	{
 		std::vector<Vertex> localVerts;
 		m_map->m_game->m_squirrelFont->AddVertsForText3DAtOriginXForward(localVerts, 0.05f * m_size, Stringf("%.1f", m_valueToDisplay), m_color, 1.f);
-		g_engine->m_render->BindShader(m_definition->m_shader);
 		g_engine->m_render->SetModelConstants(GetModelMatrixBillboarded());
 		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 		g_engine->m_render->BindTexture(&m_map->m_game->m_squirrelFont->GetTexture());
@@ -326,14 +341,22 @@ void Actor::Render_DOGSegment() const
 	std::vector<unsigned int> localIndexes;
 
 	float devourerSize = 2.5f;
+	float devourerLengthMult = 1.f;
 
-	Vec3 BL1 = Vec3(devourerSize, devourerSize, 0.f);
-	Vec3 BR1 = Vec3(devourerSize, -devourerSize, 0.f);
+	if (m_definition->m_name == "DevourerTail")
+	{
+		devourerLengthMult = 3.f;
+	}
+
+	Vec3 offset1 = Vec3(0.f, 0.f, 0.02f);
+	Vec3 BL1 = Vec3(devourerSize * devourerLengthMult, devourerSize, 0.f);
+	Vec3 BR1 = Vec3(devourerSize * devourerLengthMult, -devourerSize, 0.f);
 	Vec3 TR1 = Vec3(0.f, -devourerSize, 0.f);
 	Vec3 TL1 = Vec3(0.f, devourerSize, 0.f);
 
-	Vec3 BL2 = Vec3(devourerSize, 0.f, devourerSize);
-	Vec3 BR2 = Vec3(devourerSize, 0.f, -devourerSize);
+	Vec3 offset2 = Vec3(0.f, 0.02f, 0.f);
+	Vec3 BL2 = Vec3(devourerSize * devourerLengthMult, 0.f, devourerSize);
+	Vec3 BR2 = Vec3(devourerSize * devourerLengthMult, 0.f, -devourerSize);
 	Vec3 TR2 = Vec3(0.f, 0.f, -devourerSize);
 	Vec3 TL2 = Vec3(0.f, 0.f, devourerSize);
 
@@ -341,8 +364,11 @@ void Actor::Render_DOGSegment() const
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	g_engine->m_render->BindShader(m_definition->m_shader);
 
-	AddVertsForRoundedQuad3D(localVerts, localIndexes, BL1, BR1, TR1, TL1);
-	AddVertsForRoundedQuad3D(localVerts, localIndexes, BL2, BR2, TR2, TL2);
+	AddVertsForRoundedQuad3D(localVerts, localIndexes, BL1 + offset1, BR1 + offset1, TR1 + offset1, TL1 + offset1); // Need to add two faces, one backwards and one forwards to make lighting look complete.
+	AddVertsForRoundedQuad3D(localVerts, localIndexes, BR1 - offset1, BL1 - offset1, TL1 - offset1, TR1 - offset1);
+
+	AddVertsForRoundedQuad3D(localVerts, localIndexes, BL2 + offset2, BR2 + offset2, TR2 + offset2, TL2 + offset2);
+	AddVertsForRoundedQuad3D(localVerts, localIndexes, BR2 - offset2, BL2 - offset2, TL2 - offset2, TR2 - offset2);
 
 	// Render from prev to cur
 	Vec3 prevToCur = m_position - m_prevDOGSegment->m_position;
@@ -352,6 +378,26 @@ void Actor::Render_DOGSegment() const
 	prevToCurDirection.Orthonormalize_XFwd_YLeft_ZUp();
 	g_engine->m_render->SetModelConstants(prevToCurDirection);
 	g_engine->m_render->DrawIndexedVertexList(&localVerts, &localIndexes);
+
+	if (g_app->IsDebug())
+	{
+		Render_Debug();
+	}
+}
+
+void Actor::Render_GLTF() const
+{
+	Mat44 modelMatrix = GetModelMatrix();
+	modelMatrix.AppendTranslation3D(Vec3(m_definition->m_pivot.x, 0.f, m_definition->m_pivot.y));
+
+	modelMatrix.Append(Camera::GLTF_TO_GAME_CONVENTIONS);
+
+	g_engine->m_render->SetModelConstants(modelMatrix, Rgba8::WHITE);
+
+	for (glTF_Asset* asset : m_definition->m_gltfAssets)
+	{
+		asset->Test_RenderModel();
+	}
 }
 
 Mat44 Actor::GetModelMatrix() const
@@ -414,6 +460,10 @@ void Actor::Update_Physics()
 {
 	if (m_definition->m_physicsIsSimulated && (!m_isDead || m_definition->m_moveWhenDead))
 	{
+		if ((m_controller != nullptr && m_controller->IsPlayer() && ((Player*)m_controller)->m_ballInsideOf != nullptr))// Don't update physics if inside a ball
+		{
+			return;
+		}
 		float deltaSeconds = (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 		if (!m_definition->m_isFlying)
 		{
@@ -476,8 +526,9 @@ void Actor::Update_Gameplay()
 void Actor::Update_Position()
 {
 	if (m_definition->m_physicsIsSimulated ||
-		m_definition->m_name == "DevourerHead" ||
-		m_definition->m_name == "DevourerBody")
+		m_definition->m_faction == "DOG" ||
+		m_definition->m_name == "Ball")
+
 	{
 		m_position = m_desiredPosition;
 	}
@@ -632,7 +683,12 @@ void Actor::EquipWeapon(Weapon* weapon)
 
 void Actor::Damage(int damage, ActorHandle* otherActor)
 {
-	if (m_shouldRouteDamageToOtherActor)
+	if (m_controller != nullptr && m_controller->IsPlayer() && (((Player*)m_controller)->m_godMode || ((Player*)m_controller)->m_ballInsideOf != nullptr))
+	{
+		return;
+	}
+
+	if (m_shouldRouteDamageToOtherActor && otherActor != nullptr)
 	{
 		m_actorToRouteDamageTo->Damage(damage, otherActor);
 		return;
@@ -646,13 +702,16 @@ void Actor::Damage(int damage, ActorHandle* otherActor)
 		m_AIController->DamagedBy(otherActor);
 	}
 
-	Actor* otherActorRef = m_map->GetActorByHandle(*otherActor);
-	if (m_health <= 0 && 
-	otherActorRef != nullptr && otherActorRef->m_controller != nullptr && otherActorRef->m_controller->IsPlayer() &&
-	m_controller != nullptr && m_controller->IsPlayer())
+	if (otherActor != nullptr)
 	{
-		++((Player*)otherActorRef->m_controller)->m_playerKills;
-		++((Player*)m_controller)->m_playerDeaths;
+		Actor* otherActorRef = m_map->GetActorByHandle(*otherActor);
+		if (m_health <= 0 &&
+			otherActorRef != nullptr && otherActorRef->m_controller != nullptr && otherActorRef->m_controller->IsPlayer() &&
+			m_controller != nullptr && m_controller->IsPlayer())
+		{
+			++((Player*)otherActorRef->m_controller)->m_playerKills;
+			++((Player*)m_controller)->m_playerDeaths;
+		}
 	}
 }
 
@@ -678,7 +737,14 @@ void Actor::OnCollide(Actor* otherActor)
 	if (otherActor != nullptr && m_definition->m_damageOnCollide != FloatRange(-1, -1) && m_definition->m_faction != otherActor->m_definition->m_faction)
 	{
 		float damage = m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(m_definition->m_damageOnCollide.m_min, m_definition->m_damageOnCollide.m_max);
-		otherActor->Damage(RoundDownToInt(damage), m_owner->m_handle);
+		if (m_owner == nullptr)
+		{
+			otherActor->Damage(RoundDownToInt(damage), nullptr);
+		}
+		else
+		{
+			otherActor->Damage(RoundDownToInt(damage), m_owner->m_handle);
+		}
 	}
 	if (otherActor != nullptr && m_definition->m_impulseOnCollide != -1.f)
 	{
@@ -736,6 +802,7 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 			newActorDef->m_collidesWithSameActor = ParseXmlAttribute(*collisionElement, "collidesWithSameActor", true);
 			newActorDef->m_precisionOffset = ParseXmlAttribute(*collisionElement, "precisionOffset", Vec3());
 			newActorDef->m_precisionRadius = ParseXmlAttribute(*collisionElement, "precisionRadius", -1.f);
+			newActorDef->m_canBeShot = ParseXmlAttribute(*collisionElement, "canBeShot", true);
 		}
 
 		XmlElement* physicsElement = actorDefElement->FirstChildElement("Physics");
@@ -819,6 +886,15 @@ void ActorDefinition::InitializeDefinitions(const char* path)
 			{
 				newActorDef->m_spriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(spriteSheetPath.c_str()), newActorDef->m_cellCount);
 			}
+			std::string gltfName = ParseXmlAttribute(*VisualsElement, "gltfName", "");
+			for (glTF_Asset* curGltfAsset : g_app->m_gltfModels)
+			{
+				if (gltfName == curGltfAsset->m_name)
+				{
+					newActorDef->m_gltfAssets.push_back(curGltfAsset);
+				}
+			}
+			newActorDef->m_renderBackfaces = ParseXmlAttribute(*VisualsElement, "renderBackfaces", false);
 		}
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

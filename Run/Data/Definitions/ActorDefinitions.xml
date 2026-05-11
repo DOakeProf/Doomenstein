@@ -59,7 +59,7 @@
     </Inventory>
   </ActorDefinition>
   <!-- Demon -->
-  <ActorDefinition name="Demon" faction="Demon" health="80" canBePossessed="true" corpseLifetime="1.0" visible="true">
+  <ActorDefinition name="Demon" faction="Demon" health="50" canBePossessed="true" corpseLifetime="1.0" visible="true">
     <Collision radius="0.35" height="0.85" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.3f, 0.f, 0.5f" precisionRadius ="0.2f"/>
     <Physics simulated="true" walkSpeed="2.0f" runSpeed="5.0f" turnSpeed="180.0f" drag="9.0f" jumpHeight="11.5f"/>
     <Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
@@ -108,7 +108,7 @@
     </Inventory>
   </ActorDefinition>
 	<!-- Dinosaur -->
-	<ActorDefinition name="Dinosaur" faction="Demon" health="110" canBePossessed="true" corpseLifetime="1.0" visible="true">
+	<ActorDefinition name="Dinosaur" faction="Demon" health="80" canBePossessed="true" corpseLifetime="1.0" visible="true">
 		<Collision radius="0.4" height="1.2" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.4f, 0.f, 1.1f" precisionRadius ="0.2f"/>
 		<Physics simulated="true" walkSpeed="2.5f" runSpeed="3.5f" turnSpeed="120.0f" drag="9.0f" jumpHeight="20.5f"/>
 		<Camera eyeHeight="0.85f" cameraFOV="100.0f"/>
@@ -206,9 +206,118 @@
 			<Weapon name="DinosaurGun" />
 		</Inventory>
 	</ActorDefinition>
+	<!-- Emperor -->
+	<ActorDefinition name="Emperor" faction="Demon" health="600" canBePossessed="true" corpseLifetime="2.25" visible="true">
+		<Collision radius="1.0" height="2.2" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.8f, 0.f, 1.9f" precisionRadius ="0.3f"/>
+		<Physics simulated="true" walkSpeed="1.5f" runSpeed="2.4f" turnSpeed="120.0f" drag="9.0f" jumpHeight="11.5f"/>
+		<Camera eyeHeight="1.8f" cameraFOV="55.0f"/>
+		<AI aiEnabled="true" aiType ="Ranged" sightRadius="35.0" sightAngle="120.0"/>
+		<Visuals size="2.8,2.8" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Emperor_4x14.png" cellCount="4,14">
+			<AnimationGroup name="Walk" scaleBySpeed="true" secondsPerFrame="0.25" playbackMode="Loop">
+				<Direction vector="-1,0,0"> <!-- FRONT -->
+					<Animation startFrame="0" endFrame="3"/>
+				</Direction>
+				<Direction vector="-1,-1,0"> <!-- FRONT LEFT -->
+					<Animation startFrame="4" endFrame="7"/>
+				</Direction>
+				<Direction vector="0,-1,0"> <!-- LEFT -->
+					<Animation startFrame="8" endFrame="11"/>
+				</Direction>
+				<Direction vector="1,-1,0"> <!-- BACK LEFT -->
+					<Animation startFrame="12" endFrame="15"/>
+				</Direction>
+				<Direction vector="1,0,0"> <!-- BACK -->
+					<Animation startFrame="16" endFrame="19"/>
+				</Direction>
+				<Direction vector="1,1,0"> <!-- BACK RIGHT -->
+					<Animation startFrame="28" endFrame="31"/>
+				</Direction>
+				<Direction vector="0,1,0"> <!-- RIGHT -->
+					<Animation startFrame="24" endFrame="27"/>
+				</Direction>
+				<Direction vector="-1,1,0"> <!-- FRONT RIGHT -->
+					<Animation startFrame="20" endFrame="23"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Attack" secondsPerFrame="0.125" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="32" endFrame="33"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="36" endFrame="37"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="40" endFrame="41"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<!-- BACK LEFT -->
+					<Animation startFrame="14" endFrame="15"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<!-- BACK -->
+					<Animation startFrame="18" endFrame="19"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<!-- BACK RIGHT -->
+					<Animation startFrame="30" endFrame="31"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="42" endFrame="43"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="38" endFrame="39"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Hurt" secondsPerFrame="0.5" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="44" endFrame="45"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<!-- FRONT LEFT -->
+					<Animation startFrame="4" endFrame="5"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<!-- LEFT -->
+					<Animation startFrame="8" endFrame="9"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<!-- BACK LEFT -->
+					<Animation startFrame="12" endFrame="13"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<!-- BACK -->
+					<Animation startFrame="16" endFrame="17"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<!-- BACK RIGHT -->
+					<Animation startFrame="28" endFrame="29"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<!-- RIGHT -->
+					<Animation startFrame="24" endFrame="25"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<!-- FRONT RIGHT -->
+					<Animation startFrame="20" endFrame="21"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Death" secondsPerFrame="0.25" playbackMode="Once">
+				<Direction vector="1,0,0">
+					<Animation startFrame="44" endFrame="52"/>
+				</Direction>
+			</AnimationGroup>
+		</Visuals>
+		<Sounds>
+			<Sound sound="Hurt" name="Data/Audio/DemonHurt.wav"/>
+			<Sound sound="Death" name="Data/Audio/DemonDeath.wav"/>
+		</Sounds>
+		<Inventory>
+			<Weapon name="EmperorGun" />
+		</Inventory>
+	</ActorDefinition>
 	<!-- DevourerHead -->
-	<ActorDefinition name="DevourerHead" faction="DOG" health="5000" canBePossessed="true" corpseLifetime="1.0" visible="true">
-		<Collision radius="1.5f" height="2.2f" collidesWithWorld="false" collidesWithActors="false" precisionOffset="0.f, 0.f, 1.f" precisionRadius ="2.f"/>
+	<ActorDefinition name="DevourerHead" faction="DOG" health="8000" canBePossessed="true" corpseLifetime="1.0" visible="true">
+		<Collision radius="1.5f" height="2.6f" collidesWithWorld="false" collidesWithActors="true" damageOnCollide="60.0~80.0" impulseOnCollide="30.0" precisionOffset="0.f, 0.f, 1.f" precisionRadius ="4.f"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.85f" cameraFOV="130.0f"/>
 		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
@@ -263,8 +372,39 @@
 		<Inventory>
 		</Inventory>
 	</ActorDefinition>
+	<!-- DevourerBody Near Head -->
+	<ActorDefinition name="DevourerBody_NearHead" faction="DOG" health="1" canBePossessed="false" corpseLifetime="1.0" visible="true" armorMultiplier ="0.2f">
+		<Collision radius="1.5f" height="2.2f" collidesWithWorld="false" collidesWithActors="false" canBeShot="false"/>
+		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
+		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
+		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
+		<Visuals size="2.1,2.1" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/DOGBody.png" cellCount="1,1">
+		</Visuals>
+		<Sounds>
+			<Sound sound="Hurt" name="Data/Audio/DemonHurt.wav"/>
+			<Sound sound="Death" name="Data/Audio/DemonDeath.wav"/>
+		</Sounds>
+		<Inventory>
+		</Inventory>
+	</ActorDefinition>
+	<!-- DevourerTail -->
+	<ActorDefinition name="DevourerTail" faction="DOG" health="1" canBePossessed="false" corpseLifetime="1.0" visible="true" armorMultiplier ="1.0f">
+		<Collision radius="1.5f" height="2.2f" collidesWithWorld="false" collidesWithActors="false"/>
+		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
+		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
+		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
+		<Visuals size="2.1,2.1" pivot="0.5,0.0" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/DOGTail.png" cellCount="1,1">
+		</Visuals>
+		<Sounds>
+			<Sound sound="Hurt" name="Data/Audio/DemonHurt.wav"/>
+			<Sound sound="Death" name="Data/Audio/DemonDeath.wav"/>
+		</Sounds>
+		<Inventory>
+		</Inventory>
+	</ActorDefinition>
   <!-- BulletHit -->
   <ActorDefinition name="BulletHit" canBePossessed="false" corpseLifetime="0.4" visible="true" dieOnSpawn="true" >
+	<Collision  canBeShot="false"/>
     <Visuals size="0.2,0.2" pivot="0.5,0.5" billboardType="WorldUpOpposing" renderLit="true" renderRounded="false" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Projectile_PistolHit.png" cellCount="4,1">
       <AnimationGroup name="Death" secondsPerFrame="0.1" playbackMode="Once">
         <Direction vector="1,0,0"><Animation startFrame="0" endFrame="3"/></Direction>
@@ -273,6 +413,7 @@
   </ActorDefinition>
   <!-- BloodHit -->
   <ActorDefinition name="BloodSplatter" canBePossessed="false" corpseLifetime="0.3" visible="true" dieOnSpawn="true">
+	<Collision  canBeShot="false"/>
     <Visuals size="0.45,0.45" pivot="0.5,0.5" billboardType="WorldUpOpposing" renderLit="true" renderRounded="false" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Projectile_BloodSplatter.png" cellCount="3,1">
       <AnimationGroup name="Death" secondsPerFrame="0.1" playbackMode="Once">
         <Direction vector="1,0,0"><Animation startFrame="0" endFrame="2"/></Direction>
@@ -281,8 +422,16 @@
   </ActorDefinition>
   <!-- DamageNumber -->
   <ActorDefinition name="DamageNumber" canBePossessed="false" corpseLifetime="1.0" visible="true" dieOnSpawn="true">
+	  <Collision  canBeShot="false"/>
 	<Physics simulated="true" turnSpeed="0.0" flying="true" drag="4.5" moveWhenDead="true"/>
   	<Visuals size="0.45,0.45" pivot="0.5,0.5" billboardType="FullFacing" renderLit="false" renderRounded="false" shader="Default" displayValue="true">
+  	</Visuals>
+  </ActorDefinition>
+  <!-- Ball -->
+  <ActorDefinition name="Ball" canBePossessed="false" corpseLifetime="0.0" visible="true" dieOnSpawn="false">
+	 <Collision radius="1.f" height="1.5f" collidesWithWorld="false" collidesWithActors="false" canBeShot="false"/>
+	<Physics simulated="false" turnSpeed="0.0" flying="false" drag="4.5" moveWhenDead="true"/>
+  	<Visuals pivot="0.0,0.85" gltfName="Ball" shader="Data/Shaders/Diffuse" renderBackfaces="true">
   	</Visuals>
   </ActorDefinition>
 </Definitions>

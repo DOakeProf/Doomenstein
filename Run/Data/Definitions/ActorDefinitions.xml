@@ -206,6 +206,105 @@
 			<Weapon name="DinosaurGun" />
 		</Inventory>
 	</ActorDefinition>
+	<!-- Skeleton -->
+	<ActorDefinition name="Skeleton" faction="Demon" health="120" canBePossessed="true" corpseLifetime="1.0" visible="true">
+		<Collision radius="0.4" height="1.2" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.4f, 0.f, 1.1f" precisionRadius ="0.2f"/>
+		<Physics simulated="true" walkSpeed="4.5f" runSpeed="6.5f" turnSpeed="120.0f" drag="9.0f" jumpHeight="20.5f"/>
+		<Camera eyeHeight="0.85f" cameraFOV="100.0f"/>
+		<AI aiEnabled="true" aiType ="Ranged" sightRadius="20.0" sightAngle="120.0"/>
+		<Visuals size="1.8,1.8" pivot="0.5,0.1" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/Skeleton_6x11.png" cellCount="6,11">
+			<AnimationGroup name="Walk" scaleBySpeed="true" secondsPerFrame="0.125" playbackMode="Loop">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="36" endFrame="40"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="0" endFrame="0"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="0" endFrame="0"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="56" endFrame="63"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="12" endFrame="17"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="18" endFrame="22"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="24" endFrame="28"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="30" endFrame="34"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Attack" secondsPerFrame="0.125" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="48" endFrame="52"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="48" endFrame="52"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="48" endFrame="52"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="48" endFrame="52"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="48" endFrame="52"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="48" endFrame="52"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="48" endFrame="52"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="48" endFrame="52"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Hurt" secondsPerFrame="0.5" playbackMode="Once">
+				<Direction vector="-1,0,0">
+					<Animation startFrame="60" endFrame="61"/>
+				</Direction>
+				<Direction vector="-1,-1,0">
+					<Animation startFrame="60" endFrame="61"/>
+				</Direction>
+				<Direction vector="0,-1,0">
+					<Animation startFrame="60" endFrame="61"/>
+				</Direction>
+				<Direction vector="1,-1,0">
+					<Animation startFrame="60" endFrame="61"/>
+				</Direction>
+				<Direction vector="1,0,0">
+					<Animation startFrame="60" endFrame="61"/>
+				</Direction>
+				<Direction vector="1,1,0">
+					<Animation startFrame="60" endFrame="61"/>
+				</Direction>
+				<Direction vector="0,1,0">
+					<Animation startFrame="60" endFrame="61"/>
+				</Direction>
+				<Direction vector="-1,1,0">
+					<Animation startFrame="60" endFrame="61"/>
+				</Direction>
+			</AnimationGroup>
+			<AnimationGroup name="Death" secondsPerFrame="0.25" playbackMode="Once">
+				<Direction vector="1,0,0">
+					<Animation startFrame="66" endFrame="68"/>
+				</Direction>
+			</AnimationGroup>
+		</Visuals>
+		<Sounds>
+			<Sound sound="Hurt" name="Data/Audio/DemonHurt.wav"/>
+			<Sound sound="Death" name="Data/Audio/DemonDeath.wav"/>
+		</Sounds>
+		<Inventory>
+			<Weapon name="SkeletonMelee" />
+		</Inventory>
+	</ActorDefinition>
 	<!-- Emperor -->
 	<ActorDefinition name="Emperor" faction="Demon" health="600" canBePossessed="true" corpseLifetime="2.25" visible="true">
 		<Collision radius="1.0" height="2.2" collidesWithWorld="true" collidesWithActors="true" precisionOffset="0.8f, 0.f, 1.9f" precisionRadius ="0.3f"/>
@@ -317,11 +416,11 @@
 	</ActorDefinition>
 	<!-- DevourerHead -->
 	<ActorDefinition name="DevourerHead" faction="DOG" health="8000" canBePossessed="true" corpseLifetime="1.0" visible="true">
-		<Collision radius="1.5f" height="2.6f" collidesWithWorld="false" collidesWithActors="true" damageOnCollide="60.0~80.0" impulseOnCollide="30.0" precisionOffset="0.f, 0.f, 1.f" precisionRadius ="4.f"/>
+		<Collision radius="3.f" height="5.5f" collidesWithWorld="false" collidesWithActors="true" damageOnCollide="60.0~80.0" impulseOnCollide="30.0" precisionOffset="0.f, 0.f, 1.f" precisionRadius ="4.f"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
-		<Camera eyeHeight="0.85f" cameraFOV="130.0f"/>
+		<Camera eyeHeight="4.25f" cameraFOV="130.0f"/>
 		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
-		<Visuals size="5.5,5.5" pivot="0.5,0.5" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/DOGHead.png" cellCount="2,1">
+		<Visuals size="7.5,7.5" pivot="0.5,0.2" billboardType="WorldUpFacing" renderLit="true" renderRounded="true" shader="Data/Shaders/Diffuse" spriteSheet="Data/Images/DOGHead.png" cellCount="2,1">
 			<AnimationGroup name="Walk" scaleBySpeed="false" secondsPerFrame="0.5" playbackMode="Loop">
 				<Direction vector="-1,0,0">
 					<Animation startFrame="0" endFrame="1"/>
@@ -359,7 +458,7 @@
 	</ActorDefinition>
 	<!-- DevourerBody -->
 	<ActorDefinition name="DevourerBody" faction="DOG" health="1" canBePossessed="false" corpseLifetime="1.0" visible="true" armorMultiplier ="0.2f">
-		<Collision radius="1.5f" height="2.2f" collidesWithWorld="false" collidesWithActors="false"/>
+		<Collision radius="2.5f" height="3.6f" collidesWithWorld="false" collidesWithActors="false"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
 		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
@@ -374,7 +473,7 @@
 	</ActorDefinition>
 	<!-- DevourerBody Near Head -->
 	<ActorDefinition name="DevourerBody_NearHead" faction="DOG" health="1" canBePossessed="false" corpseLifetime="1.0" visible="true" armorMultiplier ="0.2f">
-		<Collision radius="1.5f" height="2.2f" collidesWithWorld="false" collidesWithActors="false" canBeShot="false"/>
+		<Collision radius="2.5f" height="3.6f" collidesWithWorld="false" collidesWithActors="false" canBeShot="false"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
 		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
@@ -389,7 +488,7 @@
 	</ActorDefinition>
 	<!-- DevourerTail -->
 	<ActorDefinition name="DevourerTail" faction="DOG" health="1" canBePossessed="false" corpseLifetime="1.0" visible="true" armorMultiplier ="1.0f">
-		<Collision radius="1.5f" height="2.2f" collidesWithWorld="false" collidesWithActors="false"/>
+		<Collision radius="2.5f" height="3.6f" collidesWithWorld="false" collidesWithActors="false"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
 		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>

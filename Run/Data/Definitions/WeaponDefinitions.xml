@@ -61,6 +61,12 @@
       <Sound sound="Fire" name="Data/Audio/DemonAttack.wav"/>
     </Sounds>
   </WeaponDefinition>
+	<!-- Skeleton Melee -->
+	<WeaponDefinition name="SkeletonMelee" refireTime="2.0" meleeCount="1" meleeArc="180.0" meleeRange="0.95" meleeDamage="9.0~20.0" meleeImpulse="15.0">
+		<Sounds>
+			<Sound sound="Fire" name="Data/Audio/DemonAttack.wav"/>
+		</Sounds>
+	</WeaponDefinition>
 	<!-- Dinosaur Gun -->
     <WeaponDefinition name="DinosaurGun" refireTime="1.5" projectileCount="3" projectileActor="DinosaurProjectile" projectileCone="16.0" projectileSpeed="20.0">
     	<HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">

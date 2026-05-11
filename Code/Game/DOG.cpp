@@ -205,7 +205,7 @@ void DOG::Update_MoveAlongSpline()
 		ChooseNextSpline();
 	}
 
-	m_head->m_desiredPosition = m_spline.EvaluateAtParametric(m_parametricValueAcrossCurve);
+	m_head->m_desiredPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * 0.45f, 8) - Vec3(0.f, 0.f, 2.f);
 
 	for (int segmentIndex = 0; segmentIndex < m_segments.size(); ++segmentIndex)
 	{
@@ -231,18 +231,20 @@ void DOG::ChooseInitialSpline()
 {
 	// fake prev pos, Initial pos, next pos, next next pos.
 	std::vector<Vec3> points;
-	for (int prevIndex = 0; prevIndex < m_numPrevSplinePoints; ++prevIndex)
+	for (int prevIndex = 0; prevIndex < m_numPrevSplinePoints - 1; ++prevIndex)
 	{
 		points.push_back(FindRandomVec3());
 	}
-	points.push_back(m_head->m_position);
-	points.push_back(FindRandomVec3());
-	points.push_back(FindRandomVec3());
+	points.push_back(Vec3( -113.f, -46.f, 93.5f));
+	points.push_back(Vec3(-75.6f, 19.f, 25.f));
+	points.push_back(Vec3(-33.f, 31.f, 16.f));
+	points.push_back(Vec3(0, 0.f, 5.f));
 	m_spline = CubicHermiteSpline3D(points);
 
 	CubicHermiteCurve3D hermiteCurve = CubicHermiteCurve3D(m_spline.m_points[m_numPrevSplinePoints - 1], m_spline.m_velocities[m_numPrevSplinePoints - 1], m_spline.m_points[m_numPrevSplinePoints], m_spline.m_velocities[m_numPrevSplinePoints]);
 	float lengthOfCurve = hermiteCurve.GetApproximateLength(4);
 	m_secondsUntilHit = lengthOfCurve / m_averageVelocity;
+	m_parametricValueAcrossCurve = (float)m_numPrevSplinePoints - 1.f;
 }
 
 void DOG::ChooseNextSpline()

@@ -19,6 +19,10 @@ Player::Player(Map* owner, Vec3 const& startingPosition)
 
 void Player::Update()
 {
+	if (m_map->m_isShowingDevourerSpawn)
+	{
+		return;
+	}
  	HandleInputs();
 
 	Vec3 cursorBasisPosition = m_position + m_orientation.GetForwardDir_IFwd_JLeft_KUp() * 0.2f;

@@ -77,7 +77,7 @@
 	</MapDefinition>
 	
 	<MapDefinition name="DOGDimension" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8" skyboxTexture="Data/Images/DOGBackground.png" isSkyboxCylinder="false">
-		<EnemySpawning secondsUntilNextWave="16.f" enemiesPerWave="15" maxEnemies="40">
+		<EnemySpawning secondsUntilNextWave="16.f" enemiesPerWave="0" maxEnemies="50">
 			<enemy name="Dinosaur" weight="1.f" type="Grounded"/>
 			<enemy name="Demon" weight="2.f" type="Grounded"/>
 			<enemy name="Emperor" weight="0.3f" type="Grounded"/>

@@ -581,7 +581,7 @@ void Game::EnterState(GameState state)
 			m_currentMap = new Map(this, MapDefinition::GetByName(m_mapDefinitionString));
 			m_currentMap->Startup_InitializePlayers();
 			m_currentMap->Startup_InitializeActors(); // Initialize actors here because the function calls things that only exist after the map is made.
-			m_currentMap->SpawnDOG();
+			//m_currentMap->SpawnDOG();
 
 			m_currentRiftMap = new Map(this, MapDefinition::GetByName(m_riftMapDefinitionString));
 			m_currentRiftMap->Startup_InitializeActors();
@@ -712,6 +712,7 @@ bool Game::EventFreeFlyToggle([[maybe_unused]] EventArgs& args)
 
 bool Game::EventSpawnBoss([[maybe_unused]] EventArgs& args)
 {
+	g_app->m_game->m_currentMap->SpawnDOG();
 	return true;
 }
 

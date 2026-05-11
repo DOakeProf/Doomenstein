@@ -340,7 +340,7 @@ void Actor::Render_DOGSegment() const
 	std::vector<Vertex_PCUTBN> localVerts;
 	std::vector<unsigned int> localIndexes;
 
-	float devourerSize = 2.5f;
+	float devourerSize = 4.f;
 	float devourerLengthMult = 1.f;
 
 	if (m_definition->m_name == "DevourerTail")

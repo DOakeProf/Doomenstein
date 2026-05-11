@@ -8,6 +8,7 @@
 #include "Engine/Math/MathUtils.hpp"
 
 struct Camera;
+class Clock;
 class Map;
 class Timer;
 
@@ -50,14 +51,14 @@ public:
 	bool m_isPlayerOnFrontSide = false;
 	bool m_isFlipped = false; // For checking which side of the portal should be clipped in the portal's view.
 	Camera* m_portalCamera = nullptr;
-
+	Timer* m_animTimer = nullptr;
+	Clock* m_portalClock = nullptr;
 protected:
 	Portal* m_otherPortal = nullptr;
 
 	Map* m_map = nullptr;
 	Vec3 m_position;
 	EulerAngles m_orientation;
-	Timer* m_animTimer;
 
 	float m_sizeScale;
 	

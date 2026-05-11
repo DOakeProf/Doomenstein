@@ -62,7 +62,7 @@ void Map::Startup()
 	CreateGeometry();
 	CreateBuffers();
 
-	m_sunDirection = Vec3(2.f, 1.f, -1.f);
+	m_sunDirection = Vec3(-2.f, 1.f, -1.f);
 	m_sunIntensity = 0.85f;
 	m_ambientIntensity = 0.35f;
 
@@ -74,6 +74,12 @@ void Map::Startup()
 		m_nextWaveTimer = new Timer(m_definition->m_secondsUntilNextWave, m_game->m_gameClock);
 		m_nextWaveTimer->Start();
 	}
+
+	m_devourerSpawnCameraLocation = Vec3(22.5f, 31.5f, 7.5f);
+	m_devourerSpawnCameraOrientation = EulerAngles(180.f, 0.f, 0.f);
+	m_devourerSpawnRiftLocation = Vec3(-76.5f, 31.5f, 12.5f);
+
+	m_devourerSpawnTimer = new Timer(15.f, m_game->m_gameClock);
 }
 
 void Map::Startup_InitializePlayers()
@@ -736,6 +742,16 @@ void Map::SpawnEnemy()
 void Map::SpawnDOG()
 {
 	m_DOG = new DOG(this);
+	m_DOG->m_head->m_hasEnteredRift = true;
+	for (Actor* segment : m_DOG->m_segments)
+	{
+		segment->m_hasEnteredRift = true;
+	}
+	m_DOG->m_tail->m_hasEnteredRift = true;
+	m_isShowingDevourerSpawn = true;
+	m_DOGBigRift = m_game->SpawnRift(m_devourerSpawnRiftLocation, EulerAngles(), 50.f);
+	m_DOGBigRift->m_portalClock->SetTimeScale(0.2f);
+	m_devourerSpawnTimer->Start();
 }
 
 void Map::RemoveActorFromMap(Actor* actor)
@@ -816,6 +832,12 @@ void Map::Update()
 		return;
 	}
 
+	if (m_isShowingDevourerSpawn)
+	{
+		Update_DevourerSpawn();
+		return;
+	}
+
 	if (m_definition->m_secondsUntilNextWave != -1.f && m_nextWaveTimer->DecrementPeriodIfElapsed())
 	{
 		SpawnWave();
@@ -852,6 +874,54 @@ void Map::Update()
 		{
 			player->HandleAACorrection();
 		}
+	}
+}
+
+void Map::Update_DevourerSpawn()
+{
+	if (m_DOG != nullptr)
+	{
+		m_DOG->Update();
+	}
+	CollideActorsWithRifts();
+	for (int actorIndex = 0; actorIndex < m_actors.size(); ++actorIndex)
+	{
+		Actor* actor = m_actors[actorIndex];
+		if (actor != nullptr && actor->m_definition->m_faction == "DOG")
+		{
+			m_actors[actorIndex]->Update_Position();
+		}
+	}
+
+	float elapsedTime = (float)m_devourerSpawnTimer->GetElapsedTime();
+	float period = (float)m_devourerSpawnTimer->m_period;
+
+	if (elapsedTime < 0.5f) // Move player to where the camera should be spawning.
+	{
+		float cameraInterpolationValue = elapsedTime / 0.5f;
+		cameraInterpolationValue = SmoothStep3(cameraInterpolationValue);
+		for (Player* player : m_players)
+		{
+			player->m_worldCamera->SetPosition(Interpolate(player->GetActor()->m_position, m_devourerSpawnCameraLocation, cameraInterpolationValue));
+			player->m_worldCamera->SetOrientation(Interpolate(player->GetActor()->m_orientation, m_devourerSpawnCameraOrientation, cameraInterpolationValue));
+		}
+	}
+
+	if (elapsedTime > period - 0.5f) // Move player to where the camera should be spawning.
+	{
+		float cameraInterpolationValue = (period - elapsedTime) / 0.5f;
+		cameraInterpolationValue = SmoothStep3(cameraInterpolationValue);
+		for (Player* player : m_players)
+		{
+			player->m_worldCamera->SetPosition(Interpolate(player->GetActor()->m_position, m_devourerSpawnCameraLocation, cameraInterpolationValue));
+			player->m_worldCamera->SetOrientation(Interpolate(player->GetActor()->m_orientation, m_devourerSpawnCameraOrientation, cameraInterpolationValue));
+		}
+	}
+
+	if (m_devourerSpawnTimer->DecrementPeriodIfElapsed())
+	{
+		m_devourerSpawnTimer->Stop();
+		m_isShowingDevourerSpawn = false;
 	}
 }
 
@@ -1728,6 +1798,12 @@ RaycastResultDoomenstein Map::RaycastAll(const Vec3& start, const Vec3& directio
 		result = portalResult;
 	}
 
+	RaycastResultDoomenstein riftResult = RaycastWorldRifts(start, direction, distance);
+	if (riftResult.m_impactDist < raycastResult.m_impactDist)
+	{
+		result = riftResult;
+	}
+
 	// Draw debug raycast
 	Vec3 raycastStartOffset;
 	if (owner != nullptr)
@@ -1760,6 +1836,17 @@ RaycastResultDoomenstein Map::RaycastAll(const Vec3& start, const Vec3& directio
 		else
 		{
 			result = RaycastAll(newStart - result.m_portal->GetOtherPortal()->GetOrientation().GetForwardDir_IFwd_JLeft_KUp() * 0.01f, newDirection.GetForwardDir_IFwd_JLeft_KUp(), distance - result.m_impactDist);
+		}
+	}
+	else if (result.m_riftMap != nullptr)
+	{
+		Vec3 newStart = result.m_impactPos + direction * 0.01f;
+
+		Map* riftMapStorage = result.m_riftMap;
+		result = m_riftMap->RaycastAll(newStart, direction, distance - result.m_impactDist);
+		if (result.m_riftMap == nullptr)
+		{
+			result.m_riftMap = riftMapStorage;
 		}
 	}
 
@@ -2021,6 +2108,39 @@ RaycastResultDoomenstein Map::RaycastWorldPortals(const Vec3& start, const Vec3&
 	result.m_rayLength = raycastResult.m_rayLength;
 	result.m_rayStartPosition = raycastResult.m_rayStartPosition;
 	result.m_portal = portalHit;
+	return result;
+}
+
+RaycastResultDoomenstein Map::RaycastWorldRifts(const Vec3& start, const Vec3& direction, float distance) const
+{
+	RaycastResult3D raycastResult;
+	raycastResult.m_impactDist = distance;
+	Rift* riftHit = nullptr;
+
+	for (int riftIndex = 0; riftIndex < g_rifts.size(); ++riftIndex)
+	{
+		Rift* rift = g_rifts[riftIndex];
+		if (rift != nullptr)
+		{
+			RaycastResult3D newRaycastResult = rift->RaycastAgainst(start, direction, distance);
+			if (newRaycastResult.m_impactDist != 0.f && newRaycastResult.m_impactDist < raycastResult.m_impactDist)
+			{
+				raycastResult = newRaycastResult;
+				riftHit = rift;
+			}
+		}
+	}
+
+	RaycastResultDoomenstein result;
+	result.m_didImpact = raycastResult.m_didImpact;
+	result.m_impactDist = raycastResult.m_impactDist;
+	result.m_impactNormal = raycastResult.m_impactNormal;
+	result.m_impactPos = raycastResult.m_impactPos;
+	result.m_rayDirection = raycastResult.m_rayDirection;
+	result.m_rayLength = raycastResult.m_rayLength;
+	result.m_rayStartPosition = raycastResult.m_rayStartPosition;
+	result.m_portal = nullptr;
+	result.m_riftMap = m_riftMap;
 	return result;
 }
 

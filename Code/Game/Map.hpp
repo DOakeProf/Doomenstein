@@ -42,6 +42,8 @@ struct RaycastResultDoomenstein
 	Vec3 m_impactNormal;
 	Actor* m_actor = nullptr;
 	Portal* m_portal = nullptr;
+	Map* m_riftMap = nullptr; // If fired through a rift, this will be equal to whatever rift map the shot ends up in.
+
 };
 
 struct MapDefinition
@@ -151,6 +153,7 @@ public:
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Update
 	void Update();
+	void Update_DevourerSpawn();
 	void Update_AddDebugScreenText();
 	void Update_Actors_BeforePreventative();
 	void Update_Actors_AfterPreventative();
@@ -188,6 +191,7 @@ public:
 	RaycastResult3D				RaycastWorldZ(const Vec3& start, const Vec3& direction, float distance) const;
 	RaycastResultDoomenstein	RaycastWorldActors(const Vec3& start, const Vec3& direction, float distance, Actor* owner = nullptr) const;
 	RaycastResultDoomenstein	RaycastWorldPortals(const Vec3& start, const Vec3& direction, float distance) const;
+	RaycastResultDoomenstein	RaycastWorldRifts(const Vec3& start, const Vec3& direction, float distance) const;
 
 	Game* m_game = nullptr;
 	ConstantBuffer* m_clipPlaneCBO = nullptr;
@@ -214,6 +218,7 @@ protected:
 	// Properties
 	IntVec3 m_dimensions;
 	SpriteSheet m_tileSpriteSheet;
+	bool m_isShowingDevourerSpawn = false;
 	
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Graphics rendering
@@ -238,6 +243,11 @@ protected:
 	std::vector<Actor*> m_riftPointMains;
 	std::vector<Actor*> m_riftPointRandoms;
 	std::vector<Portal*> m_portals;
+	Timer* m_devourerSpawnTimer = nullptr;
+	Rift* m_DOGBigRift = nullptr;
+	Vec3 m_devourerSpawnCameraLocation;
+	EulerAngles m_devourerSpawnCameraOrientation;
+	Vec3 m_devourerSpawnRiftLocation;
 	Timer* m_nextWaveTimer;
 	unsigned int m_nextActorUID = 0;
 	Actor* m_bulletActor;

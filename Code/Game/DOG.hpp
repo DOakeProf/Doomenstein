@@ -30,6 +30,8 @@ public:
 	Actor* m_head;
 	bool m_isDead;
 	bool m_isGarbage;
+	Actor* m_tail;
+	std::vector<Actor*> m_segments;
 private:
 	Map* m_map;
 	Texture* m_bodyTexture;
@@ -41,10 +43,8 @@ private:
 	Timer* m_playerChargeAtTimer = nullptr;
 	Timer* m_dpsPhaseTimer = nullptr;
 
-	Actor* m_tail;
-	std::vector<Actor*> m_segments;
 	int m_numSegments = 50;
-	float m_followDistance = 2.5f;
+	float m_followDistance = 4.f;
 
 	Actor* m_ballInMouth = nullptr;
 

@@ -7,6 +7,7 @@
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Core/Timer.hpp"
 #include "Engine/Renderer/SpriteAnimDefinition.hpp"
+#include "Engine/Core/Clock.hpp"
 
 #include "Game/Game.hpp"
 #include "Game/Player.hpp"
@@ -60,7 +61,8 @@ Portal::Portal(Map* map, Vec3 const& startingPosition, EulerAngles const& orient
 	AddVertsForAABB3D(m_borderVertexes, rightAABB3, Rgba8::WHITE);
 	AddVertsForAABB3D(m_borderVertexes, topAABB3, Rgba8::WHITE);
 
-	m_animTimer = new Timer(g_app->m_game->m_riftAnim->GetFPS(), g_app->m_game->m_gameClock);
+	m_portalClock = new Clock(*g_app->m_game->m_gameClock);
+	m_animTimer = new Timer(g_app->m_game->m_riftAnim->GetFPS(), m_portalClock);
 	m_animTimer->Start();
 }
 

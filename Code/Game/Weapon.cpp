@@ -863,9 +863,16 @@ void Weapon::Fire_Weapon(Actor* actor)
 				damageNumber->AddImpulse(actor->m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(1.f, 2.f) * damageNumberToActorOrientation.GetForwardDir_IFwd_JLeft_KUp());
 				damageNumber->m_valueToDisplay = RandomDamage;
 			}
-			else
+			else if (result.m_didImpact)
 			{
-				actor->m_map->SpawnActor("BulletHit", result.m_impactPos, EulerAngles());
+				if (result.m_riftMap != nullptr)
+				{
+					result.m_riftMap->SpawnActor("BulletHit", result.m_impactPos, EulerAngles());
+				}	
+				else
+				{
+					actor->m_map->SpawnActor("BulletHit", result.m_impactPos, EulerAngles());
+				}
 			}
 		}
 	}

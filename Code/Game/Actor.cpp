@@ -153,7 +153,8 @@ void Actor::Update()
 	}
 	ClearStoppedPlaybackID();
 
-	if (m_position.z <= -2.f && !m_isDead && m_definition->m_faction != "DOG" && m_definition->m_name != "Ball") // Kill actors below a certain Z value.
+	if ((m_position.z <= -2.f  || m_position.z >= 200.f || m_position.x <= -100.f || m_position.x >= 200.f || m_position.y <= -100.f || m_position.y >= 200.f)
+	&& !m_isDead && m_definition->m_faction != "DOG" && m_definition->m_name != "Ball") // Kill actors below a certain Z value.
 	{
 		Damage(m_health, nullptr);
 	}
@@ -731,7 +732,7 @@ void Actor::Die()
 		PlaySoundOnActor("Death");
 		if (m_definition->m_name == "Emperor")
 		{
-			m_map->SpawnActor("OrbPickup", m_position, m_orientation, 1.f);
+			m_map->SpawnActor("OrbPickup", m_position + Vec3(0.f, 0.f, 0.1f), m_orientation, 1.f);
 		}
 	}
 }

@@ -72,14 +72,16 @@ void Map::Startup()
 	if (m_definition->m_secondsUntilNextWave != -1.f)
 	{
 		m_nextWaveTimer = new Timer(m_definition->m_secondsUntilNextWave, m_game->m_gameClock);
-		m_nextWaveTimer->Start();
+		//m_nextWaveTimer->Start();
 	}
 
 	m_devourerSpawnCameraLocation = Vec3(22.5f, 31.5f, 7.5f);
 	m_devourerSpawnCameraOrientation = EulerAngles(180.f, 0.f, 0.f);
 	m_devourerSpawnRiftLocation = Vec3(-76.5f, 31.5f, 12.5f);
 
-	m_devourerSpawnTimer = new Timer(8.f, m_game->m_gameClock);
+	m_devourerSpawnTimer = new Timer(15.f, m_game->m_gameClock);
+
+	SubscribeEventCallbackFunction("spawnOrb", EventSpawnOrb);
 }
 
 void Map::Startup_InitializePlayers()
@@ -169,11 +171,6 @@ void Map::Startup_InitializeActors()
 		{
 			SpawnActor(m_definition->m_spawnInfos[spawnInfoIndex]);
 		}
-	}
-
-	for (Actor* rift : m_riftPointMains)
-	{
-		m_game->SpawnRift(rift->m_position, rift->m_orientation, 3.f);
 	}
 }
 
@@ -741,17 +738,20 @@ void Map::SpawnEnemy()
 
 void Map::SpawnDOG()
 {
-	m_DOG = new DOG(this);
-	m_DOG->m_head->m_hasEnteredRift = true;
-	for (Actor* segment : m_DOG->m_segments)
-	{
-		segment->m_hasEnteredRift = true;
-	}
-	m_DOG->m_tail->m_hasEnteredRift = true;
 	m_isShowingDevourerSpawn = true;
 	m_DOGBigRift = m_game->SpawnRift(m_devourerSpawnRiftLocation, EulerAngles(), 50.f);
-	m_DOGBigRift->m_portalClock->SetTimeScale(0.2f);
+	//m_DOGBigRift->m_portalClock->SetTimeScale(0.04081632653f);
+	m_DOGBigRift->m_portalClock->SetTimeScale(0.08081632653f);
 	m_devourerSpawnTimer->Start();
+	g_engine->m_audio->StopSound(m_game->m_gameMusicPlayback);
+	m_game->m_gameMusicPlayback = g_engine->m_audio->StartSound(m_game->m_DOGIntro, false, 0.f);
+	for (Player* player : m_game->m_players)
+	{
+		if (player->m_map == m_riftMap)
+		{
+			player->GetActor()->m_hasEnteredRift = true;
+		}
+	}
 }
 
 void Map::RemoveActorFromMap(Actor* actor)
@@ -907,6 +907,22 @@ void Map::Update_DevourerSpawn()
 		}
 	}
 
+	if (elapsedTime < 1.5f)
+	{
+		g_engine->m_audio->SetSoundPlaybackVolume(m_game->m_gameMusicPlayback, RangeMap(elapsedTime, 0.f, 1.5f, 0.f, m_game->m_musicVolume));
+	}
+
+	if (m_DOG == nullptr && elapsedTime > 8.f)
+	{
+		m_DOG = new DOG(this);
+		m_DOG->m_head->m_hasEnteredRift = true;
+		for (Actor* segment : m_DOG->m_segments)
+		{
+			segment->m_hasEnteredRift = true;
+		}
+		m_DOG->m_tail->m_hasEnteredRift = true;
+	}
+
 	if (elapsedTime > period - 0.5f) // Move player to where the camera should be spawning.
 	{
 		float cameraInterpolationValue = (period - elapsedTime) / 0.5f;
@@ -922,6 +938,18 @@ void Map::Update_DevourerSpawn()
 	{
 		m_devourerSpawnTimer->Stop();
 		m_isShowingDevourerSpawn = false;
+		for (Actor* rift : m_riftPointMains)
+		{
+			m_game->SpawnRift(rift->m_position, rift->m_orientation, 3.f);
+		}
+		if (m_nextWaveTimer != nullptr)
+		{
+			m_nextWaveTimer->Start();
+		}
+		if (m_riftMap->m_nextWaveTimer != nullptr)
+		{
+			m_riftMap->m_nextWaveTimer->Start();
+		}
 	}
 }
 
@@ -1355,9 +1383,6 @@ void Map::CollideActorsWithRifts()
 bool Map::CollideActorWithRift(Actor* actor, Rift* rift)
 {
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	// Plane check for if its touching rift. TODO
-
-	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Raycast check for if it entered rift
 	Vec3 actorEyePos = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
 	Vec3 actorDesiredEyePos = actor->m_desiredPosition + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);
@@ -1592,6 +1617,11 @@ void Map::Render()
 		g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 		g_engine->m_render->BindTexture(nullptr);
 		g_engine->m_render->DrawVertexList(&localVerts);
+
+		localVerts.clear();
+		m_game->m_squirrelFont->AddVertsForTextInBox2D(localVerts, "DEVOURER OF GODS", AABB2(0.f, 0.f, SCREEN_SIZE_X, SCREEN_SIZE_Y), SCREEN_SIZE_Y * 0.03f, Rgba8(189, 29, 224), 1.f, Vec2(0.5f, 0.95f));
+		g_engine->m_render->BindTexture(&m_game->m_squirrelFont->GetTexture());
+		g_engine->m_render->DrawVertexList(&localVerts);
 	}
 }
 
@@ -1787,19 +1817,19 @@ RaycastResultDoomenstein Map::RaycastAll(const Vec3& start, const Vec3& directio
 	result.m_rayStartPosition = raycastResult.m_rayStartPosition;
 
 	RaycastResultDoomenstein worldActorsResult = RaycastWorldActors(start, direction, distance, owner);
-	if (worldActorsResult.m_impactDist < raycastResult.m_impactDist)
+	if (worldActorsResult.m_impactDist < result.m_impactDist)
 	{
 		result = worldActorsResult;
 	}
 
 	RaycastResultDoomenstein portalResult = RaycastWorldPortals(start, direction, distance);
-	if (portalResult.m_impactDist < raycastResult.m_impactDist)
+	if (portalResult.m_impactDist < result.m_impactDist)
 	{
 		result = portalResult;
 	}
 
 	RaycastResultDoomenstein riftResult = RaycastWorldRifts(start, direction, distance);
-	if (riftResult.m_impactDist < raycastResult.m_impactDist)
+	if (riftResult.m_impactDist < result.m_impactDist)
 	{
 		result = riftResult;
 	}
@@ -2154,6 +2184,17 @@ void Map::Debug_KillAllActors()
 			m_actors[actorIndex]->Die();
 		}
 	}
+}
+
+bool Map::EventSpawnOrb([[maybe_unused]] EventArgs& args)
+{
+	g_app->m_game->m_players[0]->m_map->SpawnActor("OrbPickup",	g_app->m_game->m_players[0]->m_position, EulerAngles());
+	return true;
+}
+
+bool Map::EventSpawnBall([[maybe_unused]] EventArgs& args)
+{
+	return true;
 }
 
 void MapDefinition::InitializeDefinitions(const char* path)

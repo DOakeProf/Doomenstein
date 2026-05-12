@@ -1,0 +1,11 @@
+Model Information:
+* title:	Time Orb
+* source:	https://sketchfab.com/3d-models/time-orb-4a5c39889f0e4328b233e94d47b4a929
+* author:	murilojones (https://sketchfab.com/murilojones)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Time Orb" (https://sketchfab.com/3d-models/time-orb-4a5c39889f0e4328b233e94d47b4a929) by murilojones (https://sketchfab.com/murilojones) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -111,7 +111,11 @@ void DOG::Update()
 
 	if (m_ballInMouth)
 	{
-		m_ballInMouth->m_desiredPosition = Vec3(0.f, 0.f, -0.5f) + m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, m_followDistance, 16);
+		Vec3 newPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, m_followDistance, 16);
+		if (newPosition != Vec3())
+		{
+			m_ballInMouth->m_desiredPosition = Vec3(0.f, 0.f, -0.7f) + newPosition;
+		}
 		if (m_ballInMouth->m_map != m_head->m_map)
 		{
 			m_ballInMouth->m_hasEnteredRift = true;
@@ -191,7 +195,7 @@ void DOG::Update()
 		Vec3 riftFwd = (riftPositionRightInFrontOf - riftPosition).GetNormalized();
 		Mat44 riftOrientationAsMatrix = Mat44(riftFwd, Vec3(0.f, 1.f, 0.f), Vec3(0.f, 0.f, 1.f), Vec3(0.f, 0.f, 0.f));
 		EulerAngles riftOrientation = EulerAngles(riftOrientationAsMatrix);
-		m_DOGRift = m_map->m_game->SpawnRift(riftPosition, riftOrientation, 7.f);
+		m_DOGRift = m_map->m_game->SpawnRift(riftPosition, riftOrientation, 4.f);
 
 		m_riftSpawnTimer->m_period = m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(5.f,17.f);
 		m_riftSpawnTimer->Stop();
@@ -214,14 +218,26 @@ void DOG::Update_MoveAlongSpline()
 		ChooseNextSpline();
 	}
 
-	m_head->m_desiredPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * 0.45f, 8) - Vec3(0.f, 0.f, 2.f);
+	Vec3 newPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * 0.45f, 8) - Vec3(0.f, 0.f, 2.f);
+	if (newPosition != Vec3())
+	{
+		m_head->m_desiredPosition = newPosition;
+	}
 
 	for (int segmentIndex = 0; segmentIndex < m_segments.size(); ++segmentIndex)
 	{
-		m_segments[segmentIndex]->m_desiredPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * ((float)segmentIndex + 1.f), 8);
-	}
+		newPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * ((float)segmentIndex + 1.f), 8);
+		if (newPosition != Vec3())
+		{
+			m_segments[segmentIndex]->m_desiredPosition = newPosition;
+		}
+	}	
 
-	m_tail->m_desiredPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * ((float)m_segments.size() + 1.f), 8);
+	newPosition = m_spline.EvaluateAtParametricDisplacedByDistance(m_parametricValueAcrossCurve, -m_followDistance * ((float)m_segments.size() + 1.f), 8);
+	if (newPosition != Vec3())
+	{
+		m_tail->m_desiredPosition = newPosition;
+	}
 
 	if (g_app->IsDebug())
 	{
@@ -269,14 +285,14 @@ void DOG::ChooseNextSpline()
 	{
 		points.push_back(m_specificPointToChargeAt); // Next spline position
 		points.push_back(FindRandomVec3()); // Next Next spline position
-		points.push_back(FindRandomPointInFront()); // a new random point, must be here to calculate next spline position's velocity.
+		points.push_back(FindRandomVec3()); // a new random point, must be here to calculate next spline position's velocity.
 		m_shouldChargeAtSpecificPoint = false;
 	}
 	else
 	{
 		points.push_back(m_spline.m_points[m_numPrevSplinePoints + 1]); // Next spline position
 		points.push_back(m_spline.m_points[m_numPrevSplinePoints + 2]); // Next Next spline position
-		points.push_back(FindRandomPointInFront()); // a new random point, must be here to calculate next spline position's velocity.
+		points.push_back(FindRandomVec3()); // a new random point, must be here to calculate next spline position's velocity.
 	}
 	m_spline = CubicHermiteSpline3D(points, m_spline.m_velocities[m_numPrevSplinePoints]); // Have initial velocity be the velocity of the point we just hit.
 	for (Vec3& velocity : m_spline.m_velocities)
@@ -308,8 +324,8 @@ Vec3 DOG::FindRandomPointInFront()
 	fwdDir.z = 0.f;
 	fwdDir = fwdDir.GetNormalized();
 
-	Vec3 randomDirection = m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(fwdDir, 45.f);
-	Vec3 randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(17.f, 30.f) + m_head->m_position;
+	Vec3 randomDirection = m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(fwdDir, 90.f);
+	Vec3 randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(5.f, 30.f) + m_head->m_position;
 
 	int maxRandomRolls = 10;
 	int randomRollsCount = 0;

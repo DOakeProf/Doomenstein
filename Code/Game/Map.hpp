@@ -9,6 +9,7 @@
 #include "Engine/IndexBuffer.hpp"
 #include "Engine/Core/Image.hpp"
 #include "Engine/Math/Vec4.hpp"
+#include "Engine/Core/EventSystem.hpp"
 
 #include "Game/Tile.hpp"
 #include "Game/ActorHandle.hpp"
@@ -210,6 +211,11 @@ public:
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Debug
 	void Debug_KillAllActors();
+
+	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	// Commands
+	static bool EventSpawnOrb(EventArgs& args);
+	static bool EventSpawnBall(EventArgs& args);
 
 	const MapDefinition* m_definition = nullptr;
 protected:

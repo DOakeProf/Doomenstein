@@ -91,6 +91,10 @@ public:
 
 	Actor* m_ballNextTo = nullptr;
 	Actor* m_ballInsideOf = nullptr;
+	Actor* m_orbNextTo = nullptr;
+	bool m_isHoldingOrb = false;
+	bool m_hasPlacedOrbThisFrame = false;
+	Actor* m_spawnPadNextTo = nullptr;
 
 	float m_jumpBuffer = 1.f;
 	bool m_sprintToggle = false;

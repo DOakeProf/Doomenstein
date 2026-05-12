@@ -4,6 +4,8 @@
 	musicVolume="0.1"
 	mainMenuMusic="Data/Audio/Music/MainMenu_InTheDark.mp2"
 	gameMusic="Data/Audio/Music/E1M1_AtDoomsGate.mp2"
+	DOGIntro="Data/Audio/Music/ScourgeOfTheUniverse_PartialIntro.mp3"
+	DOGLooped="Data/Audio/Music/ScourgeOfTheUniverse_Looped.mp3"
 	buttonClickSound="Data/Audio/Click.mp3"
 	windowAspect="2.0"
 	

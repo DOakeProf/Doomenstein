@@ -461,8 +461,11 @@ void Weapon::FireBullet(Actor* actor)
 	actor->SetAnimGroup("Attack");
 	SetAnimation("Attack");
 	SoundPlaybackID playbackID = PlaySoundOnActor("Fire", actor);
-	g_engine->m_audio->SetSoundPlaybackSpeed(playbackID, 1.f + (0.02f * m_rideTheBull));
-	actor->AddSoundPlaybackID(playbackID);
+	if (playbackID != -1)
+	{
+		g_engine->m_audio->SetSoundPlaybackSpeed(playbackID, 1.f + (0.02f * m_rideTheBull));
+		actor->AddSoundPlaybackID(playbackID);
+	}
 
 	// Add recoil
 	if (m_definition->m_recoil != -1.f && actor->m_controller != nullptr && actor->m_controller->IsPlayer())
@@ -637,7 +640,10 @@ void Weapon::StartReload(Actor* actor)
 
 void Weapon::StopReload()
 {
-	g_engine->m_audio->StopSound(m_reloadSound);
+	if (m_reloadSound != -1)
+	{
+		g_engine->m_audio->StopSound(m_reloadSound);
+	}
 	m_isReloading = false;
 	m_reloadTimer->Stop();
 }

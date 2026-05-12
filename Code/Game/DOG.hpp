@@ -50,7 +50,7 @@ private:
 
 	// Movement
 	CubicHermiteSpline3D m_spline;
-	int m_numPrevSplinePoints = 10; // The amount of previous spline points to track, these are needed in order to properly place the body segments of the devourer.
+	int m_numPrevSplinePoints = 20; // The amount of previous spline points to track, these are needed in order to properly place the body segments of the devourer.
 	float m_parametricValueAcrossCurve = 1.f;
 	float m_secondsUntilHit = 1.f;
 	float m_averageVelocity = 25.f;

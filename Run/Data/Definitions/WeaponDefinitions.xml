@@ -45,6 +45,13 @@
 			<Sound sound="Reload" name="Data/Audio/WhisperReload.mp3"/>
 		</Sounds>
 	</WeaponDefinition>
+	<!-- Orb Pickup -->
+	<WeaponDefinition name="OrbPickup" refireTime="0.83" >
+		<HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" gltfName="OrbPickup" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">
+		</HUD>
+		<Sounds>
+		</Sounds>
+	</WeaponDefinition>
   <!-- Plasma Rifle -->
   <WeaponDefinition name="PlasmaRifle" refireTime="0.1" projectileCount="1" projectileActor="PlasmaProjectile" projectileCone="4.0" projectileSpeed="4.0">
     <HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">

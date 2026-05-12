@@ -23,6 +23,13 @@ void Player::Update()
 	{
 		return;
 	}
+
+	if (m_position.GetLength() > 1000.f && GetActor() != nullptr)
+	{
+		GetActor()->m_desiredPosition = Vec3(45.5f, 41.5f, 20.f);
+	}
+
+	m_hasPlacedOrbThisFrame = false;
  	HandleInputs();
 
 	Vec3 cursorBasisPosition = m_position + m_orientation.GetForwardDir_IFwd_JLeft_KUp() * 0.2f;
@@ -60,53 +67,79 @@ void Player::Update()
 		{
 			m_worldCamera->SetPerspectiveFOV(60.f);
 		}
-	}
-	
-	// Check if near interactable balls
-	m_ballNextTo = nullptr;
-	for (Actor* actorToCheck : m_map->GetActors())
-	{
-		if (actorToCheck != nullptr && actorToCheck->m_definition->m_name == "Ball")
+
+		// Check if near interactable actors
+		m_ballNextTo = nullptr;
+		m_orbNextTo = nullptr;
+		m_spawnPadNextTo = nullptr;
+		for (Actor* actorToCheck : m_map->GetActors())
 		{
-			Vec3 ballToPlayer = m_position - actorToCheck->m_position;
-			if (ballToPlayer.GetLength() < 2.f)
+			if (actorToCheck != nullptr && actorToCheck->m_definition->m_name == "Ball")
 			{
-				m_ballNextTo = actorToCheck;
+				Vec3 ballToPlayer = m_position - actorToCheck->m_position;
+				if (ballToPlayer.GetLength() < 2.f)
+				{
+					m_ballNextTo = actorToCheck;
+				}
+			}
+			if (actorToCheck != nullptr && actorToCheck->m_definition->m_name == "OrbPickup")
+			{
+				Vec3 orbToPlayer = m_position - actorToCheck->m_position;
+				if (orbToPlayer.GetLength() < 2.f)
+				{
+					m_orbNextTo = actorToCheck;
+				}
+			}
+			if (actorToCheck != nullptr && actorToCheck->m_definition->m_name == "SpawnPlatform")
+			{
+				Vec3 platformToPlayer = m_position - actorToCheck->m_position;
+				if (platformToPlayer.GetLength() < 3.5f)
+				{
+					m_spawnPadNextTo = actorToCheck;
+				}
 			}
 		}
-	}
 
-	if (m_ballInsideOf != nullptr && m_ballInsideOf->m_isDead)
-	{
-		GetActor()->m_desiredPosition = m_ballInsideOf->m_desiredPosition + Vec3(1.f, 0.f, 0.f);
-		Vec3 centerOfMap = Vec3(45.5f, 41.5f, 7.f);
-		Vec3 actorToCenter = centerOfMap - GetActor()->m_position;
-		GetActor()->AddImpulse(actorToCenter * GetActor()->m_definition->m_drag);
-		m_ballInsideOf = nullptr;
-	}
+		// Check for if we dropped an orb
+		bool isHoldingOrb = (GetActor()->m_equippedWeapon->m_definition->m_name == "OrbPickup");
+		if (!isHoldingOrb && m_isHoldingOrb && !m_hasPlacedOrbThisFrame) // We just lost it
+		{
+			m_map->SpawnActor("OrbPickup", GetActor()->m_position, EulerAngles(), 1.f);
+		}
+		m_isHoldingOrb = isHoldingOrb;
 
-	// If in a ball, override all position adjustments from input and move the player to wherever the ball is. This is done again if the DOG has the ball in its mouth but later after the ball has changed desired position.
-	if (m_ballInsideOf != nullptr)
-	{
-		GetActor()->m_desiredPosition = m_ballInsideOf->m_desiredPosition;
-	}
+		if (m_ballInsideOf != nullptr && m_ballInsideOf->m_isDead)
+		{
+			Vec3 centerOfMap = Vec3(45.5f, 41.5f, 20.f);
+			Vec3 actorToCenter = centerOfMap - GetActor()->m_desiredPosition;
+			Vec3 newImpulseToCenter = actorToCenter;
+			GetActor()->AddImpulse(newImpulseToCenter);
+			m_ballInsideOf = nullptr;
+		}
 
-	if (actor != nullptr && actor->m_isDead)
-	{
-		float cameraFallTime = (float)actor->m_deathTimer->GetElapsedFraction();
-		Vec3 cameraFallDisplacement = Vec3(0.f,0.f,-actor->m_definition->m_eyeHeight);
-		cameraFallDisplacement *= GetClamped(cameraFallTime, 0.f, 0.5f) * 1.5f;
-		m_worldCamera->SetPositionAndOrientation(m_position + cameraFallDisplacement, m_orientation);
-	}
-	else
-	{
-		m_worldCamera->SetPositionAndOrientation(m_position, m_orientation + m_recoil);
-	}
+		// If in a ball, override all position adjustments from input and move the player to wherever the ball is. This is done again if the DOG has the ball in its mouth but later after the ball has changed desired position.
+		if (m_ballInsideOf != nullptr)
+		{
+			GetActor()->m_desiredPosition = m_ballInsideOf->m_desiredPosition + Vec3(0.f, 0.f, 0.2f);
+		}
 
-	if (m_orientation.m_rollDegrees != 0.f)
-	{
-		float maxTurnThisFrame = m_map->m_game->m_rollSensitivity * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
-		m_orientation.m_rollDegrees += GetClamped(GetShortestAngularDispDegrees(m_orientation.m_rollDegrees, 0.f), -maxTurnThisFrame, maxTurnThisFrame);
+		if (actor != nullptr && actor->m_isDead)
+		{
+			float cameraFallTime = (float)actor->m_deathTimer->GetElapsedFraction();
+			Vec3 cameraFallDisplacement = Vec3(0.f, 0.f, -actor->m_definition->m_eyeHeight);
+			cameraFallDisplacement *= GetClamped(cameraFallTime, 0.f, 0.5f) * 1.5f;
+			m_worldCamera->SetPositionAndOrientation(m_position + cameraFallDisplacement, m_orientation);
+		}
+		else
+		{
+			m_worldCamera->SetPositionAndOrientation(m_position, m_orientation + m_recoil);
+		}
+
+		if (m_orientation.m_rollDegrees != 0.f)
+		{
+			float maxTurnThisFrame = m_map->m_game->m_rollSensitivity * (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
+			m_orientation.m_rollDegrees += GetClamped(GetShortestAngularDispDegrees(m_orientation.m_rollDegrees, 0.f), -maxTurnThisFrame, maxTurnThisFrame);
+		}
 	}
 
 	if (actor == nullptr)
@@ -166,6 +199,32 @@ void Player::Render_HUD()
 			else if (m_controlState == ControlState::CONTROLLER)
 			{
 				m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Press Y to enter Ball", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+			}
+		}
+		else if (m_orbNextTo != nullptr && GetActor()->m_equippedWeapon->m_definition->m_name != "OrbPickup")
+		{
+			if (m_controlState == ControlState::KEYBOARD)
+			{
+				m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Press E to pick up Orb", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+			}
+			else if (m_controlState == ControlState::CONTROLLER)
+			{
+				m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Press Y to pick up Orb", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+			}
+		}
+		else if (m_spawnPadNextTo != nullptr && GetActor()->m_equippedWeapon->m_definition->m_name != "OrbPickup" && m_ballInsideOf != nullptr)
+		{
+			m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Missing Orb", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8(200, 200, 200), 1.f, Vec2(0.5f, 0.4f));
+		}
+		else if (m_spawnPadNextTo != nullptr && GetActor()->m_equippedWeapon->m_definition->m_name == "OrbPickup")
+		{
+			if (m_controlState == ControlState::KEYBOARD)
+			{
+				m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Press E to deposit Orb", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+			}
+			else if (m_controlState == ControlState::CONTROLLER)
+			{
+				m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Press Y to deposit Orb", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
 			}
 		}
 		g_engine->m_render->BindTexture(&m_map->m_game->m_squirrelFont->GetTexture());
@@ -481,6 +540,16 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 			actor->m_equippedWeapon->StopReload();
 			actor->m_equippedWeapon = actor->m_weapons[2];
 		}
+		if (g_engine->m_input->WasKeyJustPressed('4') && actor->m_weapons.size() > 3)
+		{
+			actor->m_equippedWeapon->StopReload();
+			actor->m_equippedWeapon = actor->m_weapons[3];
+		}
+		if (g_engine->m_input->WasKeyJustPressed('5') && actor->m_weapons.size() > 4)
+		{
+			actor->m_equippedWeapon->StopReload();
+			actor->m_equippedWeapon = actor->m_weapons[4];
+		}
 		if (g_engine->m_input->WasKeyJustPressed(KEYCODE_LEFTARROW))
 		{
 			actor->m_equippedWeapon->StopReload();
@@ -514,14 +583,34 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 			actor->m_equippedWeapon->StartReload(actor);
 		}
 
-		if (m_ballInsideOf != nullptr && g_engine->m_input->WasKeyJustPressed('E'))
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Interacting with E
+		if (g_engine->m_input->WasKeyJustPressed('E'))
 		{
-			GetActor()->m_position = m_ballInsideOf->m_position + Vec3(1.f, 0.f, 0.f);
-			m_ballInsideOf = nullptr;
-		}
-		else if (m_ballNextTo != nullptr && g_engine->m_input->WasKeyJustPressed('E'))
-		{
-			m_ballInsideOf = m_ballNextTo;
+			if (m_ballInsideOf != nullptr) // If in ball, exit it
+			{
+				GetActor()->m_position = m_ballInsideOf->m_position + Vec3(1.f, 0.f, 0.f);
+				m_ballInsideOf = nullptr;
+			}
+			else if (m_ballNextTo != nullptr) // If not in ball but near one, enter it
+			{
+				m_ballInsideOf = m_ballNextTo;
+			}
+			else if (m_orbNextTo != nullptr && GetActor()->m_equippedWeapon->m_definition->m_name != "OrbPickup") // If next to orb, pick it up
+			{
+				GetActor()->m_equippedWeapon = new Weapon(m_map, "OrbPickup");
+				m_orbNextTo->Die();
+			}
+			else if (GetActor()->m_equippedWeapon->m_definition->m_name == "OrbPickup" && m_spawnPadNextTo != nullptr) // If next to a spawn pad and holding orb, put the orb in it and spawn a ball
+			{
+				GetActor()->m_equippedWeapon = GetActor()->m_weapons[0];
+				m_hasPlacedOrbThisFrame = true;
+				m_map->SpawnActor("Ball", m_spawnPadNextTo->m_position, EulerAngles(), 1.f);
+			}
+			else if (GetActor()->m_equippedWeapon->m_definition->m_name == "OrbPickup") // If holding an orb, drop it
+			{
+				GetActor()->m_equippedWeapon = GetActor()->m_weapons[0];
+			}
 		}
 
 		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);

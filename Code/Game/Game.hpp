@@ -111,6 +111,8 @@ public:
 	SoundPlaybackID m_mainMenuMusicPlayback;
 	SoundID		m_gameMusic;
 	SoundPlaybackID m_gameMusicPlayback;
+	SoundID		m_DOGIntro;
+	SoundID		m_DOGLooped;
 	SoundID		m_buttonClickSound;
 	std::string m_mapDefinitionString;
 	std::string m_riftMapDefinitionString;

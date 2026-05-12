@@ -123,6 +123,8 @@ void Game::Startup_PopulateFromBlackboard()
 	m_musicVolume = g_gameConfigBlackboard.GetValue("musicVolume", 0.1f);
 	m_mainMenuMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("mainMenuMusic", ""), true);
 	m_gameMusic = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("gameMusic", ""), true);
+	m_DOGIntro = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("DOGIntro", ""), true);
+	m_DOGLooped = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("DOGLooped", ""), true);
 	m_buttonClickSound = g_engine->m_audio->CreateOrGetSound(g_gameConfigBlackboard.GetValue("buttonClickSound", ""), true);
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -431,6 +433,11 @@ void Game::Render_LobbyMode() const
 void Game::Update_PlayingMode()
 {
 	DestroyIfGarbage();
+
+	if (!g_engine->m_audio->IsPlaying(m_gameMusicPlayback))
+	{
+		m_gameMusicPlayback = g_engine->m_audio->StartSound(m_DOGLooped, true, m_musicVolume);
+	}
 
 	for (Actor* actor : m_currentMap->GetActors())
 	{

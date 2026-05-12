@@ -458,7 +458,7 @@
 	</ActorDefinition>
 	<!-- DevourerBody -->
 	<ActorDefinition name="DevourerBody" faction="DOG" health="1" canBePossessed="false" corpseLifetime="1.0" visible="true" armorMultiplier ="0.2f">
-		<Collision radius="2.5f" height="3.6f" collidesWithWorld="false" collidesWithActors="false"/>
+		<Collision radius="2.25f" height="3.6f" collidesWithWorld="false" collidesWithActors="false"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
 		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
@@ -473,7 +473,7 @@
 	</ActorDefinition>
 	<!-- DevourerBody Near Head -->
 	<ActorDefinition name="DevourerBody_NearHead" faction="DOG" health="1" canBePossessed="false" corpseLifetime="1.0" visible="true" armorMultiplier ="0.2f">
-		<Collision radius="2.5f" height="3.6f" collidesWithWorld="false" collidesWithActors="false" canBeShot="false"/>
+		<Collision radius="2.25f" height="3.6f" collidesWithWorld="false" collidesWithActors="false" canBeShot="false"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
 		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>
@@ -488,7 +488,7 @@
 	</ActorDefinition>
 	<!-- DevourerTail -->
 	<ActorDefinition name="DevourerTail" faction="DOG" health="1" canBePossessed="false" corpseLifetime="1.0" visible="true" armorMultiplier ="1.0f">
-		<Collision radius="2.5f" height="3.6f" collidesWithWorld="false" collidesWithActors="false"/>
+		<Collision radius="2.25f" height="3.6f" collidesWithWorld="false" collidesWithActors="false"/>
 		<Physics simulated="false" walkSpeed="5.0f" runSpeed="10.0f" turnSpeed="180.0f" drag="9.0f"/>
 		<Camera eyeHeight="0.75f" cameraFOV="120.0f"/>
 		<AI aiEnabled="false" sightRadius="64.0" sightAngle="120.0"/>

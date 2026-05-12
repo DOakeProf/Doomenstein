@@ -1,0 +1,11 @@
+Model Information:
+* title:	Sci-Fi Platform / Teleporter Pad–Unity & Unreal
+* source:	https://sketchfab.com/3d-models/sci-fi-platform-teleporter-padunity-unreal-ec178b39b6da429ea8d5a26f0981be77
+* author:	DevPoly3D (https://sketchfab.com/DevPoly3D)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Sci-Fi Platform / Teleporter Pad–Unity & Unreal" (https://sketchfab.com/3d-models/sci-fi-platform-teleporter-padunity-unreal-ec178b39b6da429ea8d5a26f0981be77) by DevPoly3D (https://sketchfab.com/DevPoly3D) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

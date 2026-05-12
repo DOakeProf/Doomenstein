@@ -735,14 +735,34 @@ void Player::HandleInputs_FirstPerson_Controller()
 			actor->m_equippedWeapon->StartReload(actor);
 		}
 
-		if (m_ballInsideOf != nullptr && controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_Y))
+		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		// Interacting with Y
+		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_Y))
 		{
-			GetActor()->m_position = m_ballInsideOf->m_position + Vec3(1.f, 0.f, 0.f);
-			m_ballInsideOf = nullptr;
-		}
-		else if (m_ballNextTo != nullptr && controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_Y))
-		{
-			m_ballInsideOf = m_ballNextTo;
+			if (m_ballInsideOf != nullptr) // If in ball, exit it
+			{
+				GetActor()->m_position = m_ballInsideOf->m_position + Vec3(1.f, 0.f, 0.f);
+				m_ballInsideOf = nullptr;
+			}
+			else if (m_ballNextTo != nullptr) // If not in ball but near one, enter it
+			{
+				m_ballInsideOf = m_ballNextTo;
+			}
+			else if (m_orbNextTo != nullptr && GetActor()->m_equippedWeapon->m_definition->m_name != "OrbPickup") // If next to orb, pick it up
+			{
+				GetActor()->m_equippedWeapon = new Weapon(m_map, "OrbPickup");
+				m_orbNextTo->Die();
+			}
+			else if (GetActor()->m_equippedWeapon->m_definition->m_name == "OrbPickup" && m_spawnPadNextTo != nullptr) // If next to a spawn pad and holding orb, put the orb in it and spawn a ball
+			{
+				GetActor()->m_equippedWeapon = GetActor()->m_weapons[0];
+				m_hasPlacedOrbThisFrame = true;
+				m_map->SpawnActor("Ball", m_spawnPadNextTo->m_position, EulerAngles(), 1.f);
+			}
+			else if (GetActor()->m_equippedWeapon->m_definition->m_name == "OrbPickup") // If holding an orb, drop it
+			{
+				GetActor()->m_equippedWeapon = GetActor()->m_weapons[0];
+			}
 		}
 
 		m_position = actor->m_position + Vec3(0.f, 0.f, actor->m_definition->m_eyeHeight);

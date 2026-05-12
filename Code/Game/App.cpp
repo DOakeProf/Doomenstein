@@ -142,14 +142,14 @@ void App::Startup_DisplayCommandsToDevConsole()
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Sprint: LShift - Left Thumbstick");
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Jump: Spacebar - Gamepad A");
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Fire: Left Click - Right Trigger");
-	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Alternate Fire: Right click - Left Trigger");
-	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Cycle Weapon: Left/Right Arrow Keys - Left/Right DPAD");
-	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Select Weapon: 1/2/3 - Gamepad X/Y/B");
+	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Look down scope: Right click - Left Trigger");
+	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Reload: R - Gamepad X");
+	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Cycle Weapon: Left/Right Arrow Keys - Left/Right Shoulder");
+	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Select Weapon: 1/2/3/4/5");
+	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Interact with object: E - Gamepad Y");
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Toggle Freefly: F");
-	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Possess Next Actor: N");
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Pause: P");
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Single Step Frame: O");
-	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Slow Mode: T");
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "Reset/Exit Game: ESC / Back");
 	g_engine->m_devConsole->AddLine(DevConsole::DEV_INFO_MAJOR, "----------------");
 }

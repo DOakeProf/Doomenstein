@@ -42,7 +42,7 @@
 	<MapDefinition name="Overworld" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8" skyboxTexture="Data/Images/Clouds4.png" isSkyboxCylinder="true">
 		<SpawnInfos>
 			<SpawnInfo actor="SpawnPoint" position="39.5,35.5,5.01" orientation="270.0,0.0,0.0" />
-			<SpawnInfo actor="Ball" position="43.5,32.5,5.0" orientation="270.0,0.0,0.0" />
+			<SpawnInfo actor="SpawnPlatform" position="43.5,32.5,5.0" orientation="270.0,0.0,0.0" />
 
 			<SpawnInfo actor="RiftPointMain" position="6.0,12.0,4.75" orientation="45.0,0.0,0.0" />
 			<SpawnInfo actor="RiftPointMain" position="47.0,60.0,9.75" orientation="270.0,0.0,0.0" />
@@ -77,10 +77,10 @@
 	</MapDefinition>
 	
 	<MapDefinition name="DOGDimension" shader="Data/Shaders/Diffuse" spriteSheetTexture="Data/Images/Terrain_8x8.png" spriteSheetCellCount="8,8" skyboxTexture="Data/Images/DOGBackground.png" isSkyboxCylinder="false">
-		<EnemySpawning secondsUntilNextWave="16.f" enemiesPerWave="0" maxEnemies="50">
+		<EnemySpawning secondsUntilNextWave="16.f" enemiesPerWave="2" maxEnemies="50">
 			<enemy name="Dinosaur" weight="1.f" type="Grounded"/>
 			<enemy name="Demon" weight="2.f" type="Grounded"/>
-			<enemy name="Emperor" weight="0.3f" type="Grounded"/>
+			<enemy name="Emperor" weight="300.f" type="Grounded"/>
 		</EnemySpawning>
 		<SpawnInfos>
 			<SpawnInfo actor="SpawnPoint" position="40.5,45.5,5.01" orientation="270.0,0.0,0.0" />

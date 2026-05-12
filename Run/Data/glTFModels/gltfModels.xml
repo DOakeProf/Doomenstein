@@ -5,6 +5,7 @@
 	<Model name="BlackSpindle" gltfModel="Data/glTFModels/BlackSpindle/BlackSpindle.gltf" gltfBin="Data/glTFModels/BlackSpindle/BlackSpindle.bin"/>
 	<Model name="RedDeath" gltfModel="Data/glTFModels/RedDeath/RedDeath.gltf" gltfBin="Data/glTFModels/RedDeath/RedDeath.bin"/>
 	<Model name="Horseman" gltfModel="Data/glTFModels/Horseman/Horseman.gltf" gltfBin="Data/glTFModels/Horseman/Horseman.bin"/>
-	<Model name="Tractor" gltfModel="Data/glTFModels/Tractor/Tractor.gltf" gltfBin="Data/glTFModels/Tractor/Tractor.bin"/>
 	<Model name="Ball" gltfModel="Data/glTFModels/Ball/Ball.gltf" gltfBin="Data/glTFModels/Ball/Ball.bin"/>
+	<Model name="SpawnPlatform" gltfModel="Data/glTFModels/SpawnPlatform/SpawnPlatform.gltf" gltfBin="Data/glTFModels/SpawnPlatform/SpawnPlatform.bin"/>
+	<Model name="OrbPickup" gltfModel="Data/glTFModels/OrbPickup/OrbPickup.gltf" gltfBin="Data/glTFModels/OrbPickup/OrbPickup.bin"/>
 </glTFModels>

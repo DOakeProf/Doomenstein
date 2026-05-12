@@ -533,5 +533,19 @@
   	<Visuals pivot="0.0,0.85" gltfName="Ball" shader="Data/Shaders/Diffuse" renderBackfaces="true">
   	</Visuals>
   </ActorDefinition>
+  <!-- SpawnPlatform -->
+  <ActorDefinition name="SpawnPlatform" canBePossessed="false" corpseLifetime="0.0" visible="true" dieOnSpawn="false">
+	 <Collision collidesWithWorld="false" collidesWithActors="false" canBeShot="false"/>
+	<Physics simulated="false" turnSpeed="0.0" flying="false" drag="4.5" moveWhenDead="true"/>
+  	<Visuals pivot="0.0,-0.5" gltfName="SpawnPlatform" shader="Data/Shaders/Diffuse" renderBackfaces="true">
+  	</Visuals>
+  </ActorDefinition>
+	<!-- OrbPickup -->
+	<ActorDefinition name="OrbPickup" canBePossessed="false" corpseLifetime="0.0" visible="true" dieOnSpawn="false">
+		<Collision collidesWithWorld="false" collidesWithActors="false" canBeShot="false"/>
+		<Physics simulated="false" turnSpeed="0.0" flying="false" drag="4.5" moveWhenDead="true"/>
+		<Visuals pivot="0.0,0.0" gltfName="OrbPickup" shader="Data/Shaders/Diffuse" renderBackfaces="true">
+		</Visuals>
+	</ActorDefinition>
 </Definitions>
 

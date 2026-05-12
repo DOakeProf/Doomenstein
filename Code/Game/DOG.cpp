@@ -172,14 +172,23 @@ void DOG::Update()
 		}
 	}
 
+	// Spawn a rift along the spline
 	if (m_riftSpawnTimer->DecrementPeriodIfElapsed())
 	{
 		m_riftGoAwayTimer->Start();
 
 		float deltaSeconds = (float)m_map->m_game->m_gameClock->GetDeltaSeconds();
 		m_parametricValueAcrossCurve += 1.f / m_secondsUntilHit * deltaSeconds;
-		Vec3 riftPosition = m_spline.EvaluateAtParametric(m_parametricValueAcrossCurve + 0.5f);
-		Vec3 riftFwd = (m_spline.m_points[m_numPrevSplinePoints + 1] - m_spline.m_points[m_numPrevSplinePoints]).GetNormalized();
+		float newParametricValue = m_parametricValueAcrossCurve + 0.5f;
+		float newParametricRemainder = fmod(newParametricValue, 1.f);
+		while (newParametricRemainder < 0.15f || newParametricRemainder > 0.85f)
+		{
+			newParametricValue += 0.1f;
+			newParametricRemainder = fmod(newParametricValue, 1.f);
+		}
+		Vec3 riftPosition = m_spline.EvaluateAtParametric(newParametricValue);
+		Vec3 riftPositionRightInFrontOf = m_spline.EvaluateAtParametric(newParametricValue + 0.01f);
+		Vec3 riftFwd = (riftPositionRightInFrontOf - riftPosition).GetNormalized();
 		Mat44 riftOrientationAsMatrix = Mat44(riftFwd, Vec3(0.f, 1.f, 0.f), Vec3(0.f, 0.f, 1.f), Vec3(0.f, 0.f, 0.f));
 		EulerAngles riftOrientation = EulerAngles(riftOrientationAsMatrix);
 		m_DOGRift = m_map->m_game->SpawnRift(riftPosition, riftOrientation, 7.f);
@@ -288,7 +297,7 @@ Vec3 DOG::FindRandomVec3()
 	Vec3 randomVec3 = Vec3(
 		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(GetClamped(m_head->m_position.x - horizontalDisplacement, m_movementBounds.m_mins.x, m_movementBounds.m_maxs.x), GetClamped(m_head->m_position.x + horizontalDisplacement, m_movementBounds.m_mins.x, m_movementBounds.m_maxs.x)),
 		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(GetClamped(m_head->m_position.y - horizontalDisplacement, m_movementBounds.m_mins.y, m_movementBounds.m_maxs.y), GetClamped(m_head->m_position.y + horizontalDisplacement, m_movementBounds.m_mins.y, m_movementBounds.m_maxs.y)),
-		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(GetClamped(m_head->m_position.z - verticalDisplacement, m_movementBounds.m_mins.x, m_movementBounds.m_maxs.z), GetClamped(m_head->m_position.z + verticalDisplacement, m_movementBounds.m_mins.z, m_movementBounds.m_maxs.z))
+		m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(GetClamped(m_head->m_position.z - verticalDisplacement, m_movementBounds.m_mins.z, m_movementBounds.m_maxs.z), GetClamped(m_head->m_position.z + verticalDisplacement, m_movementBounds.m_mins.z, m_movementBounds.m_maxs.z))
 	);
 	return randomVec3;
 }

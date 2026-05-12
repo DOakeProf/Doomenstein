@@ -79,7 +79,7 @@ void Map::Startup()
 	m_devourerSpawnCameraOrientation = EulerAngles(180.f, 0.f, 0.f);
 	m_devourerSpawnRiftLocation = Vec3(-76.5f, 31.5f, 12.5f);
 
-	m_devourerSpawnTimer = new Timer(15.f, m_game->m_gameClock);
+	m_devourerSpawnTimer = new Timer(8.f, m_game->m_gameClock);
 }
 
 void Map::Startup_InitializePlayers()

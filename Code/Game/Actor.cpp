@@ -729,6 +729,10 @@ void Actor::Die()
 		m_deathTimer->Start();
 		SetAnimGroup("Death");
 		PlaySoundOnActor("Death");
+		if (m_definition->m_name == "Emperor")
+		{
+			m_map->SpawnActor("OrbPickup", m_position, m_orientation, 1.f);
+		}
 	}
 }
 

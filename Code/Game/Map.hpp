@@ -134,8 +134,8 @@ public:
 	bool AreActorsSameFaction(Actor* actorA, Actor* actorB);
 	VertexBuffer* GetVertexBuffer();
 	IndexBuffer* GetIndexBuffer();
-	SpawnInfo const& GetSpawnInfoForGrounded();
-	SpawnInfo const& GetSpawnInfoForFlying();
+	SpawnInfo const GetSpawnInfoForGrounded();
+	SpawnInfo const GetSpawnInfoForFlying();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Utility functions

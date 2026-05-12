@@ -111,7 +111,7 @@ void Player::Update()
 		if (m_ballInsideOf != nullptr && m_ballInsideOf->m_isDead)
 		{
 			Vec3 centerOfMap = Vec3(45.5f, 41.5f, 20.f);
-			Vec3 actorToCenter = centerOfMap - GetActor()->m_desiredPosition;
+			Vec3 actorToCenter = centerOfMap - GetActor()->m_position;
 			Vec3 newImpulseToCenter = actorToCenter;
 			GetActor()->AddImpulse(newImpulseToCenter);
 			m_ballInsideOf = nullptr;

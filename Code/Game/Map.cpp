@@ -560,7 +560,7 @@ IndexBuffer* Map::GetIndexBuffer()
 	return m_indexBuffer;
 }
 
-SpawnInfo const& Map::GetSpawnInfoForGrounded()
+SpawnInfo const Map::GetSpawnInfoForGrounded()
 {
 	int maxEnemySpawnIndex = (int)m_enemySpawnPoints.size() - 1;
 	int randomEnemySpawnIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, maxEnemySpawnIndex);
@@ -568,7 +568,7 @@ SpawnInfo const& Map::GetSpawnInfoForGrounded()
 	return SpawnInfo("", spawnPoint->m_position, spawnPoint->m_orientation);
 }
 
-SpawnInfo const& Map::GetSpawnInfoForFlying()
+SpawnInfo const Map::GetSpawnInfoForFlying()
 {
 	int maxEnemySpawnIndex = (int)m_flyingEnemySpawnPoints.size() - 1;
 	int randomEnemySpawnIndex = m_game->m_randomNumberGenerator->RollRandomIntInRange(0, maxEnemySpawnIndex);

@@ -1717,7 +1717,7 @@ void Map::Render_Actors() const
 					portalPlane = Vec4(-portalNormal.x, -portalNormal.y, -portalNormal.z, DotProduct3D(portalNormal, actor->m_riftCollidingWith->GetPosition()));
 				}
 				clipPlaneConstants.gClipPlane[0] = portalPlane;
-				if (!m_isRenderingRift)
+				if (!m_isRenderingRift && !m_isRenderingPortal)
 				{
 					g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_clipPlaneCBO);
 				}
@@ -1725,7 +1725,7 @@ void Map::Render_Actors() const
 			else
 			{	
 				clipPlaneConstants.isEnabled = 0;
-				if (!m_isRenderingRift)
+				if (!m_isRenderingRift && !m_isRenderingPortal)
 				{
 					g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_clipPlaneCBO);
 				}
@@ -1734,7 +1734,7 @@ void Map::Render_Actors() const
 		}
 	}
 	clipPlaneConstants.isEnabled = 0;
-	if (!m_isRenderingRift)
+	if (!m_isRenderingRift && !m_isRenderingPortal)
 	{
 		g_engine->m_render->SetConstantBufferData(k_clipPlaneConstantsSlot, clipPlaneConstants, m_clipPlaneCBO);
 	}

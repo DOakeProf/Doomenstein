@@ -376,10 +376,13 @@ void Weapon::Render_GLTF()
 		Mat44 modelMatrix = Mat44();
 		modelMatrix.AppendTranslation3D(currentPlayer->m_position);
 
-		modelMatrix.Append(currentPlayer->m_orientationRecoil.GetAsMatrix_IFwd_JLeft_KUp());
+		if (currentPlayer->m_ballInsideOf != nullptr)
+		{
+			modelMatrix.Append((currentPlayer->m_ballInsideOf->m_orientation + currentPlayer->m_orientationRecoil).GetAsMatrix_IFwd_JLeft_KUp());
+		}
+		modelMatrix.Append((currentPlayer->m_orientationRecoil).GetAsMatrix_IFwd_JLeft_KUp());
 		modelMatrix.Append(m_orientationRecoil.GetAsMatrix_IFwd_JLeft_KUp());
 		modelMatrix.AppendTranslation3D(Vec3(0.5f, -0.15f, -0.15f));
-
 
 		if (m_scopeFraction > 0.f)
 		{

@@ -132,7 +132,15 @@ void Player::Update()
 		}
 		else
 		{
-			m_worldCamera->SetPositionAndOrientation(m_position, m_orientation + m_recoil);
+			if (m_ballInsideOf != nullptr)
+			{
+				EulerAngles orientationInBallSpace = m_orientation + m_ballInsideOf->m_orientation;
+				m_worldCamera->SetPositionAndOrientation(m_position, orientationInBallSpace + m_recoil);
+			}
+			else
+			{
+				m_worldCamera->SetPositionAndOrientation(m_position, m_orientation + m_recoil);
+			}
 		}
 
 		if (m_orientation.m_rollDegrees != 0.f)
@@ -439,10 +447,6 @@ void Player::HandleInputs_FirstPerson()
 		case ControlState::KEYBOARD: HandleInputs_FirstPerson_Keyboard(); break;
 		case ControlState::CONTROLLER: HandleInputs_FirstPerson_Controller(); break;
 	}
-
-	// Just do both for now
-	//HandleInputs_FirstPerson_Keyboard();
-	//HandleInputs_FirstPerson_Controller();
 }
 
 void Player::HandleInputs_FirstPerson_Keyboard()
@@ -465,7 +469,15 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		m_orientation = newOrientation;
 
 		HandleAACapture();
-		actor->m_orientation = m_orientationRecoil;
+		if (m_ballInsideOf)
+		{
+			EulerAngles orientationInBallSpace = m_orientation + m_ballInsideOf->m_orientation;
+			actor->m_orientation = orientationInBallSpace;
+		}
+		else
+		{
+			actor->m_orientation = m_orientationRecoil;
+		}
 
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		// Movement

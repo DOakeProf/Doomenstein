@@ -57,7 +57,7 @@ DOG::DOG(Map* map)
 
 	m_riftGoAwayTimer = new Timer(10.f, m_map->m_game->m_gameClock);
 	m_riftSpawnTimer = new Timer(15.f, m_map->m_game->m_gameClock);
-	m_playerChargeAtTimer = new Timer(20.f, m_map->m_game->m_gameClock);
+	m_playerChargeAtTimer = new Timer(5.f, m_map->m_game->m_gameClock);
 	m_playerChargeAtTimer->Start();
 	m_dpsPhaseTimer = new Timer(25.f, m_map->m_game->m_gameClock);
 	m_riftSpawnTimer->Start();
@@ -115,6 +115,10 @@ void DOG::Update()
 		if (newPosition != Vec3())
 		{
 			m_ballInMouth->m_desiredPosition = Vec3(0.f, 0.f, -0.7f) + newPosition;
+			Mat44 ballBillboardedToHead = GetBillboardTransform(BillboardType::FULL_FACING, m_head->GetModelMatrix(), m_ballInMouth->m_desiredPosition);
+			ballBillboardedToHead.AppendZRotation(45.f);
+			m_ballInMouth->m_orientation = EulerAngles(ballBillboardedToHead);
+			
 		}
 		if (m_ballInMouth->m_map != m_head->m_map)
 		{

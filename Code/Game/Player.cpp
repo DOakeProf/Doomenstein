@@ -3,6 +3,7 @@
 #include "Game/Game.hpp"
 #include "Game/Map.hpp"
 #include "Game/Actor.hpp"
+#include "Game/App.hpp"
 
 #include "Engine/Renderer/Camera.hpp"
 #include "Engine/Core/Engine.hpp"
@@ -110,10 +111,14 @@ void Player::Update()
 
 		if (m_ballInsideOf != nullptr && m_ballInsideOf->m_isDead)
 		{
-			Vec3 centerOfMap = Vec3(45.5f, 41.5f, 20.f);
-			Vec3 actorToCenter = centerOfMap - GetActor()->m_position;
+			Vec3 centerOfMap = Vec3(45.5f, 41.5f, 40.f);
+			Vec3 actorPosition = GetActor()->m_position;
+			Vec3 actorToCenter = centerOfMap - actorPosition;
 			Vec3 newImpulseToCenter = actorToCenter;
-			GetActor()->AddImpulse(newImpulseToCenter);
+
+			GetActor()->m_velocity = Vec3(); // Player can accumulate velocity from the devourer and other bullets constantly hitting them while in the ball, this just resets it.
+
+			GetActor()->AddImpulse(newImpulseToCenter * GetActor()->m_definition->m_drag);
 			m_ballInsideOf = nullptr;
 		}
 
@@ -602,6 +607,9 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 			if (m_ballInsideOf != nullptr) // If in ball, exit it
 			{
 				GetActor()->m_position = m_ballInsideOf->m_position + Vec3(1.f, 0.f, 0.f);
+
+				GetActor()->m_velocity = Vec3(); // Player can accumulate velocity from the devourer and other bullets constantly hitting them while in the ball, this just resets it.
+
 				m_ballInsideOf = nullptr;
 			}
 			else if (m_ballNextTo != nullptr) // If not in ball but near one, enter it

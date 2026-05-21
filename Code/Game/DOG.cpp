@@ -57,7 +57,7 @@ DOG::DOG(Map* map)
 
 	m_riftGoAwayTimer = new Timer(10.f, m_map->m_game->m_gameClock);
 	m_riftSpawnTimer = new Timer(15.f, m_map->m_game->m_gameClock);
-	m_playerChargeAtTimer = new Timer(5.f, m_map->m_game->m_gameClock);
+	m_playerChargeAtTimer = new Timer(20.f, m_map->m_game->m_gameClock);
 	m_playerChargeAtTimer->Start();
 	m_dpsPhaseTimer = new Timer(25.f, m_map->m_game->m_gameClock);
 	m_riftSpawnTimer->Start();
@@ -72,18 +72,18 @@ void DOG::Update()
 {
 	Update_MoveAlongSpline();
 
-	if (m_playerChargeAtTimer->HasPeriodElapsed())
+	for (Player* player : m_map->GetPlayers())
 	{
-		for (Player* player : m_map->GetPlayers())
+		if (player != nullptr && (m_playerChargeAtTimer->HasPeriodElapsed() || player->m_ballInsideOf != nullptr) && m_dpsPhaseTimer->IsStopped())
 		{
 			float randomNumber = m_map->m_game->m_randomNumberGenerator->RollRandomFloatZeroToOne();
-			if (!m_shouldChargeAtSpecificPoint && player != nullptr) // If we haven't started charging yet, do so at the first player we see..
+			if (!m_shouldChargeAtSpecificPoint) // If we haven't started charging yet, do so at the first player we see.
 			{
 				m_specificPointToChargeAt = player->m_position;
 				m_shouldChargeAtSpecificPoint = true;
 				m_playerChargeAtTimer->Start();
 			}
-			else if (m_shouldChargeAtSpecificPoint && player != nullptr && randomNumber < 0.5f) // If we already have a player 50 charge at, 50% chance we charge at this next one instead.
+			else if (m_shouldChargeAtSpecificPoint && randomNumber < 0.5f) // If we already have a player 50 charge at, 50% chance we charge at this next one instead.
 			{
 				m_specificPointToChargeAt = player->m_position;
 				m_shouldChargeAtSpecificPoint = true;

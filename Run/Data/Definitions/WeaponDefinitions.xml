@@ -28,7 +28,7 @@
 		</Sounds>
 	</WeaponDefinition>
 	<!-- Fourth Horseman -->
-	<WeaponDefinition name="Horseman" refireTime="0.166" rayCount="12" rayCone="10.0" rayRange="12.0" rayDamage="3.5~4.5" rayImpulse="0.5"  precisionMultiplier = "1.4f" maxAmmo="400" reloadTime="2.8" recoil="10.0" canScope ="true" scopedFOV="50" perk="RideTheBull">
+	<WeaponDefinition name="Horseman" refireTime="0.166" rayCount="12" rayCone="10.0" rayRange="12.0" rayDamage="3.5~4.5" rayImpulse="0.5"  precisionMultiplier = "1.4f" maxAmmo="4" reloadTime="2.8" recoil="10.0" canScope ="true" scopedFOV="50" perk="Broadside">
 		<HUD shader="Default" baseTexture="Data/Images/Hud_Base.png" gltfName="Horseman" reticleTexture="Data/Images/Reticle.png" reticleSize="16,16" spriteSize="256,256" spritePivot="0.5,0.0">
 		</HUD>
 		<Sounds>

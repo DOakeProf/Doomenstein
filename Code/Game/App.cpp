@@ -65,7 +65,6 @@ void App::Update()
 		m_isDebug = !m_isDebug;
 	}
 
-	// Runs update then pauses
 	if (g_engine->m_input->WasKeyJustPressed(KEYCODE_TILDE))
 	{
 		g_engine->m_devConsole->ToggleMode(DevConsoleMode::OPEN_FULL);

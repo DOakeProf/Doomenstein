@@ -378,9 +378,13 @@ void Weapon::Render_GLTF()
 
 		if (currentPlayer->m_ballInsideOf != nullptr)
 		{
+			//EulerAngles orientationInBallSpace = m_orientation + m_ballInsideOf->m_orientation;
 			modelMatrix.Append((currentPlayer->m_ballInsideOf->m_orientation + currentPlayer->m_orientationRecoil).GetAsMatrix_IFwd_JLeft_KUp());
 		}
-		modelMatrix.Append((currentPlayer->m_orientationRecoil).GetAsMatrix_IFwd_JLeft_KUp());
+		else
+		{
+			modelMatrix.Append((currentPlayer->m_orientationRecoil).GetAsMatrix_IFwd_JLeft_KUp());
+		}
 		modelMatrix.Append(m_orientationRecoil.GetAsMatrix_IFwd_JLeft_KUp());
 		modelMatrix.AppendTranslation3D(Vec3(0.5f, -0.15f, -0.15f));
 

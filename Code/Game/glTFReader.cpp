@@ -595,15 +595,6 @@ void glTF_Node::RenderNode()
 				g_engine->m_render->BindTexture(nullptr);
 			}
 
-			// Bind the node transform
-			Vec4 iBasis = Vec4(1.f, 0.f, 0.f, 0.f);
-			Vec4 jBasis = Vec4(0.f, 1.f, 0.f, 0.f);
-			Vec4 kBasis = Vec4(0.f, 0.f, 1.f, 0.f);
-			Vec4 tBasis = Vec4(0.f, 0.f, 0.f, 1.f);
-			Mat44 testMatrix = Mat44(iBasis, jBasis, kBasis, tBasis);
-
-			g_engine->m_render->SetNodeTransformConstants(testMatrix);
-
 			switch (currentPrimitive->m_indexType)
 			{
 				case glTF_Primitive::IndexType::INDEXTYPE_8: // TODO: Find a way to convert uint8_t and uint16_t into unsigned int stored with 32 bits. current implementation of dividing may be flawed.

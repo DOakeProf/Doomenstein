@@ -532,6 +532,11 @@ void Actor::Update_Position()
 
 	{
 		m_position = m_desiredPosition;
+		if (m_controller != nullptr && m_controller->IsPlayer() && ((Player*)m_controller)->m_playerState == PlayerState::FIRSTPERSON)
+		{
+			((Player*)m_controller)->m_position =GetEyePos();
+			((Player*)m_controller)->Update_Camera();
+		}
 	}
 }
 

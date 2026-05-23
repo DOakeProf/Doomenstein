@@ -39,6 +39,8 @@ public:
 	void Update() override;
 	void Render();
 
+	void Update_Camera();
+
 	void Render_HUD();
 	void Render_Death();
 

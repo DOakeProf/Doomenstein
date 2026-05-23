@@ -172,14 +172,31 @@ void Rift::RenderRift(const Map* map)
 
 	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
 	SpriteDef spriteDef;
-	if (m_isDead)
+	if (m_isBigRift)
 	{
-		float totalTime = map->m_game->m_riftStencilAnim->GetTotalTime();
-		spriteDef = map->m_game->m_riftStencilAnim->GetSpriteDefAtTime(totalTime - (float)m_deathTimer->GetElapsedTime());
+		g_engine->m_render->BindTexture(map->m_game->m_riftStencilBigAnim->GetTexture());
+		if (m_isDead)
+		{
+			float totalTime = map->m_game->m_riftStencilBigAnim->GetTotalTime();
+			spriteDef = map->m_game->m_riftStencilBigAnim->GetSpriteDefAtTime(totalTime - (float)m_deathTimer->GetElapsedTime());
+		}
+		else
+		{
+			spriteDef = map->m_game->m_riftStencilBigAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+		}
 	}
 	else
 	{
-		spriteDef = map->m_game->m_riftStencilAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+		g_engine->m_render->BindTexture(map->m_game->m_riftStencilAnim->GetTexture());
+		if (m_isDead)
+		{
+			float totalTime = map->m_game->m_riftStencilAnim->GetTotalTime();
+			spriteDef = map->m_game->m_riftStencilAnim->GetSpriteDefAtTime(totalTime - (float)m_deathTimer->GetElapsedTime());
+		}
+		else
+		{
+			spriteDef = map->m_game->m_riftStencilAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+		}
 	}
 	AABB2 spriteUVs = spriteDef.m_UVs;
 	m_vertexes[0].m_uvTexCoords = spriteUVs.m_mins;
@@ -188,7 +205,6 @@ void Rift::RenderRift(const Map* map)
 	m_vertexes[3].m_uvTexCoords = spriteUVs.m_maxs;
 	m_vertexes[4].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
 	m_vertexes[5].m_uvTexCoords = spriteUVs.m_mins;
-	g_engine->m_render->BindTexture(map->m_game->m_riftStencilAnim->GetTexture());
 	g_engine->m_render->DrawVertexList(&m_vertexes);
 
 	g_engine->m_render->EndCamera(map->m_game->m_currentlyRenderedPlayer->m_worldCamera);
@@ -222,14 +238,31 @@ void Rift::RenderOutline(const Map* map)
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
 	g_engine->m_render->SetModelConstants(GetModelToWorldTransform(), Rgba8::WHITE);
 	SpriteDef spriteDef;
-	if (m_isDead)
+	if (m_isBigRift)
 	{
-		float totalTime = map->m_game->m_riftStencilAnim->GetTotalTime();
-		spriteDef = map->m_game->m_riftAnim->GetSpriteDefAtTime(totalTime - (float)m_deathTimer->GetElapsedTime());
+		g_engine->m_render->BindTexture(map->m_game->m_riftBigAnim->GetTexture());
+		if (m_isDead)
+		{
+			float totalTime = map->m_game->m_riftStencilBigAnim->GetTotalTime();
+			spriteDef = map->m_game->m_riftBigAnim->GetSpriteDefAtTime(totalTime - (float)m_deathTimer->GetElapsedTime());
+		}
+		else
+		{
+			spriteDef = map->m_game->m_riftBigAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+		}
 	}
 	else
 	{
-		spriteDef = map->m_game->m_riftAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+		g_engine->m_render->BindTexture(map->m_game->m_riftAnim->GetTexture());
+		if (m_isDead)
+		{
+			float totalTime = map->m_game->m_riftStencilAnim->GetTotalTime();
+			spriteDef = map->m_game->m_riftAnim->GetSpriteDefAtTime(totalTime - (float)m_deathTimer->GetElapsedTime());
+		}
+		else
+		{
+			spriteDef = map->m_game->m_riftAnim->GetSpriteDefAtTime((float)m_animTimer->GetElapsedTime());
+		}
 	}
 	AABB2 spriteUVs = spriteDef.m_UVs;
 	m_vertexes[0].m_uvTexCoords = spriteUVs.m_mins;
@@ -238,7 +271,6 @@ void Rift::RenderOutline(const Map* map)
 	m_vertexes[3].m_uvTexCoords = spriteUVs.m_maxs;
 	m_vertexes[4].m_uvTexCoords = Vec2(spriteUVs.m_mins.x, spriteUVs.m_maxs.y);
 	m_vertexes[5].m_uvTexCoords = spriteUVs.m_mins;
-	g_engine->m_render->BindTexture(map->m_game->m_riftAnim->GetTexture());
 	g_engine->m_render->DrawVertexList(&m_vertexes);
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 }

@@ -53,7 +53,7 @@ private:
 	int m_numPrevSplinePoints = 20; // The amount of previous spline points to track, these are needed in order to properly place the body segments of the devourer.
 	float m_parametricValueAcrossCurve = 1.f;
 	float m_secondsUntilHit = 1.f;
-	float m_averageVelocity = 25.f;
+	float m_averageVelocity = 35.f;
 	Vec3 m_prevHeadPos = Vec3();
 	bool m_shouldChargeAtSpecificPoint = false;
 	Vec3 m_specificPointToChargeAt = Vec3();

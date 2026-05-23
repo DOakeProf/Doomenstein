@@ -139,6 +139,16 @@ void Game::Startup_PopulateFromBlackboard()
 	SpriteSheet* riftStencilSpriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(g_gameConfigBlackboard.GetValue("riftStencilSpriteSheet", "").c_str()),
 														  riftStencilLayout);
 	m_riftStencilAnim = new SpriteAnimDefinition(*riftStencilSpriteSheet, 0, riftStencilLayout.x - 1, riftFramesPerSecond, SpriteAnimPlaybackType::ONCE);
+	
+	IntVec2 riftBigLayout = g_gameConfigBlackboard.GetValue("riftBigLayout", IntVec2(-1, -1));
+	SpriteSheet* riftBigSpriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(g_gameConfigBlackboard.GetValue("riftBigSpriteSheet", "").c_str()), 
+														riftBigLayout);
+	m_riftBigAnim = new SpriteAnimDefinition(*riftBigSpriteSheet, 0, riftBigLayout.x - 1, riftFramesPerSecond, SpriteAnimPlaybackType::ONCE);
+
+	IntVec2 riftStencilBigLayout = g_gameConfigBlackboard.GetValue("riftStencilBigLayout", IntVec2(-1, -1));
+	SpriteSheet* riftStencilBigSpriteSheet = new SpriteSheet(g_engine->m_render->CreateOrGetTextureFromFile(g_gameConfigBlackboard.GetValue("riftStencilBigSpriteSheet", "").c_str()),
+														  riftStencilBigLayout);
+	m_riftStencilBigAnim = new SpriteAnimDefinition(*riftStencilBigSpriteSheet, 0, riftStencilBigLayout.x - 1, riftFramesPerSecond, SpriteAnimPlaybackType::ONCE);
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 	m_mapDefinitionString = g_gameConfigBlackboard.GetValue("defaultMap", "");

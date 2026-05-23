@@ -13,6 +13,11 @@
 	riftStencilLayout="4,1"
 	riftSpriteSheet="Data/Images/RiftOverworld.png"
 	riftLayout="4,1"
+	
+	riftStencilBigSpriteSheet="Data/Images/RiftStencil_Big.png"
+	riftStencilBigLayout="5,1"
+	riftBigSpriteSheet="Data/Images/RiftOverworld_Big.png"
+	riftBigLayout="5,1"
 	riftFramesPerSecond="7.0"
 
 	perspectiveFOV = "60.f"

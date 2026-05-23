@@ -128,25 +128,7 @@ void Player::Update()
 			GetActor()->m_desiredPosition = m_ballInsideOf->m_desiredPosition + Vec3(0.f, 0.f, 0.2f);
 		}
 
-		if (actor != nullptr && actor->m_isDead)
-		{
-			float cameraFallTime = (float)actor->m_deathTimer->GetElapsedFraction();
-			Vec3 cameraFallDisplacement = Vec3(0.f, 0.f, -actor->m_definition->m_eyeHeight);
-			cameraFallDisplacement *= GetClamped(cameraFallTime, 0.f, 0.5f) * 1.5f;
-			m_worldCamera->SetPositionAndOrientation(m_position + cameraFallDisplacement, m_orientation);
-		}
-		else
-		{
-			if (m_ballInsideOf != nullptr)
-			{
-				EulerAngles orientationInBallSpace = m_orientation + m_ballInsideOf->m_orientation;
-				m_worldCamera->SetPositionAndOrientation(m_position, orientationInBallSpace + m_recoil);
-			}
-			else
-			{
-				m_worldCamera->SetPositionAndOrientation(m_position, m_orientation + m_recoil);
-			}
-		}
+		Update_Camera();
 
 		if (m_orientation.m_rollDegrees != 0.f)
 		{
@@ -178,6 +160,30 @@ void Player::Render()
 	}
 	Render_HUD();
 	Render_Death();
+}
+
+void Player::Update_Camera()
+{
+	Actor* actor = GetActor();
+	if (actor != nullptr && actor->m_isDead)
+	{
+		float cameraFallTime = (float)actor->m_deathTimer->GetElapsedFraction();
+		Vec3 cameraFallDisplacement = Vec3(0.f, 0.f, -actor->m_definition->m_eyeHeight);
+		cameraFallDisplacement *= GetClamped(cameraFallTime, 0.f, 0.5f) * 1.5f;
+		m_worldCamera->SetPositionAndOrientation(m_position + cameraFallDisplacement, m_orientation);
+	}
+	else
+	{
+		if (m_ballInsideOf != nullptr)
+		{
+			EulerAngles orientationInBallSpace = m_orientation + m_ballInsideOf->m_orientation;
+			m_worldCamera->SetPositionAndOrientation(m_position, orientationInBallSpace + m_recoil);
+		}
+		else
+		{
+			m_worldCamera->SetPositionAndOrientation(m_position, m_orientation + m_recoil);
+		}
+	}
 }
 
 void Player::Render_HUD()

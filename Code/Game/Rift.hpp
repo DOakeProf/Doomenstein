@@ -27,6 +27,7 @@ public:
 
 	Timer* m_deathTimer;
 
+	bool m_isBigRift = false;
 	bool m_isDead = false;
 	bool m_isGarbage = false;
 };

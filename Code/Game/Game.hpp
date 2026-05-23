@@ -119,6 +119,8 @@ public:
 
 	SpriteAnimDefinition* m_riftAnim = nullptr;
 	SpriteAnimDefinition* m_riftStencilAnim = nullptr;
+	SpriteAnimDefinition* m_riftBigAnim = nullptr;
+	SpriteAnimDefinition* m_riftStencilBigAnim = nullptr;
 
 	Camera* m_screenCamera = nullptr;
 

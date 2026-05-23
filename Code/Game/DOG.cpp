@@ -72,6 +72,8 @@ void DOG::Update()
 {
 	Update_MoveAlongSpline();
 
+	m_spline.DebugDraw3D(10);
+
 	for (Player* player : m_map->GetPlayers())
 	{
 		if (player != nullptr && (m_playerChargeAtTimer->HasPeriodElapsed() || player->m_ballInsideOf != nullptr) && m_dpsPhaseTimer->IsStopped())
@@ -288,24 +290,24 @@ void DOG::ChooseNextSpline()
 	if (m_shouldChargeAtSpecificPoint)
 	{
 		points.push_back(m_specificPointToChargeAt); // Next spline position
-		points.push_back(FindRandomVec3()); // Next Next spline position
-		points.push_back(FindRandomVec3()); // a new random point, must be here to calculate next spline position's velocity.
+		points.push_back(FindRandomPointInFront()); // Next Next spline position
+		points.push_back(FindRandomPointInFront()); // a new random point, must be here to calculate next spline position's velocity.
 		m_shouldChargeAtSpecificPoint = false;
 	}
 	else
 	{
 		points.push_back(m_spline.m_points[m_numPrevSplinePoints + 1]); // Next spline position
 		points.push_back(m_spline.m_points[m_numPrevSplinePoints + 2]); // Next Next spline position
-		points.push_back(FindRandomVec3()); // a new random point, must be here to calculate next spline position's velocity.
+		points.push_back(FindRandomPointInFront()); // a new random point, must be here to calculate next spline position's velocity.
 	}
 	m_spline = CubicHermiteSpline3D(points, m_spline.m_velocities[m_numPrevSplinePoints]); // Have initial velocity be the velocity of the point we just hit.
 	for (Vec3& velocity : m_spline.m_velocities)
 	{
-		velocity *= 2.f;
+		velocity *= 1.f;
 	}
 
 	CubicHermiteCurve3D hermiteCurve = CubicHermiteCurve3D(m_spline.m_points[m_numPrevSplinePoints - 1], m_spline.m_velocities[m_numPrevSplinePoints - 1], m_spline.m_points[m_numPrevSplinePoints], m_spline.m_velocities[m_numPrevSplinePoints]);
-	float lengthOfCurve = hermiteCurve.GetApproximateLength(4);
+	float lengthOfCurve = hermiteCurve.GetApproximateLength(6);
 	m_secondsUntilHit = lengthOfCurve / m_averageVelocity;
 }
 
@@ -324,12 +326,13 @@ Vec3 DOG::FindRandomVec3()
 
 Vec3 DOG::FindRandomPointInFront()
 {
-	Vec3 fwdDir = (m_spline.m_points[m_numPrevSplinePoints + 2] - m_spline.m_points[m_numPrevSplinePoints + 1]);
+	Vec3 currentFinalPoint = m_spline.m_points[m_numPrevSplinePoints + 2];
+	Vec3 fwdDir = (currentFinalPoint - m_spline.m_points[m_numPrevSplinePoints + 1]);
 	fwdDir.z = 0.f;
 	fwdDir = fwdDir.GetNormalized();
 
 	Vec3 randomDirection = m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(fwdDir, 90.f);
-	Vec3 randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(5.f, 30.f) + m_head->m_position;
+	Vec3 randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(10.f, 20.f) + currentFinalPoint;
 
 	int maxRandomRolls = 10;
 	int randomRollsCount = 0;
@@ -342,7 +345,7 @@ Vec3 DOG::FindRandomPointInFront()
 		}
 
 		randomDirection = m_map->m_game->m_randomNumberGenerator->RollRandomDirectionInCone(fwdDir, 35.f);
-		randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(17.f, 30.f) + m_head->m_position;
+		randomVec3 = randomDirection * m_map->m_game->m_randomNumberGenerator->RollRandomFloatInRange(10.f, 20.f) + currentFinalPoint;
 	}
 
 	return randomVec3;

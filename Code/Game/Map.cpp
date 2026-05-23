@@ -740,6 +740,7 @@ void Map::SpawnDOG()
 {
 	m_isShowingDevourerSpawn = true;
 	m_DOGBigRift = m_game->SpawnRift(m_devourerSpawnRiftLocation, EulerAngles(), 50.f);
+	m_DOGBigRift->m_isBigRift = true;
 	//m_DOGBigRift->m_portalClock->SetTimeScale(0.04081632653f);
 	m_DOGBigRift->m_portalClock->SetTimeScale(0.08081632653f);
 	m_devourerSpawnTimer->Start();

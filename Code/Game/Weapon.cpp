@@ -404,7 +404,6 @@ void Weapon::Render_GLTF()
 
 		modelMatrix.Append(Camera::GLTF_TO_GAME_CONVENTIONS);
 
-
 		g_engine->m_render->SetModelConstants(modelMatrix, Rgba8::WHITE);
 
 		for (glTF_Asset* asset : m_definition->m_gltfAssets)

@@ -733,7 +733,7 @@ bool Game::EventSpawnBoss([[maybe_unused]] EventArgs& args)
 	return true;
 }
 
-bool Game::EventDamageBoss([[maybe_unused]] EventArgs& args)
+bool Game::EventDamageBoss([[maybe_unused]] EventArgs& args) // TODO: Implement this
 {
 	return true;
 }

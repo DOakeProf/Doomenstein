@@ -209,7 +209,18 @@ void Player::Render_HUD()
 		{
 			m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, Stringf("%i/%i", GetActor()->m_equippedWeapon->m_bullets, GetActor()->m_equippedWeapon->m_definition->m_maxAmmo), SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.15f, 0.06f));
 		}
-		if (m_ballNextTo != nullptr && m_ballInsideOf == nullptr)
+		if (m_map->m_DOG == nullptr && m_map->m_riftMap->m_DOG == nullptr && m_map->m_devourerSpawnTimer->IsStopped())
+		{
+			if (m_controlState == ControlState::KEYBOARD)
+			{
+				m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Press E to spawn Boss", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+			}
+			else if (m_controlState == ControlState::CONTROLLER)
+			{
+				m_map->m_game->m_squirrelFont->AddVertsForTextInBox2D(uiVerts, "Press Y to spawn Boss", SCREEN_AABB2, SCREEN_SIZE_Y * 0.04f, Rgba8::WHITE, 1.f, Vec2(0.5f, 0.4f));
+			}
+		}
+		else if (m_ballNextTo != nullptr && m_ballInsideOf == nullptr)
 		{
 			if (m_controlState == ControlState::KEYBOARD)
 			{
@@ -609,8 +620,12 @@ void Player::HandleInputs_FirstPerson_Keyboard()
 		//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 		// Interacting with E
 		if (g_engine->m_input->WasKeyJustPressed('E'))
-		{
-			if (m_ballInsideOf != nullptr) // If in ball, exit it
+		{	
+			if (m_map->m_DOG == nullptr && m_map->m_riftMap->m_DOG == nullptr)
+			{
+				m_map->SpawnDOG();
+			}
+			else if (m_ballInsideOf != nullptr) // If in ball, exit it
 			{
 				GetActor()->m_position = m_ballInsideOf->m_position + Vec3(1.f, 0.f, 0.f);
 
@@ -765,6 +780,10 @@ void Player::HandleInputs_FirstPerson_Controller()
 		// Interacting with Y
 		if (controller->WasButtonJustPressed(XboxButtonID::GAMEPAD_Y))
 		{
+			if (m_map->m_DOG == nullptr && m_map->m_riftMap->m_DOG == nullptr)
+			{
+				m_map->SpawnDOG();
+			}
 			if (m_ballInsideOf != nullptr) // If in ball, exit it
 			{
 				GetActor()->m_position = m_ballInsideOf->m_position + Vec3(1.f, 0.f, 0.f);

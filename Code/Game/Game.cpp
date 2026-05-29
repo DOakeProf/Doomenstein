@@ -449,6 +449,23 @@ void Game::Update_PlayingMode()
 		m_gameMusicPlayback = g_engine->m_audio->StartSound(m_DOGLooped, true, m_musicVolume);
 	}
 
+
+	// Entity updates
+	for (Player* player : m_players)
+	{
+		if (player == nullptr)
+		{
+			continue;
+		}
+		player->Update();
+	}
+
+	Update_Rifts(); // Checks for each actor that is near a rift, and adds it to that rift's list so that it can be rendered again in the other map.
+
+	m_currentMap->Update();
+	m_currentRiftMap->Update();
+
+	// Moves actors to and from each map
 	for (Actor* actor : m_currentMap->GetActors())
 	{
 		if (actor != nullptr)
@@ -475,21 +492,6 @@ void Game::Update_PlayingMode()
 			}
 		}
 	}
-
-	// Entity updates
-	for (Player* player : m_players)
-	{
-		if (player == nullptr)
-		{
-			continue;
-		}
-		player->Update();
-	}
-
-	Update_Rifts(); // Checks for each actor that is near a rift, and adds it to that rift's list so that it can be rendered again in the other map.
-
-	m_currentMap->Update();
-	m_currentRiftMap->Update();
 }
 
 void Game::Render_PlayingMode() const

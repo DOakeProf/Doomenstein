@@ -76,6 +76,15 @@ struct MapDefinition
 	static std::vector<MapDefinition*> s_definitions;
 };
 
+struct LightingConstants
+{
+	Vec3 SunDirection;
+	float SunIntensity;
+	float AmbientIntensity;
+	Vec3 padding;
+};
+static const int k_lightingConstantsSlot = 8;
+
 struct ClipPlaneConstants
 {
 	Vec4 gClipPlane[5];
@@ -83,7 +92,7 @@ struct ClipPlaneConstants
 	int amountOfClipPlanes;
 	Vec2 padding;
 };
-static const int k_clipPlaneConstantsSlot = 5;
+static const int k_clipPlaneConstantsSlot = 9;
 
 const int MAX_PORTAL_AABB3_SIZE = 4;
 struct PortalAABB3Constants
@@ -94,7 +103,7 @@ struct PortalAABB3Constants
 	uint32_t amountOfPortals;
 	Vec2 padding;
 };
-static const int k_portalAABB3ConstantsSlot = 6;
+static const int k_portalAABB3ConstantsSlot = 10;
 
 class Map
 {
@@ -197,6 +206,7 @@ public:
 	Game* m_game = nullptr;
 	ConstantBuffer* m_clipPlaneCBO = nullptr;
 	ConstantBuffer* m_portalAABB3CBO = nullptr;
+	ConstantBuffer* m_lightingCBO = nullptr;
 
 	Map* m_riftMap;
 	Shader* m_shader = nullptr;

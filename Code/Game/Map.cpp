@@ -34,14 +34,16 @@ Map::Map(Game* game, const MapDefinition* definition)
 
 Map::~Map()
 {
-	delete m_vertexBuffer;
-	delete m_indexBuffer;
+	delete m_vertexBufferGeometry;
+	delete m_indexBufferGeometry;
+	delete m_vertexBufferSkybox;
 	delete m_clipPlaneCBO;
 	delete m_portalAABB3CBO;
 	delete m_lightingCBO;
 
-	m_vertexBuffer = nullptr;
-	m_indexBuffer = nullptr;
+	m_vertexBufferGeometry = nullptr;
+	m_indexBufferGeometry = nullptr;
+	m_vertexBufferSkybox = nullptr;
 	m_clipPlaneCBO = nullptr;
 	m_portalAABB3CBO = nullptr;
 	m_lightingCBO = nullptr;
@@ -60,9 +62,9 @@ void Map::Startup()
 	m_tileSpriteSheet = SpriteSheet(m_definition->m_spriteSheetTexture, m_definition->m_spriteSheetCellCount);
 	IntVec2 dimensionsXY = m_definition->m_mapImages[0]->GetDimensions();
 	m_dimensions = IntVec3(dimensionsXY.x, dimensionsXY.y, (int)m_definition->m_mapImages.size());
+	CreateBuffers();
 	CreateTiles();
 	CreateGeometry();
-	CreateBuffers();
 
 	m_sunDirection = Vec3(-2.f, 1.f, -1.f);
 	m_sunIntensity = 0.85f;
@@ -200,6 +202,8 @@ void Map::CreateTiles()
 
 void Map::CreateGeometry()
 {
+	std::vector<Vertex_PCUTBN> vertexes;
+	std::vector<unsigned int> indexes;
 	for (int tileIndex = 0; tileIndex < m_tiles.size(); ++tileIndex)
 	{
 		Tile currentTile = m_tiles[tileIndex];
@@ -209,33 +213,36 @@ void Map::CreateGeometry()
 		if (currentTileDefinition->m_floorSpriteCoords != IntVec2(-1, -1))
 		{
 			AABB2 currentUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_floorSpriteCoords);
-			AddGeometryForFloor(currentBounds, currentUVs);
+			AddGeometryForFloor(vertexes, indexes, currentBounds, currentUVs);
 		}
 		if (currentTileDefinition->m_wallSpriteCoords != IntVec2(-1, -1))
 		{
 			AABB2 currentUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_wallSpriteCoords);
-			AddGeometryForWall(tileIndex, currentBounds, currentUVs);
+			AddGeometryForWall(vertexes, indexes, tileIndex, currentBounds, currentUVs);
 		}
 		if (currentTileDefinition->m_ceilingSpriteCoords != IntVec2(-1, -1))
 		{
 			AABB2 currentUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_ceilingSpriteCoords);
-			AddGeometryForCeiling(currentBounds, currentUVs);
+			AddGeometryForCeiling(vertexes, indexes, currentBounds, currentUVs);
 		}
 		if (currentTileDefinition->m_rampSpriteCoords != IntVec2(-1, -1))
 		{
 			AABB2 currentRampUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_rampSpriteCoords);
 			AABB2 currentWallUVs = m_tileSpriteSheet.GetUVsForSprite(currentTileDefinition->m_rampWallSpriteCoords);
-			AddGeometryForRamp(currentBounds, currentRampUVs, currentWallUVs, currentTileDefinition->m_rampDirection);
+			AddGeometryForRamp(vertexes, indexes, currentBounds, currentRampUVs, currentWallUVs, currentTileDefinition->m_rampDirection);
 		}
 	}
+	g_engine->m_render->CopyCPUToGPU(vertexes.data(), (unsigned int)vertexes.size() * sizeof(Vertex_PCUTBN), m_vertexBufferGeometry);
+	g_engine->m_render->CopyCPUToGPU(indexes.data(), (unsigned int)indexes.size() * sizeof(unsigned int), m_indexBufferGeometry);
 
+	std::vector<Vertex> skyboxVertexes;
 	// Skybox
 	if (m_definition->m_skyboxTexture != nullptr)
 	{
 		if (m_definition->m_isSkyboxCylinder)
 		{
 			AddVertsForCylinder3D_ExtendUVs(
-				m_skyboxVertexes,
+				skyboxVertexes,
 				Vec3((float)m_dimensions.x / 2.f, (float)m_dimensions.y / 2.f, -70.f),
 				Vec3((float)m_dimensions.x / 2.f, (float)m_dimensions.y / 2.f, 250.f),
 				300.f,
@@ -246,12 +253,13 @@ void Map::CreateGeometry()
 		}
 		else
 		{
-			AddVertsForSphere3D(m_skyboxVertexes, Vec3((float)m_dimensions.x / 2.f, (float)m_dimensions.y / 2.f, 0.f), 300.f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 32, 32);
+			AddVertsForSphere3D(skyboxVertexes, Vec3((float)m_dimensions.x / 2.f, (float)m_dimensions.y / 2.f, 0.f), 300.f, Rgba8::WHITE, AABB2::ZERO_TO_ONE, 32, 32);
 		}
 	}
+	g_engine->m_render->CopyCPUToGPU(skyboxVertexes.data(), (unsigned int)skyboxVertexes.size() * sizeof(Vertex), m_vertexBufferSkybox);
 }
 
-void Map::AddGeometryForWall(int tileIndex, const AABB3& bounds, const AABB2& UVs)
+void Map::AddGeometryForWall(std::vector<Vertex_PCUTBN>& vertexes, std::vector<unsigned int>& indexes, int tileIndex, const AABB3& bounds, const AABB2& UVs)
 {
 	const Tile* tileXPos = GetTile(tileIndex + m_dimensions.y);
 	const Tile* tileXNeg = GetTile(tileIndex - m_dimensions.y);
@@ -261,7 +269,7 @@ void Map::AddGeometryForWall(int tileIndex, const AABB3& bounds, const AABB2& UV
 	// + X
 	if (tileXPos != nullptr && tileXPos->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1))
 	{
-		AddVertsForQuad3D(m_vertexes, m_indexes,
+		AddVertsForQuad3D(vertexes, indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
@@ -272,7 +280,7 @@ void Map::AddGeometryForWall(int tileIndex, const AABB3& bounds, const AABB2& UV
 	// + Y
 	if (tileYPos != nullptr && tileYPos->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1))
 	{
-		AddVertsForQuad3D(m_vertexes, m_indexes,
+		AddVertsForQuad3D(vertexes, indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
@@ -283,7 +291,7 @@ void Map::AddGeometryForWall(int tileIndex, const AABB3& bounds, const AABB2& UV
 	// - X
 	if (tileXNeg != nullptr && tileXNeg->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1))
 	{
-	AddVertsForQuad3D(m_vertexes, m_indexes,
+	AddVertsForQuad3D(vertexes, indexes,
 		Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 		Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
 		Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
@@ -294,7 +302,7 @@ void Map::AddGeometryForWall(int tileIndex, const AABB3& bounds, const AABB2& UV
 	// - Y
 	if (tileYNeg != nullptr && tileYNeg->m_tileDefinition->m_wallSpriteCoords == IntVec2(-1, -1))
 	{
-	AddVertsForQuad3D(m_vertexes, m_indexes,
+	AddVertsForQuad3D(vertexes, indexes,
 		Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
 		Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 		Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
@@ -304,9 +312,9 @@ void Map::AddGeometryForWall(int tileIndex, const AABB3& bounds, const AABB2& UV
 	}
 }
 
-void Map::AddGeometryForFloor(const AABB3& bounds, const AABB2& UVs)
+void Map::AddGeometryForFloor(std::vector<Vertex_PCUTBN>& vertexes, std::vector<unsigned int>& indexes, const AABB3& bounds, const AABB2& UVs)
 {
-	AddVertsForQuad3D(m_vertexes, m_indexes, 
+	AddVertsForQuad3D(vertexes, indexes, 
 		Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
 		Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 		Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
@@ -315,9 +323,9 @@ void Map::AddGeometryForFloor(const AABB3& bounds, const AABB2& UVs)
 		UVs);
 }
 
-void Map::AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs)
+void Map::AddGeometryForCeiling(std::vector<Vertex_PCUTBN>& vertexes, std::vector<unsigned int>& indexes, const AABB3& bounds, const AABB2& UVs)
 {
-	AddVertsForQuad3D(m_vertexes, m_indexes,
+	AddVertsForQuad3D(vertexes, indexes,
 		Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
 		Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
 		Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
@@ -326,23 +334,23 @@ void Map::AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs)
 		UVs);
 }
 
-void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& RampUVs, const AABB2& WallUvs, IntVec2 const & direction)
+void Map::AddGeometryForRamp(std::vector<Vertex_PCUTBN>& vertexes, std::vector<unsigned int>& indexes, const AABB3& bounds, const AABB2& RampUVs, const AABB2& WallUvs, IntVec2 const & direction)
 {
 	if (direction == IntVec2(1,0))
 	{
-		AddVertsForQuad3D(m_vertexes, m_indexes,
+		AddVertsForQuad3D(vertexes, indexes,
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			bounds.m_mins,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
 			bounds.m_maxs,
 			Rgba8::WHITE, RampUVs);
 		AABB2 newWallUVs = AABB2(WallUvs.m_maxs, WallUvs.m_mins);
-		AddVertsForTriangle3D(m_vertexes, m_indexes,
+		AddVertsForTriangle3D(vertexes, indexes,
 			bounds.m_mins,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Rgba8::WHITE, WallUvs);
-		AddVertsForTriangle3D(m_vertexes, m_indexes,
+		AddVertsForTriangle3D(vertexes, indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
@@ -350,19 +358,19 @@ void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& RampUVs, const AA
 	}
 	else if (direction == IntVec2(-1, 0))
 	{
-		AddVertsForQuad3D(m_vertexes, m_indexes,
+		AddVertsForQuad3D(vertexes, indexes,
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Rgba8::WHITE, RampUVs);
 		AABB2 newWallUVs = AABB2(WallUvs.m_maxs, WallUvs.m_mins);
-		AddVertsForTriangle3D(m_vertexes, m_indexes,
+		AddVertsForTriangle3D(vertexes, indexes,
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Rgba8::WHITE, newWallUVs);
-		AddVertsForTriangle3D(m_vertexes, m_indexes,
+		AddVertsForTriangle3D(vertexes, indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
@@ -370,19 +378,19 @@ void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& RampUVs, const AA
 	}
 	else if (direction == IntVec2(0, 1))
 	{
-		AddVertsForQuad3D(m_vertexes, m_indexes,
+		AddVertsForQuad3D(vertexes, indexes,
 			bounds.m_mins,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			bounds.m_maxs,
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
 			Rgba8::WHITE, RampUVs);
 		AABB2 newWallUVs = AABB2(WallUvs.m_maxs, WallUvs.m_mins);
-		AddVertsForTriangle3D(m_vertexes, m_indexes,
+		AddVertsForTriangle3D(vertexes, indexes,
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_maxs.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			bounds.m_mins,
 			Rgba8::WHITE, newWallUVs);
-		AddVertsForTriangle3D(m_vertexes, m_indexes,
+		AddVertsForTriangle3D(vertexes, indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_maxs.z),
@@ -390,19 +398,19 @@ void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& RampUVs, const AA
 	}
 	else if (direction == IntVec2(0, -1))
 	{
-		AddVertsForQuad3D(m_vertexes, m_indexes,
+		AddVertsForQuad3D(vertexes, indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Rgba8::WHITE, RampUVs);
 		AABB2 newWallUVs = AABB2(WallUvs.m_maxs, WallUvs.m_mins);
-		AddVertsForTriangle3D(m_vertexes, m_indexes,
+		AddVertsForTriangle3D(vertexes, indexes,
 			Vec3(bounds.m_mins.x, bounds.m_maxs.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Rgba8::WHITE, WallUvs);
-		AddVertsForTriangle3D(m_vertexes, m_indexes,
+		AddVertsForTriangle3D(vertexes, indexes,
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_maxs.z),
 			Vec3(bounds.m_maxs.x, bounds.m_mins.y, bounds.m_mins.z),
 			Vec3(bounds.m_maxs.x, bounds.m_maxs.y, bounds.m_mins.z),
@@ -413,8 +421,9 @@ void Map::AddGeometryForRamp(const AABB3& bounds, const AABB2& RampUVs, const AA
 
 void Map::CreateBuffers()
 {
-	m_vertexBuffer = g_engine->m_render->CreateVertexBuffer(sizeof(Vertex_PCUTBN), sizeof(Vertex_PCUTBN));
-	m_indexBuffer = g_engine->m_render->CreateIndexBuffer(sizeof(unsigned int));
+	m_vertexBufferGeometry = g_engine->m_render->CreateVertexBuffer(sizeof(Vertex_PCUTBN), sizeof(Vertex_PCUTBN));
+	m_indexBufferGeometry = g_engine->m_render->CreateIndexBuffer(sizeof(unsigned int));
+	m_vertexBufferSkybox = g_engine->m_render->CreateVertexBuffer(sizeof(Vertex), sizeof(Vertex));
 }
 
 bool Map::IsPositionInBounds(const Vec3& position) const
@@ -555,12 +564,12 @@ bool Map::AreActorsSameFaction(Actor* actorA, Actor* actorB)
 
 VertexBuffer* Map::GetVertexBuffer()
 {
-	return m_vertexBuffer;
+	return m_vertexBufferGeometry;
 }
 
 IndexBuffer* Map::GetIndexBuffer()
 {
-	return m_indexBuffer;
+	return m_indexBufferGeometry;
 }
 
 SpawnInfo const Map::GetSpawnInfoForGrounded()
@@ -1660,7 +1669,7 @@ void Map::Render_World()
 	g_engine->m_render->SetModelConstants(Mat44());
 	g_engine->m_render->BindTexture(m_definition->m_skyboxTexture);
 	g_engine->m_render->BindShader(g_engine->m_render->m_defaultShader);
-	g_engine->m_render->DrawVertexList(&m_skyboxVertexes);
+	g_engine->m_render->DrawFromBuffer(m_vertexBufferSkybox);
 	g_engine->m_render->BindShader(m_shader);
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 
@@ -1681,7 +1690,8 @@ void Map::Render_Tiles() const
 	lightingConstants.SunIntensity = m_sunIntensity;
 	lightingConstants.SunDirection = m_sunDirection;
 	g_engine->m_render->SetConstantBufferData(k_lightingConstantsSlot, lightingConstants, m_lightingCBO);
-	g_engine->m_render->DrawIndexedVertexList(&m_vertexes, &m_indexes, m_vertexBuffer, m_indexBuffer);
+
+	g_engine->m_render->DrawIndexedFromBuffers(m_vertexBufferGeometry, m_indexBufferGeometry);
 }
 
 void Map::Render_Actors() const

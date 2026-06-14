@@ -121,10 +121,10 @@ public:
 	// Creating Geometry/Map tiles
 	void CreateTiles();
 	void CreateGeometry();
-	void AddGeometryForWall(int tileIndex, const AABB3& bounds, const AABB2& UVs);
-	void AddGeometryForFloor(const AABB3& bounds, const AABB2& UVs);
-	void AddGeometryForCeiling(const AABB3& bounds, const AABB2& UVs);
-	void AddGeometryForRamp(const AABB3& bounds, const AABB2& RampUVs, const AABB2& WallUVs, IntVec2 const& direction);
+	void AddGeometryForWall(std::vector<Vertex_PCUTBN>& vertexes, std::vector<unsigned int>& indexes, int tileIndex, const AABB3& bounds, const AABB2& UVs);
+	void AddGeometryForFloor(std::vector<Vertex_PCUTBN>& vertexes, std::vector<unsigned int>& indexes, const AABB3& bounds, const AABB2& UVs);
+	void AddGeometryForCeiling(std::vector<Vertex_PCUTBN>& vertexes, std::vector<unsigned int>& indexes, const AABB3& bounds, const AABB2& UVs);
+	void AddGeometryForRamp(std::vector<Vertex_PCUTBN>& vertexes, std::vector<unsigned int>& indexes, const AABB3& bounds, const AABB2& RampUVs, const AABB2& WallUVs, IntVec2 const& direction);
 	void CreateBuffers();
 
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -238,12 +238,13 @@ protected:
 	
 	//------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	// Graphics rendering
-	std::vector<Vertex_PCUTBN> m_vertexes;
+	/*std::vector<Vertex_PCUTBN> m_vertexes;
 	std::vector<Vertex> m_skyboxVertexes;
-	std::vector<unsigned int> m_indexes;
+	std::vector<unsigned int> m_indexes;*/
 	const Texture* m_texture = nullptr;
-	VertexBuffer* m_vertexBuffer = nullptr;
-	IndexBuffer* m_indexBuffer = nullptr;
+	VertexBuffer* m_vertexBufferGeometry = nullptr;
+	IndexBuffer* m_indexBufferGeometry = nullptr;
+	VertexBuffer* m_vertexBufferSkybox = nullptr;
 	Vec3 m_sunDirection;
 	float m_sunIntensity;
 	float m_ambientIntensity;

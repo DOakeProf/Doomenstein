@@ -250,7 +250,7 @@ void Actor::Render()
 		g_engine->m_render->BindShader(m_definition->m_shader);
 		g_engine->m_render->SetModelConstants(GetModelMatrixBillboarded());
 		g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
-		g_engine->m_render->DrawIndexedVertexList(&m_verts, &m_vertexIndexes, m_map->GetVertexBuffer(), m_map->GetIndexBuffer());
+		g_engine->m_render->DrawIndexedVertexList(&m_verts, &m_vertexIndexes);
 	}
 
 	if (g_app->IsDebug())

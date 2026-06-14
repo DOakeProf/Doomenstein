@@ -38,11 +38,13 @@ Map::~Map()
 	delete m_indexBuffer;
 	delete m_clipPlaneCBO;
 	delete m_portalAABB3CBO;
+	delete m_lightingCBO;
 
 	m_vertexBuffer = nullptr;
 	m_indexBuffer = nullptr;
 	m_clipPlaneCBO = nullptr;
 	m_portalAABB3CBO = nullptr;
+	m_lightingCBO = nullptr;
 
 	for (Actor* actor : m_actors)
 	{
@@ -68,6 +70,7 @@ void Map::Startup()
 
 	m_clipPlaneCBO = new ConstantBuffer(g_engine->m_render->GetDevice(), sizeof(ClipPlaneConstants));
 	m_portalAABB3CBO = new ConstantBuffer(g_engine->m_render->GetDevice(), sizeof(PortalAABB3Constants));
+	m_lightingCBO = new ConstantBuffer(g_engine->m_render->GetDevice(), sizeof(LightingConstants));
 
 	if (m_definition->m_secondsUntilNextWave != -1.f)
 	{
@@ -1673,7 +1676,11 @@ void Map::Render_Tiles() const
 	g_engine->m_render->BindTexture(m_tileSpriteSheet.GetTexture());
 	g_engine->m_render->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 	g_engine->m_render->BindShader(m_definition->m_shader);
-	g_engine->m_render->SetLightingConstants(m_sunDirection.GetNormalized(), m_sunIntensity, m_ambientIntensity);
+	LightingConstants lightingConstants = LightingConstants();
+	lightingConstants.AmbientIntensity = m_ambientIntensity;
+	lightingConstants.SunIntensity = m_sunIntensity;
+	lightingConstants.SunDirection = m_sunDirection;
+	g_engine->m_render->SetConstantBufferData(k_lightingConstantsSlot, lightingConstants, m_lightingCBO);
 	g_engine->m_render->DrawIndexedVertexList(&m_vertexes, &m_indexes, m_vertexBuffer, m_indexBuffer);
 }
 

@@ -22,14 +22,6 @@ struct v2p_t
 };
 
 //------------------------------------------------------------------------------------------------
-cbuffer LightConstants : register(b1)
-{
-	float3 SunDirection;
-	float SunIntensity;
-	float AmbientIntensity;
-};
-
-//------------------------------------------------------------------------------------------------
 cbuffer CameraConstants : register(b2)
 {
 	float4x4 WorldToCameraTransform;	// View transform
@@ -44,7 +36,15 @@ cbuffer ModelConstants : register(b3)
 	float4 ModelColor;
 };
 
-cbuffer ClipPlaneConstants : register(b5)
+//------------------------------------------------------------------------------------------------
+cbuffer LightConstants : register(b8)
+{
+	float3 SunDirection;
+	float SunIntensity;
+	float AmbientIntensity;
+};
+
+cbuffer ClipPlaneConstants : register(b9)
 {
     float4 gClipPlane[5];
     int isEnabledClipPlane;
@@ -52,7 +52,7 @@ cbuffer ClipPlaneConstants : register(b5)
     float2 paddingClipPlane;
 };
 
-cbuffer PortalAABB3Constants : register(b6)
+cbuffer PortalAABB3Constants : register(b10)
 {
     float4 aabb3Mins[4];
     float4 aabb3Maxs[4];
@@ -129,7 +129,7 @@ float4 PixelMain(v2p_t input) : SV_Target0
             clip(0.5 - isPointInside);
         }
     }
-	
+
     return color;
 }
 

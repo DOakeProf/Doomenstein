@@ -1,3 +1,10 @@
+<img width="1148" height="577" alt="Doomenstein Example" src="https://github.com/user-attachments/assets/a182020b-f27c-4ac4-ab2f-06772165b5c3" />
+
+-------------------------------------------
+		RUNNING THE PROJECT
+-------------------------------------------
+To Run this project you need to download the "Run" folder, then launch the Doomenstein_Release_x64.exe executable.
+
 This Doomenstein has several different new features, including a boss fight. below is a list of all features as well as how to test them:
 
 -------------------------------------------
@@ -26,16 +33,16 @@ keys 1-5.
 -  Black Spindle, Key 4: This is a sniper rifles which will automatically reload if you land 3 
 			 precision hits in a row.
 
-- Portal Gun, Key 5: Its the portal gun from portal, you know what it does.
+- Portal Gun, Key 5: Left click to spawn the first portal, right click to spawn the second. The portals wont show up until both are shot.
 
 -------------------------------------------
 		ENEMIES 
 -------------------------------------------
-There are really only two new enemies, the Dinosaur and the Emperor.
-Both of these enemies will shoot projectiles at you, but the Emperor
-has more health and will additionally drop an item you can pick up 
-to beat the boss. These enemies will only spawn if the boss encounter 
-has started.
+There are 3 enemies listed below:
+- Pinky: This enemy will charge at you and attempt to use a melee attack.
+- Dinosaur: This enemy will stay at a range and shoot projectiles at you.
+- Emperor: This large enemy will also stay at range and shoot projectiles,
+  			but it will additionally drop an item that you need to effectively damage the boss.
 
 -------------------------------------------
 	      PORTALS/RIFTS 
@@ -74,8 +81,10 @@ STARTING A DAMAGE PHASE:
   spawn a Ball.
 
 - Enter the Ball by pressing E. While inside the Ball you will take no damage, so you can use it to heal up with Red Death. Wait in the ball until 
-  The boss chooses to charge at you, once his head hits the ball with you inside a damage phase will begin.
+  The boss chooses to charge at you, once his head hits the ball with you inside a damage phase will begin. If it is taking a while for the boss to
+  pick up the ball, try moving out of it and wait for the boss to be in the same dimension as you, then enter the ball again and he should immediately
+  charge at you.
 
 - Once the boss interacts with the Ball, it will put it in its mouth and fly around with it, which gives you ample opportunity to shoot its head at 
   close range. Black Spindle and Fourth Horseman are both really good weapons to use in this phase. This will continue for around 20 seconds, and then
-  the boss will destroy the ball and launch you towards the center of the map (currently glitched and will send you into space).
+  the boss will destroy the ball and launch you towards the center of the map.
